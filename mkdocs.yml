@@ -1,0 +1,51 @@
+
+site_name: RBACX
+repo_url: https://github.com/your-org/rbacx
+nav:
+  - Overview: docs/overview.md
+  - Quickstart: docs/quickstart.md
+  - Adapters: docs/adapters.md
+  - Architecture: docs/architecture.md
+  - Logging: docs/logging.md
+  - API Reference: docs/api.md
+  - Security: docs/security.md
+  - Performance: docs/performance.md
+  - Metrics: docs/metrics.md
+  - Web adapters: docs/web_adapters.md
+  - Benchmarks: docs/benchmarks.md
+  - Observability stack: docs/observability_stack.md
+  - DRF example: docs/drf_example.md
+  - CI: docs/ci.md
+  - Policy authoring: docs/policy_authoring.md
+  - Reasons: docs/reasons.md
+  - Diagnostics: docs/diagnostics.md
+  - Time operators: docs/time_operators.md
+  - Migration (RBAC→ABAC): docs/migration_rbac_to_abac.md
+  - Policy catalog: docs/policy_catalog.md
+  - Policy stores: docs/policy_stores.md
+  - OpenTelemetry: docs/otel_metrics.md
+  - HTTP mapping: docs/http_mapping.md
+  - Role hierarchy: docs/roles.md
+  - Audit mode: docs/audit_mode.md
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences

@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.envrc
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+.nox/
+.tox/
+.pytest_cache/
+coverage.xml
+htmlcov/
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Editors / OS
+*.swp
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# MkDocs site
+site/
+
+# Local databases / demo artifacts
+examples/django_demo/db.sqlite3
+
+# Docker / compose artifacts
+*.log
+docker-data/
+
+docs/site
+bench/*.csv
+
+dist/
+build/
+*.egg-info/
+venv/
+.venv/
+.mypy_cache/
+.pytest_cache/

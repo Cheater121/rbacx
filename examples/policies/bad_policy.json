@@ -1,0 +1,55 @@
+{
+  "algorithm": "first-applicable",
+  "rules": [
+    {
+      "id": "a",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      }
+    },
+    {
+      "id": "a",
+      "effect": "deny",
+      "actions": [],
+      "resource": {
+        "type": "*"
+      }
+    },
+    {
+      "id": "b",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      },
+      "condition": {
+        "==": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "c",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      },
+      "condition": {
+        "!=": [
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

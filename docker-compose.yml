@@ -1,0 +1,51 @@
+
+version: "3.9"
+services:
+  fastapi:
+    build:
+      context: .
+      target: runtime
+    command: uvicorn examples.fastapi_demo.app:app --host 0.0.0.0 --port 8000 --log-config examples/logging/uvicorn_logging_json.yml
+    environment: [RBACX_LOG_JSON=1]
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  litestar:
+    build:
+      context: .
+      target: runtime
+    command: uvicorn examples.litestar_demo.app:app --host 0.0.0.0 --port 8001 --log-config examples/logging/uvicorn_logging_json.yml
+    environment: [RBACX_LOG_JSON=1]
+    ports: ["8001:8001"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  flask:
+    build:
+      context: .
+      target: runtime
+    command: python -m examples.flask_demo.app
+    environment: [PORT=8002, RBACX_LOG_JSON=1]
+    ports: ["8002:8002"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8002/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  django:
+    build:
+      context: .
+      target: runtime
+    command: bash -lc "python examples/django_demo/manage.py migrate && python examples/django_demo/manage.py runserver 0.0.0.0:8003"
+    environment: [RBACX_LOG_JSON=1]
+    ports: ["8003:8003"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8003/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

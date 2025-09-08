@@ -1,0 +1,25 @@
+
+version: "3.9"
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/compose/app/Dockerfile
+    ports:
+      - "8000:8000"
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus

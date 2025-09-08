@@ -1,0 +1,36 @@
+{
+  "algorithm": "permit-overrides",
+  "rules": [
+    {
+      "id": "p1",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      },
+      "condition": {
+        "hasAny": [
+          {
+            "attr": "subject.roles"
+          },
+          [
+            "user",
+            "viewer"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "d1",
+      "effect": "deny",
+      "actions": [
+        "delete"
+      ],
+      "resource": {
+        "type": "doc"
+      }
+    }
+  ]
+}

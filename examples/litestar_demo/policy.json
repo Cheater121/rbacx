@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "id": "p",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      }
+    },
+    {
+      "id": "t",
+      "effect": "permit",
+      "actions": [
+        "transfer"
+      ],
+      "resource": {
+        "type": "payment"
+      },
+      "obligations": [
+        {
+          "type": "require_mfa"
+        }
+      ]
+    }
+  ]
+}

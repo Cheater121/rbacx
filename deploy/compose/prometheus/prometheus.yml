@@ -1,0 +1,10 @@
+
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: 'app'
+    static_configs:
+      - targets: ['app:8000']
+        labels:
+          group: 'demo'
+    metrics_path: /metrics

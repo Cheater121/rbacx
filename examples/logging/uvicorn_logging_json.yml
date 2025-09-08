@@ -1,0 +1,31 @@
+
+version: 1
+disable_existing_loggers: False
+formatters:
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s"
+filters:
+  trace:
+    (): rbacx.logging.context.TraceIdFilter
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: json
+    filters: [trace]
+loggers:
+  uvicorn:
+    level: INFO
+    handlers: [console]
+    propagate: False
+  uvicorn.error:
+    level: INFO
+    handlers: [console]
+    propagate: False
+  uvicorn.access:
+    level: INFO
+    handlers: [console]
+    propagate: False
+root:
+  level: INFO
+  handlers: [console]

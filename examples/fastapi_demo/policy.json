@@ -1,0 +1,14 @@
+{
+  "rules": [
+    {
+      "id": "docs",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      }
+    }
+  ]
+}

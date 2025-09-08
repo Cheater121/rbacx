@@ -1,0 +1,62 @@
+[project]
+name = "rbacx"
+version = "0.1.0"
+description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "Cheater121", email = "cheater1211@gmail.com" }]
+keywords = ["rbac", "abac", "policy", "authorization"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage   = "https://github.com/Cheater121/rbacx"
+Repository = "https://github.com/Cheater121/rbacx"
+Issues     = "https://github.com/Cheater121/rbacx/issues"
+Changelog  = "https://github.com/Cheater121/rbacx/blob/main/CHANGELOG.md"
+# Documentation = "https://cheater121.github.io/rbacx/"
+
+[project.optional-dependencies]
+adapters-fastapi = ["fastapi>=0.110","starlette>=0.37"]
+adapters-flask = ["flask>=2.3"]
+adapters-drf = ["django>=4.2","djangorestframework>=3.14"]
+metrics = ["prometheus-client>=0.14", "opentelemetry-api>=1.25"]
+dates = ["python-dateutil>=2.8"]
+http = ["requests>=2.28"]
+s3 = ["boto3>=1.26"]
+otel = ["opentelemetry-api>=1.19", "opentelemetry-sdk>=1.19"]
+dev = ["pytest", "pytest-cov", "pre-commit>=3.7", "build>=1.2", "ruff>=0.6", "twine", "mypy>=1.8"]
+tests = ["pytest>=8", "pytest-asyncio>=0.23", "coverage>=7"]
+docs = ["mkdocs>=1.6", "mkdocs-material>=9.5"]
+examples = ["uvicorn>=0.30", "fastapi>=0.110", "starlette>=0.37", "flask>=2.3", "django>=4.2", "djangorestframework>=3.14", "litestar>=2.8"]
+validate = ["jsonschema>=4.18"]
+
+[project.scripts]
+rbacx = "rbacx.cli:main"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["I", "B"]
+
+[tool.coverage.run]
+source = ["rbacx"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rbacx = ["py.typed", "dsl/policy.schema.json"]

@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RBACX Policy",
+  "type": "object",
+  "properties": {
+    "algorithm": {
+      "type": "string",
+      "enum": [
+        "deny-overrides",
+        "permit-overrides"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "permit",
+              "deny"
+            ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resource": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "attrs": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "condition": {
+            "$ref": "#/$defs/Condition"
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "effect",
+          "actions",
+          "resource"
+        ]
+      }
+    },
+    "policies": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "rules"
+      ]
+    },
+    {
+      "required": [
+        "policies"
+      ]
+    }
+  ],
+  "$defs": {
+    "Condition": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 1,
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Condition"
+              }
+            },
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Condition"
+              }
+            },
+            "not": {
+              "$ref": "#/$defs/Condition"
+            },
+            "==": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "!=": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2
+            },
+            ">": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/NumExpr"
+                },
+                {
+                  "$ref": "#/$defs/NumExpr"
+                }
+              ]
+            },
+            "<": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/NumExpr"
+                },
+                {
+                  "$ref": "#/$defs/NumExpr"
+                }
+              ]
+            },
+            ">=": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/NumExpr"
+                },
+                {
+                  "$ref": "#/$defs/NumExpr"
+                }
+              ]
+            },
+            "<=": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/NumExpr"
+                },
+                {
+                  "$ref": "#/$defs/NumExpr"
+                }
+              ]
+            },
+            "in": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/StrExpr"
+                    },
+                    {
+                      "$ref": "#/$defs/NumExpr"
+                    }
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                }
+              ]
+            },
+            "contains": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                },
+                {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/StrExpr"
+                    },
+                    {
+                      "$ref": "#/$defs/NumExpr"
+                    }
+                  ]
+                }
+              ]
+            },
+            "startsWith": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/StrExpr"
+                },
+                {
+                  "$ref": "#/$defs/StrExpr"
+                }
+              ]
+            },
+            "endsWith": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/StrExpr"
+                },
+                {
+                  "$ref": "#/$defs/StrExpr"
+                }
+              ]
+            },
+            "before": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/DateTimeExpr"
+                },
+                {
+                  "$ref": "#/$defs/DateTimeExpr"
+                }
+              ]
+            },
+            "after": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/DateTimeExpr"
+                },
+                {
+                  "$ref": "#/$defs/DateTimeExpr"
+                }
+              ]
+            },
+            "between": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/DateTimeExpr"
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "$ref": "#/$defs/DateTimeExpr"
+                    },
+                    {
+                      "$ref": "#/$defs/DateTimeExpr"
+                    }
+                  ]
+                }
+              ]
+            },
+            "hasAll": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                },
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                }
+              ]
+            },
+            "hasAny": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": [
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                },
+                {
+                  "$ref": "#/$defs/ContainerExpr"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "AttrRef": {
+      "type": "object",
+      "properties": {
+        "attr": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "attr"
+      ],
+      "additionalProperties": false
+    },
+    "StrExpr": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/AttrRef"
+        }
+      ]
+    },
+    "NumExpr": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/$defs/AttrRef"
+        }
+      ]
+    },
+    "ContainerExpr": {
+      "oneOf": [
+        {
+          "type": "array"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/AttrRef"
+        }
+      ]
+    },
+    "DateTimeExpr": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "$ref": "#/$defs/AttrRef"
+        }
+      ]
+    }
+  }
+}

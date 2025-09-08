@@ -1,0 +1,14 @@
+
+include LICENSE
+include README.md
+include pyproject.toml
+
+recursive-include src *
+
+prune .github
+prune docs
+prune tests
+prune examples
+prune site
+prune build
+prune dist
