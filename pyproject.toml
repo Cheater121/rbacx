@@ -60,3 +60,11 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 rbacx = ["py.typed", "dsl/policy.schema.json"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+
+[[tool.mypy.overrides]]
+module = ["django.*", "litestar.*"]
+ignore_missing_imports = true
