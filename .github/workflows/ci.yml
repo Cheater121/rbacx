@@ -14,22 +14,45 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: 'pip'  # cache pip wheels to speed up installs
+
       - name: Install deps
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev,examples,validate]
-      - name: Ruff
+          python -m pip install -U pip
+          pip install -e .
+          pip install ruff mypy pytest coverage build twine
+
+      - name: Ruff (lint)
         run: ruff check src
-      - name: Mypy
+
+      - name: Mypy (types)
         run: mypy src
+
       - name: Pytest
         run: pytest -q
-      - name: Coverage (artifact)
+
+      - name: Coverage (generate XML)
+        if: matrix.python-version == '3.11'
         run: |
-          python -m pip install cover
+          coverage run -m pytest -q
+          coverage xml -o coverage.xml
+
+      - name: Upload coverage.xml
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+      - name: Build (sdist & wheel) + twine check
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m build
+          twine check dist/*
