@@ -18,6 +18,7 @@ plugins:
       default_handler: python
       handlers:
         python:
+          paths: [src]
           options:
             docstring_style: google
             merge_init_into_class: true
@@ -53,6 +54,7 @@ nav:
   - Migration (RBAC→ABAC): migration_rbac_to_abac.md
   - Policy catalog: policy_catalog.md
   - Policy stores: policy_stores.md
+  - Policy loading: policy_loading.md
   - OpenTelemetry: otel_metrics.md
   - HTTP mapping: http_mapping.md
   - Role hierarchy: roles.md
