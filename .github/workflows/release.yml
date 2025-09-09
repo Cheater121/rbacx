@@ -1,26 +1,54 @@
 name: Release
 on:
   release:
-    types: [published]
+    types: [published]   
+  workflow_dispatch:      
 
 permissions:
-  contents: read
-  id-token: write  # PyPI Trusted Publishing
+  contents: read          
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Build sdist/wheel
+
+      - name: Build sdist & wheel
         run: |
-          python -m pip install --upgrade pip build
+          python -m pip install -U pip
+          python -m pip install build twine
           python -m build
-      - name: Publish to PyPI
+          twine check dist/*
+
+      - name: Upload dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/rbacx
+    permissions:
+      id-token: write       
+      contents: read
+    steps:
+      - name: Download dist/
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip-existing: true
+          packages-dir: dist
+          
