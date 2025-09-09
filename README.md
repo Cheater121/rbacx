@@ -1,14 +1,14 @@
 # RBACX
 
-<!-- 
+
 [![CI](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml/badge.svg)](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-website-blue)](https://cheater121.github.io/rbacx/)
--->
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-<!-- After publishing to PyPI:
+
 [![PyPI](https://img.shields.io/pypi/v/rbacx)](https://pypi.org/project/rbacx/)
 [![Python](https://img.shields.io/pypi/pyversions/rbacx)](https://pypi.org/project/rbacx/)
--->
+
 
 Universal **RBAC/ABAC** policy engine for Python with a clean core, policy sets, a compact condition DSL (including time ops), and adapters for common web frameworks.
 

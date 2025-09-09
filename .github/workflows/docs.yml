@@ -16,10 +16,11 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Install MkDocs
+      - name: Install MkDocs + plugins + project
         run: |
-          python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material
+          python -m pip install -U pip
+          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
+          pip install -e .
       - name: Configure git user
         run: |
           git config user.name "github-actions[bot]"

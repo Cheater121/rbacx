@@ -1,32 +1,10 @@
-
 site_name: RBACX
-repo_url: https://github.com/your-org/rbacx
-nav:
-  - Overview: docs/overview.md
-  - Quickstart: docs/quickstart.md
-  - Adapters: docs/adapters.md
-  - Architecture: docs/architecture.md
-  - Logging: docs/logging.md
-  - API Reference: docs/api.md
-  - Security: docs/security.md
-  - Performance: docs/performance.md
-  - Metrics: docs/metrics.md
-  - Web adapters: docs/web_adapters.md
-  - Benchmarks: docs/benchmarks.md
-  - Observability stack: docs/observability_stack.md
-  - DRF example: docs/drf_example.md
-  - CI: docs/ci.md
-  - Policy authoring: docs/policy_authoring.md
-  - Reasons: docs/reasons.md
-  - Diagnostics: docs/diagnostics.md
-  - Time operators: docs/time_operators.md
-  - Migration (RBAC→ABAC): docs/migration_rbac_to_abac.md
-  - Policy catalog: docs/policy_catalog.md
-  - Policy stores: docs/policy_stores.md
-  - OpenTelemetry: docs/otel_metrics.md
-  - HTTP mapping: docs/http_mapping.md
-  - Role hierarchy: docs/roles.md
-  - Audit mode: docs/audit_mode.md
+site_url: https://cheater121.github.io/rbacx/
+repo_url: https://github.com/Cheater121/rbacx
+repo_name: Cheater121/rbacx
+edit_uri: edit/main/docs/
+
+docs_dir: docs
 
 theme:
   name: material
@@ -37,11 +15,14 @@ theme:
 plugins:
   - search
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
+          paths: [src]
           options:
             docstring_style: google
             merge_init_into_class: true
+            show_source: false
 
 markdown_extensions:
   - admonition
@@ -49,3 +30,32 @@ markdown_extensions:
       permalink: true
   - pymdownx.highlight
   - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - Quickstart: quickstart.md
+  - Adapters: adapters.md
+  - Architecture: architecture.md
+  - Logging: logging.md
+  - API Reference: api.md
+  - Security: security.md
+  - Performance: performance.md
+  - Metrics: metrics.md
+  - Web adapters: web_adapters.md
+  - Benchmarks: benchmarks.md
+  - Observability stack: observability_stack.md
+  - DRF example: drf_example.md
+  - CI: ci.md
+  - Policy authoring: policy_authoring.md
+  - Reasons: reasons.md
+  - Diagnostics: diagnostics.md
+  - Time operators: time_operators.md
+  - Migration (RBAC→ABAC): migration_rbac_to_abac.md
+  - Policy catalog: policy_catalog.md
+  - Policy stores: policy_stores.md
+  - Policy loading: policy_loading.md
+  - OpenTelemetry: otel_metrics.md
+  - HTTP mapping: http_mapping.md
+  - Role hierarchy: roles.md
+  - Audit mode: audit_mode.md

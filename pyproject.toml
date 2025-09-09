@@ -1,6 +1,6 @@
 [project]
 name = "rbacx"
-version = "0.1.0"
+version = "0.1.1"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -60,3 +60,11 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 rbacx = ["py.typed", "dsl/policy.schema.json"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+
+[[tool.mypy.overrides]]
+module = ["django.*", "litestar.*"]
+ignore_missing_imports = true
