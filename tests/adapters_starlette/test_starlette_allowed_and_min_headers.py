@@ -1,4 +1,3 @@
-
 from importlib import reload
 import types, asyncio, pytest
 
@@ -11,7 +10,8 @@ def test_starlette_allowed_pass_through(monkeypatch):
     reload(st)
     class G:
         def evaluate_sync(self, *a, **k):
-            d = types.SimpleNamespace(allowed=True, reason="ok", explain=types.SimpleNamespace(reason="ok", rule_id="r", policy_id="p"))
+            d = types.SimpleNamespace(allowed=True, reason="ok",
+                                      explain=types.SimpleNamespace(reason="ok", rule_id="r", policy_id="p"))
             return d
     try:
         import starlette  # noqa: F401
@@ -21,18 +21,19 @@ def test_starlette_allowed_pass_through(monkeypatch):
         st.JSONResponse = JSONResponse
         dep = st.require_access(G(), _build_env, add_headers=True)
         res = asyncio.run(dep(object()))
-        # allowed returns original request or None — just ensure no exception and an object returned
         assert res is None or res is not None
     except Exception:
+        dep = st.require_access(G(), _build_env, add_headers=True)
         with pytest.raises(RuntimeError):
-            st.require_access(G(), _build_env)(object())
+            asyncio.run(dep(object()))
 
 def test_starlette_denied_min_headers(monkeypatch):
     import rbacx.adapters.starlette as st
     reload(st)
     class G:
         def evaluate_sync(self, *a, **k):
-            d = types.SimpleNamespace(allowed=False, reason="no", explain=types.SimpleNamespace(reason="no", rule_id="r", policy_id="p"))
+            d = types.SimpleNamespace(allowed=False, reason="no",
+                                      explain=types.SimpleNamespace(reason="no", rule_id="r", policy_id="p"))
             return d
     try:
         import starlette  # noqa: F401
@@ -45,5 +46,6 @@ def test_starlette_denied_min_headers(monkeypatch):
         assert res.status_code == 403
         assert isinstance(res.headers, dict)
     except Exception:
+        dep = st.require_access(G(), _build_env, add_headers=False)
         with pytest.raises(RuntimeError):
-            st.require_access(G(), _build_env)(object())
+            asyncio.run(dep(object()))
