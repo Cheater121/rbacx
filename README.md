@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml/badge.svg)](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-website-blue)](https://cheater121.github.io/rbacx/)
-[![Coverage](./coverage.svg)
+![Coverage](./coverage.svg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
