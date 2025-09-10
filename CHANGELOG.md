@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 — 2025-09-10
+
+### Improved
+- **Test Coverage**: Expanded test suite to push overall coverage above 80%, especially around middleware, adapters, and core logic.
+- **CI Pipeline**: Integrated code coverage badge generation and automated updates to README via GitHub Actions.
+
+### Added
+- New tests for:
+  - Django middleware factories
+  - Starlette adapter behavior with/without dependencies
+  - ASGI access log functionality
+  - CLI tooling and argument parsing
+  - Core engine, policy evaluation, and policy-set logic
+  - Storage and telemetry modules
+
+### Fixed
+- Resolved test collection errors due to missing package imports in CI—corrected install strategy to ensure modules are discoverable (`pip install -e .`) before running pytest.
+
+
 ## 0.1.1 — 2025-09-09
 ### Fixed
 - MkDocs build: added `paths: [src]`, installed `mkdocstrings(-python)` in CI; fixed nav paths.
