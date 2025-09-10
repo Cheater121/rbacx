@@ -27,7 +27,7 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -e .
-          pip install ruff mypy pytest coverage build twine
+          pip install ruff mypy pytest coverage build twine pytest-asyncio
 
       - name: Ruff (lint)
         run: ruff check src
