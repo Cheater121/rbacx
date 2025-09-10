@@ -48,3 +48,16 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"pct={pct}\ncolor={color}\n")
           PY
+          
+      - name: Generate SVG badge via Shields.io
+        run: |
+          PCT="${{ steps.cov.outputs.pct }}"
+          COLOR="${{ steps.cov.outputs.color }}"
+          curl -sS "https://img.shields.io/badge/coverage-${PCT}%25-${COLOR}.svg" -o coverage.svg
+
+      - name: Commit badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "chore(ci): update coverage badge to ${{ steps.cov.outputs.pct }}%"
+          file_pattern: coverage.svg
