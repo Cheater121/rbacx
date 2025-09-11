@@ -34,4 +34,4 @@ jobs:
         run: mkdocs build --strict
 
       - name: Deploy to gh-pages
-        run: mkdocs gh-deploy --force --no-history -m "docs: {sha} (MkDocs {version})"
+        run: mkdocs gh-deploy --force
