@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1 - 2025-09-11
+## 0.3.1 — 2025-09-11
 
 ### Fixed
 - **Architecture diagram** now renders correctly on GitHub Pages:
@@ -21,7 +21,7 @@
 - No changes to the runtime package or public API. Documentation-only maintenance release.
 
 
-## 0.3.0 - 2025-09-11
+## 0.3.0 — 2025-09-11
 ### Added
 - **Landing page** (`docs/index.md`) with philosophy, Quick start, and a documentation map.
 - **Decision object** section in `docs/api.md` describing the exact fields returned by `Guard.evaluate*`.
