@@ -1,9 +1,5 @@
 # Highlights of RBACX
 
-## Overview
-
-RBACX is a Python authorization library supporting both **RBAC** (role‑based) and **ABAC** (attribute‑based) models with a declarative JSON policy format and pluggable adapters for popular web frameworks.
-
 ## Architecture & Design
 
 - **Core vs. Adapters**: Authorization decision logic lives in `rbacx.core` (e.g., `Guard`), while framework-specific integration is implemented as adapters (FastAPI, Django, Flask, DRF, Starlette/Litestar). This separation keeps the core framework‑agnostic.

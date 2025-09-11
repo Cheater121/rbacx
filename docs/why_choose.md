@@ -1,7 +1,5 @@
 # Why Choose RBACX
 
-RBACX is a Python authorization library that combines **RBAC** and **ABAC** with a declarative JSON policy model, adapter-based integrations for common web frameworks, and optional hot reloading.
-
 ### Inspiration & philosophy
 RBACX is inspired by industry security practices (e.g., **deny-by-default** and **least privilege**), the real-world pains Python developers face when moving between projects with inconsistent authorization stacks, and the proven **XACML** approach—**simplified** and made friendlier for web developers. The design borrows XACML’s ideas (policies, rules, effects, combining algorithms, obligations), but expresses them as compact JSON and a Python‑centric API. The goal is simple: **security should be understandable and ergonomic for developers**, so that correct authorization becomes the *path of least resistance*.
 
