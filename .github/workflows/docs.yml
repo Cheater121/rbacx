@@ -20,9 +20,10 @@ jobs:
       - name: Install MkDocs toolchain
         run: |
           python -m pip install -U pip
-          pip install "mkdocs==1.6" \
-                      "mkdocs-material>=9.5" \
-                      "mkdocstrings[python]==0.25.1"
+          pip install "mkdocs==1.6.1" \
+                      "mkdocs-material==9.5.20" \
+                      "mkdocstrings[python]>=0.26.2" \
+                      "mkdocs-autorefs>=1.4.2"
           pip install -e .
 
       - name: Configure git user
