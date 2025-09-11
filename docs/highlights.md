@@ -23,7 +23,6 @@
 ## Policy Loading & Reloading
 
 - **Sources**: Filesystem, HTTP(S), AWS S3.
-- **Hot Reloading**: Policy reload triggered by ETag change (no app restart).
 
 ## Observability & Tooling
 
@@ -49,4 +48,3 @@
 
 ## Verdict
 
-RBACX provides an implementation of RBAC+ABAC with declarative JSON policies, secure defaults (`deny-overrides`), multiple combining algorithms, obligations, hot reloading with ETag, and adapters for major Python web frameworks. The architecture is framework‑agnostic (ports/adapters), the API surface is typed and explicit, and the test suite covers core decision paths. This makes RBACX suitable for projects that need fine‑grained, auditable authorization with minimal coupling to the web stack.

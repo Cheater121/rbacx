@@ -1,18 +1,9 @@
-# Why Choose RBACX
-
-### Inspiration & philosophy
-RBACX is inspired by industry security practices (e.g., **deny-by-default** and **least privilege**), the real-world pains Python developers face when moving between projects with inconsistent authorization stacks, and the proven **XACML** approach—**simplified** and made friendlier for web developers. The design borrows XACML’s ideas (policies, rules, effects, combining algorithms, obligations), but expresses them as compact JSON and a Python‑centric API. The goal is simple: **security should be understandable and ergonomic for developers**, so that correct authorization becomes the *path of least resistance*.
-
----
-
 ## Quick Comparison (at a glance)
 
 | Criterion | **RBACX (Python)** | **Casbin (Python)** | **Oso (Polar + Python SDK)** | **Django Guardian** | **django-rules** | **Flask-RBAC** |
 |---|---|---|---|---|---|---|
-| **Model** | RBAC + ABAC; role hierarchy via resolvers; (ReBAC emulable via attributes) | RBAC, ABAC, ACL; model defined in `model.conf`; multi-model via PERM metamodel | RBAC/ABAC/ReBAC patterns via the Polar policy language | Object-level permissions (per-object ACL) for Django | Predicate-based rules in Python (hybrid RBAC/ABAC by code) | Pure RBAC (roles & role hierarchy) for Flask |
 | **Policy definition** | JSON/YAML/Python dicts (declarative data + operators) | Separate `model.conf` + policy storage (CSV/DB/etc.) | Separate `.polar` files; declarative DSL | No DSL; permissions stored in DB; backend checks | No DSL; rules/predicates registered in Python | In-code decorators/config registering role rules |
 | **Framework integration** | Adapters for FastAPI, Flask, Django/DRF, Starlette/Litestar (middleware/deps/decorators) | Library calls (`enforcer.enforce(...)`); framework glue typically user-built | Enforce via `authorize()` in app code; ORM filtering helpers | Django-only; integrates with `user.has_perm` and Django Admin | Django-only backend; integrates with `has_perm` & DRF helpers | Flask-only; extension + decorators |
-| **Dynamic updates / hot reload** | Built-in hot reload from file/HTTP/S3 with ETag polling | Reload via explicit calls; distributed updates via watchers | Programmatic reload; no built-in file watcher | Immediate effect (data in DB is the policy) | Rules can be added/removed at runtime via API | No built-in hot reload; rules configured in code/ext |
 | **Query-time filtering** | Manual in app/repo layer | Manual or custom helpers | Helpers like `authorized_query` / `authorized_resources` for ORMs | ORM patterns (filter by permissions) | Manual (apply predicates or integrate with queryset logic) | N/A (endpoint/role checks) |
 | **Language scope** | Python | Multi-language ecosystem | Libraries for multiple languages | Python/Django | Python/Django | Python/Flask |
 
@@ -20,7 +11,6 @@ RBACX is inspired by industry security practices (e.g., **deny-by-default** and 
 
 ## Advantages of RBACX
 
-- **Combined RBAC + ABAC**  
   RBACX brings together role-based and attribute-based access control. You can start with simple role checks and add attribute-based conditions later—without changing libraries or architecture. Many alternatives focus either on roles (e.g., Flask-RBAC, Casbin in its simplest use) or attributes (e.g., Oso, `rules`), whereas RBACX supports both approaches from the start.
 
 - **Straightforward policy format**  

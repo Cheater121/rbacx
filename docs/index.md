@@ -101,7 +101,6 @@ def docs():
 ## Documentation map
 
 **Start here**
-- [Overview](overview.md)
 - [Quickstart](quickstart.md)
 - [Why choose RBACX](why_choose.md)
 - [Highlights](highlights.md)
