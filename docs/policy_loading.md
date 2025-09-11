@@ -1,4 +1,3 @@
-# Policy loading & hot reload
 
 RBACX supports external policy sources and a lightweight polling manager.
 

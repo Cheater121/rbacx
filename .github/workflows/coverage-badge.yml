@@ -24,7 +24,7 @@ jobs:
       - name: Install project (editable) + test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e .            # важно для src-layout
+          pip install -e .            
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests with coverage (XML + terminal)
