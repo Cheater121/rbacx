@@ -6,7 +6,6 @@
   - `tests/unit/{core,dsl,engine,imports,logging,metrics,pkg,policyset}`
   - `tests/integration/{adapters/{asgi,django,flask,litestar,starlette,web},engine,metrics,storage,store,telemetry}`
   - `tests/e2e/cli`
-- **Conventions:** Maintain `tests/conftest.py` at the test root; omit `__init__.py` in test folders to keep them as plain test directories.
 
 ### Added
 - **Dev/test dependencies:** `pytest-asyncio` to enable first-class testing of `async def` tests and async fixtures.
