@@ -19,8 +19,8 @@ def test_hot_reloader_json_error_and_suppression(monkeypatch):
     hr = HotReloader(g, BadGoodSrc(), poll_interval=0.01)
     assert hr.check_and_reload() is False  # first: bad JSON
     assert hr.check_and_reload() is False  # suppressed immediately after
-    # Wait a bit, then call again — accept either False (если окно подавления ещё активно)
-    # или True (если окно прошло и загрузка успешна).
+    # Wait a bit, then call again — accept either False (if the suppression window is still active)
+    # or True (if the window has passed and the load succeeds).
     time.sleep(0.05)
     res = hr.check_and_reload()
     assert res in (False, True)

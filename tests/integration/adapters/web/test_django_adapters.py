@@ -1,10 +1,10 @@
 import pytest
 
-# Требуем Django; если его нет — корректно пропускаем весь модуль
+# Requires Django; if it's missing, gracefully skip the entire module
 django = pytest.importorskip("django")
 from django.conf import settings
 
-# Минимальная конфигурация Django для тестов DRF
+# Minimal Django configuration for DRF tests
 if not settings.configured:
     settings.configure(
         SECRET_KEY="test-secret",
@@ -22,7 +22,7 @@ if not settings.configured:
 
     _dj.setup()
 
-# Теперь можно безопасно работать с DRF
+# Now it's safe to work with DRF
 pytest.importorskip("rest_framework")
 from rest_framework.test import APIRequestFactory  # noqa: E402
 
@@ -68,6 +68,6 @@ def test_drf_permission_allow_and_message():
     PermDeny = make_permission(FakeGuard(False, "nope"), build_env)
     p_ng = PermDeny()
     assert p_ng.has_permission(req, None) is False
-    # DRF Permission.message должен содержать причину
+    # DRF Permission.message must contain the reason
     assert "nope" in str(getattr(p_ng, "message", ""))
 

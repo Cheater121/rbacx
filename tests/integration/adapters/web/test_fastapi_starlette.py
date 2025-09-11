@@ -47,7 +47,7 @@ def test_fastapi_and_starlette_require():
 
     client = TestClient(app)
 
-    # базовые параметры на случай, если зависимость объявляет обязательные query-поля
+    # basic parameters in case the dependency declares required query fields
     base_params = {"action": "read", "resource": "doc", "resource_type": "doc", "rbacx_resource_type": "doc"}
 
     r1 = client.get("/fa-ok", params=base_params)
@@ -70,7 +70,7 @@ def test_fastapi_and_starlette_require():
     def st_ok(request):
         return JSONResponse({"ok": True})
 
-    # оборачиваем через starlette.require_access
+    # wrap via starlette.require_access
     st_app = Starlette(routes=[Route("/st-ok", st_require(guard_allow, build_env)(st_ok))])
     st_client = TestClient(st_app)
     s1 = st_client.get("/st-ok")
