@@ -57,5 +57,6 @@ nav:
   - Policy loading: policy_loading.md
   - OpenTelemetry: otel_metrics.md
   - HTTP mapping: http_mapping.md
+  - Reasons: reasons.md
   - Role hierarchy: roles.md
   - Audit mode: audit_mode.md
