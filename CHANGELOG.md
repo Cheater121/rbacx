@@ -1,7 +1,18 @@
 # Changelog
 
-## 0.2.0 — 2025-09-10
+## 0.2.1 — 2025-09-11
+### Changed
+- **Test suite layout:** Reorganized into a layered structure for clarity and faster targeted runs:
+  - `tests/unit/{core,dsl,engine,imports,logging,metrics,pkg,policyset}`
+  - `tests/integration/{adapters/{asgi,django,flask,litestar,starlette,web},engine,metrics,storage,store,telemetry}`
+  - `tests/e2e/cli`
+- **Conventions:** Maintain `tests/conftest.py` at the test root; omit `__init__.py` in test folders to keep them as plain test directories.
 
+### Added
+- **Dev/test dependencies:** `pytest-asyncio` to enable first-class testing of `async def` tests and async fixtures.
+
+
+## 0.2.0 — 2025-09-10
 ### Improved
 - **Test Coverage**: Expanded test suite to push overall coverage above 80%, especially around middleware, adapters, and core logic.
 - **CI Pipeline**: Integrated code coverage badge generation and automated updates to README via GitHub Actions.
