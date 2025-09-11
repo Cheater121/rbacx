@@ -1,6 +1,27 @@
 # Changelog
 
-## [0.3.0] - 2025-09-11
+## 0.3.1 - 2025-09-11
+
+### Fixed
+- **Architecture diagram** now renders correctly on GitHub Pages:
+  - enabled native Mermaid support via `pymdownx.superfences` with a `mermaid` custom fence in `mkdocs.yml`.
+- Resolved docs build error caused by older **mkdocstrings ↔ mkdocs-autorefs** combo
+  (`AttributeError: 'dict' object has no attribute 'link_titles'`) by upgrading both and
+  adding `autorefs` to `plugins`.
+
+### Changed
+- **Docs toolchain upgraded** and pinned in CI:
+  - `mkdocs` `1.6.x`
+  - `mkdocs-material` `>=9.5.19,<10`
+  - `mkdocstrings[python]` `>=0.26.2,<1`
+  - `mkdocs-autorefs` `>=1.4.2,<2`
+- Updated `[project.optional-dependencies].docs` in `pyproject.toml` to reflect the same versions.
+
+### Notes
+- No changes to the runtime package or public API. Documentation-only maintenance release.
+
+
+## 0.3.0 - 2025-09-11
 ### Added
 - **Landing page** (`docs/index.md`) with philosophy, Quick start, and a documentation map.
 - **Decision object** section in `docs/api.md` describing the exact fields returned by `Guard.evaluate*`.
