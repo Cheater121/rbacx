@@ -16,16 +16,23 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Install MkDocs + plugins + project
+
+      - name: Install MkDocs toolchain
         run: |
           python -m pip install -U pip
-          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python
-          pip install -e .
+          pip install "mkdocs==1.6.1" \
+                      "mkdocs-material==9.5.18" \
+                      "mkdocstrings[python]==0.25.1"
+          # опционально, если очень нужно импортировать сам проект:
+          # pip install -e .
+
       - name: Configure git user
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Build & Deploy to gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mkdocs gh-deploy --force
+
+      - name: Build (strict)
+        run: mkdocs build --strict
+
+      - name: Deploy to gh-pages
+        run: mkdocs gh-deploy --force --no-history -m "docs: {sha} (MkDocs {version})"
