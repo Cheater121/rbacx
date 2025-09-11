@@ -108,6 +108,7 @@ def docs():
 **Core concepts**
 - [Architecture](architecture.md)
 - [Security model](security.md)
+- [Explainability (reasons & obligations)](reasons.md)
 - [Role hierarchy](roles.md)
 - [Audit mode](audit_mode.md)
 

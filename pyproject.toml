@@ -1,6 +1,6 @@
 [project]
 name = "rbacx"
-version = "0.3.0"
+version = "0.3.1"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -31,7 +31,12 @@ s3 = ["boto3>=1.26"]
 otel = ["opentelemetry-api>=1.19", "opentelemetry-sdk>=1.19"]
 dev = ["pytest", "pytest-cov", "pre-commit>=3.7", "build>=1.2", "ruff>=0.6", "twine", "mypy>=1.8", "pytest-asyncio>=1.1.0"]
 tests = ["pytest>=8", "pytest-asyncio>=0.23", "coverage>=7"]
-docs = ["mkdocs>=1.6", "mkdocs-material>=9.5"]
+docs = [
+  "mkdocs>=1.6.1,<1.7",
+  "mkdocs-material>=9.5.19,<10",
+  "mkdocs-autorefs>=1.4.2,<2",
+  "mkdocstrings[python]>=0.26.2,<1",
+]
 examples = ["uvicorn>=0.30", "fastapi>=0.110", "starlette>=0.37", "flask>=2.3", "django>=4.2", "djangorestframework>=3.14", "litestar>=2.8"]
 validate = ["jsonschema>=4.18"]
 
