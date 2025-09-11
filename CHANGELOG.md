@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 - 2025-09-11
+
+### Fixed
+- **Coverage badge** link in README updated to absolute raw GitHub URL so it displays correctly on PyPI.
+
 ## 0.3.1 — 2025-09-11
 
 ### Fixed
