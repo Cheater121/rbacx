@@ -23,8 +23,7 @@ jobs:
           pip install "mkdocs==1.6.1" \
                       "mkdocs-material==9.5.18" \
                       "mkdocstrings[python]==0.25.1"
-          # опционально, если очень нужно импортировать сам проект:
-          # pip install -e .
+          pip install -e .
 
       - name: Configure git user
         run: |
