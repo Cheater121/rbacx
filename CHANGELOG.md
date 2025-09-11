@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.0] - 2025-09-11
+### Added
+- **Landing page** (`docs/index.md`) with philosophy, Quick start, and a documentation map.
+- **Decision object** section in `docs/api.md` describing the exact fields returned by `Guard.evaluate*`.
+- **Why choose RBACX** and **Highlights** pages refined and consolidated.
+
+### Changed
+- **Navigation restructured** in `mkdocs.yml` (Getting started / Concepts / Policy / Integration / Observability / Performance / Operations / Reference).
+- **Examples updated** to use `from rbacx.core.engine import Guard` and `evaluate_sync(...)`.
+- **Hot-reload documentation** (`policy_loading.md`) aligned with current behavior (ETag polling, `Guard.set_policy(...)`).
+- Wording and tone adjusted to be **developer-centric** (more facts, fewer opinions).
+
+### Fixed
+- Removed duplicated introductions across multiple pages (kept a single canonical intro).
+- Corrected minor terminology mismatches and outdated snippets in docs.
+
+### Removed
+- Repeated “what is RBACX / RBAC+ABAC / hot reload” blurbs from subpages.
+
+### Notes
+- **No breaking changes.** Library runtime and public API unchanged in this release.
+
+
 ## 0.2.1 — 2025-09-11
 ### Changed
 - **Test suite layout:** Reorganized into a layered structure for clarity and faster targeted runs:

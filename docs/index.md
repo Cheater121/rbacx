@@ -1,94 +1,142 @@
 # RBACX
 
-<!-- 
-[![CI](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml/badge.svg)](https://github.com/Cheater121/rbacx/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-website-blue)](https://cheater121.github.io/rbacx/)
--->
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/Cheater121/rbacx/blob/main/LICENSE)
+**RBAC + ABAC authorization for Python** with a clean architecture, declarative JSON policies, framework adapters, and optional hot reloading.
 
-<!-- After publishing to PyPI:
-[![PyPI](https://img.shields.io/pypi/v/rbacx)](https://pypi.org/project/rbacx/)
-[![Python](https://img.shields.io/pypi/pyversions/rbacx)](https://pypi.org/project/rbacx/)
--->
+---
 
-Universal **RBAC/ABAC** policy engine for Python with a clean core, policy sets, a compact condition DSL (including time ops), and adapters for common web frameworks.
+## Inspiration & Philosophy
 
-## Features
-- Algorithms: `deny-overrides` (default), `permit-overrides`, `first-applicable`
-- Conditions: `==`, `!=`, `<`, `<=`, `>`, `>=`, `contains`, `in`, `hasAll`, `hasAny`, `startsWith`, `endsWith`, `before`, `after`, `between`
-- Explainability: `decision`, `reason`, `rule_id`/`last_rule_id`, `obligations`
-- Policy sets: combine multiple policies with the same algorithms
-- Hot reload: file/HTTP/S3 sources with ETag and a polling manager
-- Types & lint: mypy-friendly core, Ruff-ready
+RBACX is inspired by:
+- **OWASP-aligned practices** like *deny by default* and *least privilege*.
+- The recurring **pain for Python developers** switching between projects with inconsistent authorization stacks.
+- The **XACML** model (policies, rules, effects, combining algorithms, obligations), **simplified** and made friendlier for web developers using JSON and a Python-first API.
 
-## Installation
+> Our philosophy: **security should be understandable and ergonomic for developers** so that correct authorization becomes the *path of least resistance*.
+
+---
+
+## What you get
+
+- **RBAC + ABAC** in a single engine (role checks + attribute conditions).
+- **Declarative policies** (JSON/YAML or Python dict) with compact operators, including time operators.
+- **Secure defaults**: `deny-overrides` by default; also `permit-overrides`, `first-applicable`.
+- **Role hierarchy** via resolvers (`StaticRoleResolver` and custom implementations).
+- **Explainable decisions** (`allowed`, `effect`, `reason`, `rule_id`) and **obligations** (e.g., require MFA).
+- **Hot reload** from file/HTTP/S3 using ETag checks.
+- **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.
+- **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
+- **CLI & linting**: `rbacx validate` and `rbacx eval` to validate and test policies.
+- **Test coverage** around **82%** across core decision paths.
+
+---
+
+## Quick start
+
+### 1) Install
 ```bash
 pip install rbacx
 ```
 
-## Quickstart
+### 2) Define a minimal policy (JSON)
+```json
+{
+  "algorithm": "deny-overrides",
+  "rules": [
+    {
+      "id": "allow_read_public",
+      "target": { "resource": { "type": "document" }, "action": "read" },
+      "condition": { "==": [ { "attr": "resource.visibility" }, "public" ] },
+      "effect": "permit",
+      "obligations": [{ "type": "require_mfa", "when": true }]
+    }
+  ]
+}
+```
+
+### 3) Evaluate in Python
 ```python
 from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
 
-policy = {
-    "algorithm": "deny-overrides",
-    "rules": [
-        {
-            "id": "doc_read",
-            "effect": "permit",
-            "actions": ["read"],
-            "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
-            "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
-            "obligations": [{"mfa": True}]
-        },
-        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"], "resource": {"type": "doc", "attrs": {"archived": True}}},
-    ],
-}
-
+policy = {...}  # load JSON as a dict
 g = Guard(policy)
 
-d = g.evaluate_sync(
-    subject=Subject(id="u1", roles=["reader"]),
-    action=Action("read"),
-    resource=Resource(type="doc", id="42", attrs={"visibility": "public"}),
-    context=Context(attrs={"mfa": True}),
+decision = g.evaluate_sync(
+    subject={"id": "u1", "roles": ["reader"]},
+    action="read",
+    resource={"type": "document", "visibility": "public"},
+    context={"mfa": True},
 )
 
-assert d.allowed is True
-assert d.effect == "permit"
-print(d.reason, d.rule_id)  # "matched", "doc_read"
+assert decision.allowed is True
+print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 ```
 
-### Decision schema
-- `decision`: `"permit"` or `"deny"`
-- `reason`: `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"resource_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
-- `rule_id` / `last_rule_id`
-- `obligations`: list passed to the obligation checker
+### 4) (Optional) Use a web adapter
 
-### Policy sets
+**FastAPI**
 ```python
-from rbacx.core.policyset import decide as decide_policyset
+from fastapi import FastAPI, Depends
+from rbacx.adapters.fastapi import require_access
 
-policyset = {"algorithm":"deny-overrides", "policies":[ policy, {"rules":[...]} ]}
-result = decide_policyset(policyset, {"subject":..., "action":"read", "resource":...})
+app = FastAPI()
+guard = Guard(policy)
+
+def build_env(request):
+    # map request -> (subject, action, resource, context)
+    return {
+        "subject": {"id": request.headers.get("X-User"), "roles": ["reader"]},
+        "action": request.method.lower(),
+        "resource": {"type": "document", "path": request.url.path},
+        "context": {"mfa": True},
+    }
+
+@app.get("/docs")
+@require_access(guard, build_env)
+def docs():
+    return {"ok": True}
 ```
 
-## Hot reloading
-```python
-from rbacx.core.engine import Guard
-from rbacx.storage import FilePolicySource   # from rbacx.storage import HotReloader if you prefer
-from rbacx.store.manager import PolicyManager
+---
 
-guard = Guard(policy={})
-mgr = PolicyManager(guard, FilePolicySource("policy.json"))
-mgr.poll_once()        # initial load
-mgr.start_polling(10)  # background polling thread
-```
+## Documentation map
 
-## Packaging
-- We ship `py.typed` so type checkers pick up annotations.
-- Standard PyPA flow: `python -m build`, then `twine upload` to (Test)PyPI.
+**Start here**
+- [Quickstart](quickstart.md)
+- [Why choose RBACX](why_choose.md)
+- [Highlights](highlights.md)
 
-## License
-MIT
+**Core concepts**
+- [Architecture](architecture.md)
+- [Security model](security.md)
+- [Role hierarchy](roles.md)
+- [Audit mode](audit_mode.md)
+
+**Policy**
+- [Policy authoring](policy_authoring.md)
+- [Policy catalog](policy_catalog.md)
+- [Time operators](time_operators.md)
+- [Policy stores](policy_stores.md)
+- [Policy loading (hot reload)](policy_loading.md)
+- [HTTP mapping](http_mapping.md)
+
+**Integration**
+- [Web adapters](web_adapters.md)
+- [Adapters (API)](adapters.md)
+- [DRF example](drf_example.md)
+
+**Observability**
+- [Metrics](metrics.md)
+- [OpenTelemetry](otel_metrics.md)
+- [Logging](logging.md)
+- [Diagnostics](diagnostics.md)
+- [Observability stack](observability_stack.md)
+
+**Performance & operations**
+- [Performance guide](performance.md)
+- [Benchmarks](benchmarks.md)
+- [CI](ci.md)
+- [Migration (RBAC→ABAC)](migration_rbac_to_abac.md)
+
+**Reference**
+- [Public API](api.md)
+

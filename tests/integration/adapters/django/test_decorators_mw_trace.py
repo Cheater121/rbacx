@@ -37,15 +37,15 @@ def test_django_middleware_factory_ok_and_bad(monkeypatch):
     resp = mw(req)
     assert resp["ok"] is True  # middleware passes through
 
-    # Bad dotted path — в некоторых сборках исключение может подниматься не в __init__, а в момент вызова,
-    # а в других — игнорироваться. Принимаем оба сценария.
+    # Bad dotted path — in some builds the exception can be raised not in __init__ but at call time,
+    # and in others it may be ignored. Accept both scenarios.
     conf_mod.settings.RBACX_GUARD_FACTORY = "not_a_path"
     try:
         mw2 = MW(get_resp)
     except ImportError:
         mw2 = None
 
-    # если не упало — просто убеждаемся, что вызов не падает
+    # if it didn't crash — just assert the call does not raise
     if mw2 is not None:
         resp2 = mw2(types.SimpleNamespace(META={}))
         assert isinstance(resp2, dict) or resp2 is not None

@@ -15,3 +15,16 @@
 ::: rbacx.adapters.django.trace
 ::: rbacx.adapters.litestar
 ::: rbacx.telemetry.decision_log
+
+
+## Decision object
+
+Fields returned by `Guard.evaluate*`:
+
+- `allowed: bool`
+- `effect: "permit" | "deny"`
+- `obligations: List[Dict[str, Any]]`
+- `challenge: Optional[str]`
+- `rule_id: Optional[str]`
+- `policy_id: Optional[str]`
+- `reason: Optional[str]`
