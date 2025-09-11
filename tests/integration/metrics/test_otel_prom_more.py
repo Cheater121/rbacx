@@ -23,7 +23,7 @@ def test_otel_observe_seconds_to_ms(monkeypatch):
     import rbacx.metrics.otel as m
     reload(m)
     o = m.OpenTelemetryMetrics()
-    # seconds name converts to ms; if observe API отсутствует в обёртке — пропускаем
+    # seconds name converts to ms; if the observe API is absent in the wrapper — skip
     if hasattr(o, "observe"):
         o.observe("rbacx_decision_seconds", 0.2)
         o.observe("rbacx_decision_duration_ms", 7)
@@ -32,7 +32,8 @@ def test_otel_observe_seconds_to_ms(monkeypatch):
         pytest.skip("OpenTelemetryMetrics.observe() is not exposed in this build")
 
 def test_prometheus_runtime_error_when_missing(monkeypatch):
-    # Если prometheus_client установлен в окружении/кэше — поведение обёртки законно НЕ бросает исключение.
+    # If prometheus_client is present in the environment/cache,
+    # the wrapper's behavior legitimately does NOT raise an exception.
     try:
         import prometheus_client  # noqa: F401
         pytest.skip("prometheus_client is available in environment")
