@@ -49,6 +49,7 @@ def secure() -> dict: return {"ok": True}
 ## S3 policy source
 ```python
 from rbacx.storage.s3 import S3PolicySource
+from rbacx.storage import HotReloader
 source = S3PolicySource(bucket="policies", key="rbac.json")
 reloader = HotReloader(guard, source, poll_interval=1.0)
 ```
