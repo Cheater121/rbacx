@@ -111,10 +111,10 @@ Default algorithm is:
 ```python
 from rbacx.core.engine import Guard
 from rbacx.storage import FilePolicySource   # from rbacx.storage import HotReloader if you prefer
-from rbacx.store.manager import PolicyManager
+from rbacx.policy.loader import HotReloader
 
 guard = Guard(policy={})
-mgr = PolicyManager(guard, FilePolicySource("policy.json"))
+mgr = HotReloader(guard, FilePolicySource("policy.json"))
 mgr.poll_once()        # initial load
 mgr.start_polling(10)  # background polling thread
 ```
@@ -126,7 +126,7 @@ import time
 from rbacx.core.engine import Guard
 from rbacx.core.model import Subject, Action, Resource, Context
 from rbacx.storage import FilePolicySource
-from rbacx.store.manager import PolicyManager
+from rbacx.policy.loader import HotReloader
 
 # create a tiny policy file next to the script
 policy_path = "policy.json"
@@ -139,7 +139,7 @@ json.dump({
 }, open(policy_path, "w", encoding="utf-8"))
 
 guard = Guard({})
-mgr = PolicyManager(guard, FilePolicySource(policy_path))
+mgr = HotReloader(guard, FilePolicySource(policy_path))
 mgr.poll_once()  # initial load
 
 print(guard.evaluate_sync(

@@ -15,10 +15,10 @@ if not os.path.exists('policy.json'):
 
 from rbacx.core.engine import Guard
 from rbacx.storage import FilePolicySource
-from rbacx.store.manager import PolicyManager
+from rbacx.policy.loader import HotReloader
 
 guard = Guard(policy={})
-mgr = PolicyManager(guard, FilePolicySource("policy.json"))
+mgr = HotReloader(guard, FilePolicySource("policy.json"))
 mgr.poll_once()
 mgr.start_polling(interval_s=10)
 ```
