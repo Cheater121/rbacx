@@ -149,7 +149,7 @@ print(guard.evaluate_sync(
     context=Context(),
 ).effect)  # -> "permit"
 
-# update policy and wait 10 second for reload
+# update policy and wait 3 second for reload
 json.dump({
     "algorithm": "deny-overrides",
     "rules": [{"id": "deny_all", "effect": "deny", "actions": ["*"], "resource": {"type": "doc"}}]
