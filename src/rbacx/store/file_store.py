@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import hashlib
@@ -7,8 +6,12 @@ import os
 from typing import Any, Dict, Optional
 
 
-class FilePolicySource:
-    """Policy source that loads JSON from a local file path."""
+class MtimeFilePolicySource:
+    """
+    Policy source that loads JSON from a local file path.
+    Touch triggers updates for E-tag (by content + mtime).
+    """
+
     def __init__(self, path: str) -> None:
         self.path = path
         self._etag: Optional[str] = None
@@ -21,3 +24,6 @@ class FilePolicySource:
 
     def etag(self) -> Optional[str]:
         return self._etag
+
+
+FilePolicySource = MtimeFilePolicySource  # backref for previous versions

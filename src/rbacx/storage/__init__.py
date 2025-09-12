@@ -33,7 +33,10 @@ def atomic_write(path: str, data: str, *, encoding: str = "utf-8") -> None:
 
 
 class FilePolicySource(PolicySource):
-    """Load policy JSON from a file path and compute its etag (sha256 of content)."""
+    """
+    Load policy JSON from a file path and compute its etag (sha256 of content).
+    Recommended for production.
+    """
 
     def __init__(self, path: str, *, validate_schema: bool = False) -> None:
         self.path = path
@@ -58,6 +61,7 @@ class FilePolicySource(PolicySource):
         if self.validate_schema:
             try:
                 from rbacx.dsl.validate import validate_policy  # type: ignore[import-not-found]
+
                 validate_policy(policy)
             except Exception as e:  # pragma: no cover
                 logger.exception("RBACX: policy validation failed", exc_info=e)
@@ -72,7 +76,9 @@ class HotReloader:
     - Suppresses frequent retries for a short time after errors.
     """
 
-    def __init__(self, guard: Guard, source: PolicySource, *, poll_interval: float | None = 5.0) -> None:
+    def __init__(
+        self, guard: Guard, source: PolicySource, *, poll_interval: float | None = 5.0
+    ) -> None:
         self.guard = guard
         self.source = source
         self.poll_interval = poll_interval

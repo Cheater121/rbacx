@@ -18,7 +18,7 @@ if not os.path.exists('policy.json'):
     json.dump({"algorithm":"deny-overrides","rules":[]}, open('policy.json','w'))
 
 from rbacx.core.engine import Guard
-from rbacx.store.file_store import FilePolicySource
+from rbacx.storage import FilePolicySource
 from rbacx.store.manager import PolicyManager
 
 guard = Guard(policy={})
@@ -27,4 +27,4 @@ mgr.poll_once()        # initial load
 mgr.start_polling(10)  # optional background polling
 ```
 
-> HTTP ETag / If-None-Match pattern is documented by MDN. AWS S3 exposes `ETag` on `get_object`. For file watching consider `watchdog`. 
+> HTTP ETag / If-None-Match pattern is documented by MDN. AWS S3 exposes `ETag` on `get_object`. For file watching consider `watchdog`.

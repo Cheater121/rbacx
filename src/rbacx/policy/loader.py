@@ -8,8 +8,11 @@ from ..core.engine import Guard
 from ..core.ports import PolicySource
 
 
-class FilePolicySource:
-    """Loads JSON policy from a file and computes its etag (SHA-256 of its content)."""
+class SimpleFilePolicySource:
+    """
+    Loads JSON policy from a file and computes its etag (SHA-256 of its content).
+    Minimal FilePolicySource for tests/demo.
+    """
 
     def __init__(self, path: str) -> None:
         self.path = path
@@ -68,3 +71,6 @@ class ReloadingPolicyManager:
         except Exception:
             # Suppress any errors and signal that no update occurred
             return False
+
+
+FilePolicySource = SimpleFilePolicySource  # backref for previous versions
