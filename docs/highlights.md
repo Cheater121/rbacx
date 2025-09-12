@@ -45,6 +45,3 @@
 
 - **Python**: see project metadata (pyproject.toml / setup.cfg).
 - **Frameworks**: FastAPI, Flask, Django/DRF, Starlette/Litestar (via adapters).
-
-## Verdict
-
