@@ -6,9 +6,10 @@ RBACX ships simple adapters for popular frameworks.
 ## FastAPI (dependency)
 ```python
 from fastapi import FastAPI, Depends, Request
-from rbacx.adapters.fastapi import require_access
+from rbacx.adapters.fastapi_guard import make_guard_dependency
 from rbacx.core.engine import Guard
 
+policy = {"algorithm":"deny-overrides","rules":[]}
 guard = Guard(policy)
 
 def build_env(request: Request):
@@ -24,8 +25,8 @@ async def docs(): return {"ok": True}
 
 ## Starlette middleware (works with FastAPI)
 ```python
-from rbacx.adapters.starlette import RBACXMiddleware
-app.add_middleware(RBACXMiddleware, guard=guard, build_env=build_env, add_headers=True)
+from rbacx.adapters.starlette import RbacxMiddleware
+app.add_middleware(RbacxMiddleware, guard=guard, build_env=build_env, add_headers=True)
 ```
 
 ## Flask decorator

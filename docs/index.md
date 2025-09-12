@@ -25,7 +25,7 @@ RBACX is inspired by:
 - **Hot reload** from file/HTTP/S3 using ETag checks.
 - **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.
 - **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
-- **CLI & linting**: `rbacx lint` and  to validate and test policies.
+- **CLI & linting**: `rbacx validate` and `rbacx eval` to validate and test policies.
 - **Test coverage** around **82%** across core decision paths.
 
 ---

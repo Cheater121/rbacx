@@ -9,9 +9,13 @@ FastAPI / Flask / Litestar / Django examples are under `examples/`.
 ### FastAPI
 ```python
 from fastapi import FastAPI, Depends
-from rbacx.adapters.fastapi_guard import require
+from rbacx.adapters.fastapi_guard import make_guard_dependency
 
-@app.get("/secure", dependencies=[Depends(require("read", "doc"))])
+app = FastAPI()
+
+dep = make_guard_dependency(guard)
+
+@app.get("/secure", dependencies=[Depends(dep)])
 def secure():
     return {"ok": True}
 ```
@@ -49,7 +53,6 @@ def secure() -> dict: return {"ok": True}
 ## S3 policy source
 ```python
 from rbacx.storage.s3 import S3PolicySource
-from rbacx.storage import HotReloader
 source = S3PolicySource(bucket="policies", key="rbac.json")
 reloader = HotReloader(guard, source, poll_interval=1.0)
 ```

@@ -8,6 +8,11 @@ RBACX supports external policy sources and a lightweight polling manager.
 
 ## Applying updates
 ```python
+# prepare a minimal policy file for the example
+import json, os
+if not os.path.exists('policy.json'):
+    json.dump({"algorithm":"deny-overrides","rules":[]}, open('policy.json','w'))
+
 from rbacx.core.engine import Guard
 from rbacx.storage import FilePolicySource
 from rbacx.store.manager import PolicyManager
