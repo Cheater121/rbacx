@@ -98,7 +98,7 @@ policyset = {
 req = {
     "subject": {"id": "u1", "roles": ["reader"]},
     "action": "read",
-    "resource": {"type": "doc", "id": "42", "attrs": {"visibility": "public", "archived": True}},
+    "resource": {"type": "doc", "id": "42", "attrs": {"visibility": "public", "archived": False}},  # can try: would be `deny` if archived `True`
     "context": {},
 }
 
