@@ -25,5 +25,5 @@ decision_logger = DecisionLogger(
     redactions=[{"type": "mask_fields", "fields": ["subject.email", "resource.attrs.card"]}],
 )
 
-guard = Guard(policy, decision_logger=decision_logger)
+guard = Guard(policy, logger_sink=decision_logger)
 ```
