@@ -12,6 +12,8 @@ expanded = resolver.expand(["admin"])  # ['admin','employee','manager']
 Wire into the `Guard`:
 
 ```python
+from rbacx.core.engine import Guard
+
 guard = Guard(policy, role_resolver=resolver)
 ```
 

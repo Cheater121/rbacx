@@ -44,14 +44,14 @@ def my_view(request):
 from litestar import Litestar, get
 from litestar.di import Provide
 from rbacx.adapters.litestar_guard import require
-from rbacx.adapters.litestar import provide_guard
-
-@get("/secure", dependencies={"check": Provide(require("read","doc")), "rbacx_guard": Provide(provide_guard(guard))})
+@get("/secure", dependencies={"check": Provide(require("read","doc")), "rbacx_guard": Provide(lambda: guard)})
 def secure() -> dict: return {"ok": True}
 ```
 
 ## S3 policy source
 ```python
+from rbacx.storage import HotReloader
+
 from rbacx.storage.s3 import S3PolicySource
 source = S3PolicySource(bucket="policies", key="rbac.json")
 reloader = HotReloader(guard, source, poll_interval=1.0)

@@ -25,8 +25,13 @@ async def docs(): return {"ok": True}
 
 ## Starlette middleware (works with FastAPI)
 ```python
-from rbacx.adapters.starlette import RbacxMiddleware
-app.add_middleware(RbacxMiddleware, guard=guard, build_env=build_env, add_headers=True)
+from starlette.responses import JSONResponse
+from rbacx.adapters.starlette import require_access
+
+@app.route("/docs")
+@require_access(guard, build_env, add_headers=True)
+async def docs(request):
+    return JSONResponse({"ok": True})
 ```
 
 ## Flask decorator
