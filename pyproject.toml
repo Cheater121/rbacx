@@ -24,6 +24,7 @@ Documentation = "https://cheater121.github.io/rbacx/"
 adapters-fastapi = ["fastapi>=0.110","starlette>=0.37"]
 adapters-flask = ["flask>=2.3"]
 adapters-drf = ["django>=4.2","djangorestframework>=3.14"]
+adapters-litestar = ["litestar>=2.8"]
 metrics = ["prometheus-client>=0.14", "opentelemetry-api>=1.25"]
 dates = ["python-dateutil>=2.8"]
 http = ["requests>=2.28"]
