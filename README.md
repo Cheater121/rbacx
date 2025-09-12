@@ -76,6 +76,7 @@ result = decide_policyset(policyset, {"subject":..., "action":"read", "resource"
 ```
 
 ## Hot reloading
+Default algorithm is:
 ```python
 from rbacx.core.engine import Guard
 from rbacx.storage import FilePolicySource   # from rbacx.storage import HotReloader if you prefer
@@ -85,6 +86,52 @@ guard = Guard(policy={})
 mgr = PolicyManager(guard, FilePolicySource("policy.json"))
 mgr.poll_once()        # initial load
 mgr.start_polling(10)  # background polling thread
+```
+
+If you want to test, try this:
+```
+import json
+import time
+from rbacx.core.engine import Guard
+from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx.storage import FilePolicySource
+from rbacx.store.manager import PolicyManager
+
+# create a tiny policy file next to the script
+policy_path = "policy.json"
+json.dump({
+    "algorithm": "deny-overrides",
+    "rules": [{
+        "id": "allow_public_read", "effect": "permit", "actions": ["read"],
+        "resource": {"type": "doc", "attrs": {"visibility": ["public"]}}
+    }]
+}, open(policy_path, "w", encoding="utf-8"))
+
+guard = Guard({})
+mgr = PolicyManager(guard, FilePolicySource(policy_path))
+mgr.poll_once()  # initial load
+
+print(guard.evaluate_sync(
+    subject=Subject(id="u1", roles=["reader"]),
+    action=Action("read"),
+    resource=Resource(type="doc", id="1", attrs={"visibility": "public"}),
+    context=Context(),
+).effect)  # -> "permit"
+
+# update policy and wait 10 second for reload
+json.dump({
+    "algorithm": "deny-overrides",
+    "rules": [{"id": "deny_all", "effect": "deny", "actions": ["*"], "resource": {"type": "doc"}}]
+}, open(policy_path, "w", encoding="utf-8"))
+mgr.start_polling(3)  # starting polling
+time.sleep(3)
+
+print(guard.evaluate_sync(
+    subject=Subject(id="u1", roles=["reader"]),
+    action=Action("read"),
+    resource=Resource(type="doc", id="1", attrs={"visibility": "public"}),
+    context=Context(),
+).effect)  # -> "deny"
 ```
 
 ## Packaging
