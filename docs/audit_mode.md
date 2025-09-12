@@ -1,20 +1,29 @@
-
 # Audit mode
 
-RBACX can log decisions for observability without enforcing them.
+RBACX can **log authorization decisions** for observability **without enforcing** them.
 
 ## How it works
-- `DecisionLogger(sample_rate=..., redactions=[...])` writes JSON payloads to logger `rbacx.audit`.
-- Redactions reuse obligations (e.g., `mask_fields`, `redact_fields`) and apply to the env before logging.
-- Use sampling in accordance with OWASP Logging Cheat Sheet: log security-relevant events and avoid sensitive data. Configure JSON logs. 
+- Pass a `DecisionLogger` to `Guard` via `decision_logger=...`.
+- Each decision is emitted as a **structured JSON** event to the Python logger `rbacx.audit`.
+- Optional sampling (`sample_rate`) helps manage log volume in high-traffic environments.
+- Redactions reuse obligation formats (e.g. `"mask_fields"`, `"redact_fields"`) and are applied *before* the event is logged.
+- It is best practice to log security-relevant events using structured/centralized logs, and to avoid logging sensitive fields.
 
-## Example (FastAPI)
+## Example (framework-agnostic)
+
 ```python
+import logging
 from rbacx.core.engine import Guard
 from rbacx.logging.decision_logger import DecisionLogger
 
-decision_logger = DecisionLogger(sample_rate=0.1, redactions=[{"type":"mask_fields","fields":["subject.email","resource.attrs.card"]}])
+audit = logging.getLogger("rbacx.audit")
+audit.setLevel(logging.INFO)
+audit.addHandler(logging.StreamHandler())
+
+decision_logger = DecisionLogger(
+    sample_rate=0.1,
+    redactions=[{"type": "mask_fields", "fields": ["subject.email", "resource.attrs.card"]}],
+)
+
 guard = Guard(policy, decision_logger=decision_logger)
 ```
-
-See also OWASP logging guidance.
