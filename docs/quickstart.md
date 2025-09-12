@@ -1,37 +1,44 @@
-See README for quickstart; includes policy example and HotReloader.
+# Quickstart
 
-## Optional features (extras)/Installation
+This page shows how to install RBACX and its optional extras.
 
-RBACX keeps the **core lightweight** and avoids pulling heavy dependencies by default — to stay framework-agnostic and minimize conflicts in real projects.  
+RBACX keeps the **core lightweight** and avoids pulling heavy dependencies by default.  
+This helps keep it framework‑agnostic and reduces conflicts in real projects.  
 If you need integrations or helpers, install **extras** selectively.
 
-### Common extras
+## Install
 
-| Extra | What it enables | Install |
-|---|---|---|
-| `adapters-fastapi` | FastAPI / Starlette adapter | `pip install rbacx[adapters-fastapi]` |
-| `adapters-flask` | Flask adapter | `pip install rbacx[adapters-flask]` |
-| `adapters-drf` | Django + DRF adapter | `pip install rbacx[adapters-drf]` |
-| `adapters-litestar` | Litestar adapter | `pip install rbacx[adapters-litestar]` |
-| `metrics` | Prometheus client metrics | `pip install rbacx[metrics]` |
-| `otel` | OpenTelemetry (API/SDK) | `pip install rbacx[otel]` |
-| `dates` | Date/time helpers for time operators | `pip install rbacx[dates]` |
-| `http` | HTTP policy source (`requests`) | `pip install rbacx[http]` |
-| `s3` | S3 policy source (`boto3`) | `pip install rbacx[s3]` |
-| `validate` | Policy validation (`jsonschema`) | `pip install rbacx[validate]` |
-| `docs` | Build docs (MkDocs toolchain) | `pip install rbacx[docs]` |
-| `tests` | Test tooling (pytest/coverage) | `pip install rbacx[tests]` |
+```bash
+pip install rbacx
+```
 
-You can combine extras, e.g.:
+## Optional features (extras)
+
+| Extra              | Enables                                         | Install command                            |
+|--------------------|--------------------------------------------------|--------------------------------------------|
+| `adapters-fastapi` | FastAPI / Starlette adapters                     | `pip install rbacx[adapters-fastapi]`      |
+| `adapters-flask`   | Flask adapters                                   | `pip install rbacx[adapters-flask]`        |
+| `adapters-drf`     | Django + DRF adapters                            | `pip install rbacx[adapters-drf]`          |
+| `adapters-litestar`| Litestar adapters                                | `pip install rbacx[adapters-litestar]`     |
+| `metrics`          | Prometheus client metrics                        | `pip install rbacx[metrics]`               |
+| `otel`             | OpenTelemetry API/SDK helpers                    | `pip install rbacx[otel]`                  |
+| `http`             | HTTP policy source (requests)                    | `pip install rbacx[http]`                  |
+| `s3`               | S3 policy source (boto3)                         | `pip install rbacx[s3]`                    |
+| `dates`            | Time operators support (python‑dateutil)         | `pip install rbacx[dates]`                 |
+
+You can combine extras:
 
 ```bash
 pip install 'rbacx[adapters-fastapi,metrics,otel]'
 ```
 
-
 ## CLI
+
+RBACX ships a simple linter for policies.
+
 ```bash
 pip install rbacx
-rbacx validate --policy examples/fastapi_demo/policy.JSON  # required `validate` dependencies
-rbacx eval --policy examples/fastapi_demo/policy.json --subject u1 --action read --resource-type article --context '{"mfa": true}'
+rbacx lint --policy examples/fastapi_demo/policy.json
 ```
+
+See the repository **README** for a minimal policy example and a short Hot‑Reload snippet.
