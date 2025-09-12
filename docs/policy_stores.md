@@ -5,7 +5,7 @@ RBACX supports external policy sources with ETag-based updates.
 
 ## Sources
 
-- **File**: `FilePolicySource(path)` — loads local JSON; ETag is computed from content & mtime.
+- **File**: `FilePolicySource(path)` — loads local JSON; ETag is computed from file content.
 - **HTTP**: `HTTPPolicySource(url)` — uses `If-None-Match` with server-provided `ETag`, returns empty dict on HTTP `304` (not modified).
 - **S3**: `S3PolicySource(bucket, key)` — uses `boto3.get_object` and `ETag` header.
 
@@ -13,7 +13,7 @@ Use `PolicyManager` to apply updates to a running `Guard`:
 
 ```python
 from rbacx.core.engine import Guard
-from rbacx.store.file_store import FilePolicySource
+from rbacx.storage import FilePolicySource
 from rbacx.store.manager import PolicyManager
 
 guard = Guard(policy={})
