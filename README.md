@@ -68,11 +68,42 @@ print(d.reason, d.rule_id)  # "matched", "doc_read"
 - `obligations`: list passed to the obligation checker
 
 ### Policy sets
+Default algorithm is:
 ```python
 from rbacx.core.policyset import decide as decide_policyset
 
 policyset = {"algorithm":"deny-overrides", "policies":[ policy, {"rules":[...]} ]}
 result = decide_policyset(policyset, {"subject":..., "action":"read", "resource":...})
+```
+If you want to test, try this:
+```python
+from rbacx.core.policyset import decide as decide_policyset
+
+# example set of policies
+policyset = {
+    "algorithm": "deny-overrides",
+    "policies": [
+        {"rules": [
+            {"id": "allow_public_read", "effect": "permit", "actions": ["read"],
+             "resource": {"type": "doc", "attrs": {"visibility": ["public"]}}}
+        ]},
+        {"rules": [
+            {"id": "deny_archived", "effect": "deny", "actions": ["*"],
+             "resource": {"type": "doc", "attrs": {"archived": True}}}
+        ]},
+    ],
+}
+
+# example request
+req = {
+    "subject": {"id": "u1", "roles": ["reader"]},
+    "action": "read",
+    "resource": {"type": "doc", "id": "42", "attrs": {"visibility": "public", "archived": True}},
+    "context": {},
+}
+
+res = decide_policyset(policyset, req)
+print(res.get("effect", res))  # -> "permit"
 ```
 
 ## Hot reloading
@@ -89,7 +120,7 @@ mgr.start_polling(10)  # background polling thread
 ```
 
 If you want to test, try this:
-```
+```python
 import json
 import time
 from rbacx.core.engine import Guard
