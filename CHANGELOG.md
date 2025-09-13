@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.3 — 2025-09-13
+
+### Fixed
+- Django decorator: added stub for `HttpRequest` to support `from django.http import HttpRequest` in decorators so tests with minimal Django no longer fail.
+- Django decorator: ensure `audit=False` mode properly raises `PermissionDenied` or returns `HttpResponseForbidden` (status 403).
+- Litestar adapter middleware: fixed importing issues by using correct stub for `AbstractMiddleware` and isolating imports so real Litestar is not required during test collection.
+- HTTP policy source: improved import isolation for `requests`: test now forces `ImportError` on missing `requests` module so code path for missing dependency is covered.
+
+### Added
+- New integration tests for `rbacx.adapters.django.decorators` covering `audit=True` vs `audit=False`.
+- Additional branches covered in `rbacx.metrics.otel` and `rbacx.metrics.prometheus` for missing-client/SDK and minimal stub scenarios.
+- Additional test for HTTP source missing dependency behaviour.
+
+### Changed
+- Test coverage increased; several formerly unstable or failing test cases are now reliable under stubbed dependencies.
+
+### Migration / Notes
+- If you have custom decorators or settings relying on `HttpRequest` being available, ensure you consider the new stub behaviour in tests.
+- For users who override Django adapters or decorator behaviour: check that your `audit` configuration is respected (i.e. `audit=True` allows vs `audit=False` denies).
+
+
 ## 0.4.2 — 2025-09-13
 ### Fixed
 - **HotReloader example** in README updated to new feature.
