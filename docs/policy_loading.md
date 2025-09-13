@@ -15,29 +15,32 @@ RBACX supports hot-reloading policies from external sources via a lightweight re
 
 ---
 
-## Quick example (file)
+## Quick example
+File source (steps):
+1) Start with an initial or empty policy
+2) Choose source (Local filesystem source in example)
+3) Create the hot reloader, with polling interval in seconds
+4) Optional: force a one-time check at startup
+5) Optional: run background polling
+6) Then your apps run between `start` and `stop` reloader.
 
 ```python
 from rbacx.core.engine import Guard
 from rbacx.store import FilePolicySource
 from rbacx.policy.loader import HotReloader
 
-# Start with an initial or empty policy
+
 guard = Guard(policy={})
 
-# Local filesystem source
 source = FilePolicySource("policy.json")
 
-# Create the hot reloader, with polling interval in seconds
 reloader = HotReloader(guard, source, poll_interval=2.0)
 
-# Optional: force a one-time check at startup
 reloader.check_and_reload()
 
-# Optional: run background polling
-reloader.start()           # uses default poll_interval
-# ... your app runs ...
-reloader.stop()            # when shutting down
+reloader.start()           
+
+reloader.stop()          
 ```
 ---
 
