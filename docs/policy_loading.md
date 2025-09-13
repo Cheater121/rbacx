@@ -38,9 +38,8 @@ reloader = HotReloader(guard, source, poll_interval=2.0)
 
 reloader.check_and_reload()
 
-reloader.start()           
-
-reloader.stop()          
+reloader.start()
+reloader.stop()
 ```
 ---
 
