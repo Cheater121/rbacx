@@ -1,11 +1,10 @@
-# tests/integration/adapters/django/test_django_decorators_require.py
 import importlib
 import sys
 import types
 
 
 def _purge(mod_name: str):
-    """Удаляем из sys.modules всё, что могло кэшироваться, чтобы заново связать импорты."""
+    """Remove from sys.modules anything that could be cached so imports are rebound from scratch."""
     for k in list(sys.modules):
         if k == mod_name or k.startswith(mod_name + "."):
             sys.modules.pop(k, None)
@@ -13,11 +12,11 @@ def _purge(mod_name: str):
 
 def _install_min_django(monkeypatch):
     """
-    Минимальный стаб Django:
+    Minimal Django stub providing:
       - django.core.exceptions.PermissionDenied
       - django.http.HttpRequest
       - django.http.HttpResponseForbidden (403)
-    Этого достаточно для проверки поведения декоратора.
+    This is sufficient to verify the decorator's behavior.
     """
     django = types.ModuleType("django")
 
@@ -51,7 +50,7 @@ def _install_min_django(monkeypatch):
     http.HttpRequest = _HttpRequest
     http.HttpResponseForbidden = _HttpResponseForbidden
 
-    # регистрируем стабы в sys.modules
+    # register stubs in sys.modules
     monkeypatch.setitem(sys.modules, "django", django)
     monkeypatch.setitem(sys.modules, "django.core", core)
     monkeypatch.setitem(sys.modules, "django.core.exceptions", exceptions)
@@ -70,7 +69,7 @@ def test_django_decorator_allows(monkeypatch):
         def is_allowed_sync(self, subject, action, resource, context):
             return True
 
-    # если модуль использует get_guard — подменяем
+    # if the module uses get_guard — patch it
     if hasattr(deco, "get_guard"):
         monkeypatch.setattr(deco, "get_guard", lambda req=None: GuardOk())
 
@@ -83,10 +82,10 @@ def test_django_decorator_allows(monkeypatch):
 
 def test_django_decorator_denies_audit_false_forbidden_or_exception(monkeypatch):
     """
-    При строгом запрете (audit=False) декоратор может:
-      а) поднять django.core.exceptions.PermissionDenied, или
-      б) вернуть django.http.HttpResponseForbidden (status_code == 403).
-    Тест принимает оба корректных варианта.
+    With strict denial (audit=False) the decorator may:
+      a) raise django.core.exceptions.PermissionDenied, or
+      b) return django.http.HttpResponseForbidden (status_code == 403).
+    The test accepts either correct variant.
     """
     _purge("rbacx.adapters.django.decorators")
     _install_min_django(monkeypatch)
@@ -102,11 +101,11 @@ def test_django_decorator_denies_audit_false_forbidden_or_exception(monkeypatch)
         def is_allowed_sync(self, subject, action, resource, context):
             return False
 
-    # 1) если декоратор зовёт get_guard(...)
+    # 1) if the decorator calls get_guard(...)
     if hasattr(deco, "get_guard"):
         monkeypatch.setattr(deco, "get_guard", lambda req=None: GuardNo())
 
-    # 2) если декоратор берёт guard прямо из request
+    # 2) if the decorator takes the guard directly from the request
     req = HttpRequest()
     req.rbacx_guard = GuardNo()
 
@@ -114,20 +113,20 @@ def test_django_decorator_denies_audit_false_forbidden_or_exception(monkeypatch)
     def view(request):
         return "NO"
 
-    # Принимаем оба поведения: либо raise PermissionDenied, либо возврат 403-ответа
+    # Accept both behaviors: either raise PermissionDenied or return a 403 response
     try:
         resp = view(req)
     except PermissionDenied:
-        # Ок — строгий запрет через исключение
+        # OK — strict deny via exception
         return
 
-    # Возврат значения: должен быть 403
+    # If a value is returned, it must be 403
     assert isinstance(resp, HttpResponseForbidden) or getattr(resp, "status_code", None) == 403
 
 
 def test_django_decorator_denies_audit_true_allows(monkeypatch):
     """
-    Аудитный режим: даже при deny guard, декоратор пропускает выполнение view.
+    Audit mode: even when the guard denies, the decorator allows the view to run.
     """
     _purge("rbacx.adapters.django.decorators")
     _install_min_django(monkeypatch)
