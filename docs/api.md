@@ -8,7 +8,7 @@
 ::: rbacx.core.ports
 ::: rbacx.core.obligations
 ::: rbacx.store
-::: rbacx.policy.loader
+::: rbacx.policy
 ::: rbacx.store.file_store
 ::: rbacx.store.s3_store
 ::: rbacx.store.http_store
