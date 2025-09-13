@@ -7,7 +7,11 @@
 ::: rbacx.core.policyset
 ::: rbacx.core.ports
 ::: rbacx.core.obligations
-::: rbacx.storage
+::: rbacx.store
+::: rbacx.policy.loader
+::: rbacx.store.file_store
+::: rbacx.store.s3_store
+::: rbacx.store.http_store
 ::: rbacx.adapters.asgi
 ::: rbacx.adapters.asgi_logging
 ::: rbacx.adapters.flask

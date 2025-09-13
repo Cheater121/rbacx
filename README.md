@@ -110,13 +110,13 @@ print(res.get("effect", res))  # -> "permit"
 Default algorithm is:
 ```python
 from rbacx.core.engine import Guard
-from rbacx.storage import FilePolicySource   # from rbacx.storage import HotReloader if you prefer
+from rbacx.store import FilePolicySource
 from rbacx.policy.loader import HotReloader
 
 guard = Guard(policy={})
 mgr = HotReloader(guard, FilePolicySource("policy.json"))
-mgr.poll_once()        # initial load
-mgr.start_polling(10)  # background polling thread
+mgr.check_and_reload()        # initial load
+mgr.start(10)  # background polling thread
 ```
 
 If you want to test, try this:
@@ -125,7 +125,7 @@ import json
 import time
 from rbacx.core.engine import Guard
 from rbacx.core.model import Subject, Action, Resource, Context
-from rbacx.storage import FilePolicySource
+from rbacx.store import FilePolicySource
 from rbacx.policy.loader import HotReloader
 
 # create a tiny policy file next to the script
@@ -140,7 +140,7 @@ json.dump({
 
 guard = Guard({})
 mgr = HotReloader(guard, FilePolicySource(policy_path))
-mgr.poll_once()  # initial load
+mgr.check_and_reload()  # initial load
 
 print(guard.evaluate_sync(
     subject=Subject(id="u1", roles=["reader"]),
@@ -154,7 +154,7 @@ json.dump({
     "algorithm": "deny-overrides",
     "rules": [{"id": "deny_all", "effect": "deny", "actions": ["*"], "resource": {"type": "doc"}}]
 }, open(policy_path, "w", encoding="utf-8"))
-mgr.start_polling(3)  # starting polling
+mgr.start(3)  # starting polling
 time.sleep(3)
 
 print(guard.evaluate_sync(

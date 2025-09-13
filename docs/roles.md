@@ -14,6 +14,9 @@ Wire into the `Guard`:
 ```python
 from rbacx.core.engine import Guard
 
+policy = {...}  # define yours here
+resolver = ...  # use resolver from above
+
 guard = Guard(policy, role_resolver=resolver)
 ```
 

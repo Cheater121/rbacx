@@ -49,6 +49,7 @@ line-length = 100
 
 [tool.ruff.lint]
 extend-select = ["I", "B"]
+per-file-ignores = { "tests/**/*.py" = ["E402"] }
 
 [tool.coverage.run]
 source = ["rbacx"]

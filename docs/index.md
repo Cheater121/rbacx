@@ -75,10 +75,13 @@ print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 
 **FastAPI**
 ```python
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from rbacx.adapters.fastapi import require_access
+from rbacx.core.engine import Guard
 
 app = FastAPI()
+
+policy = {...}  # reuse the policy from above or define one here
 guard = Guard(policy)
 
 def build_env(request):
@@ -140,4 +143,3 @@ def docs():
 
 **Reference**
 - [Public API](api.md)
-

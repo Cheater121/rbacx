@@ -6,7 +6,7 @@ RBACX uses Python's standard `logging` and **does not** configure handlers for y
 ## Console logging (dictConfig)
 
 ```python
-import logging, logging.config
+import logging.config
 LOGGING = {
   "version": 1,
   "disable_existing_loggers": False,
@@ -20,7 +20,7 @@ logging.config.dictConfig(LOGGING)
 ## Rotating file logs
 
 ```python
-import logging, logging.config
+import logging.config
 LOGGING = {
   "version": 1, "disable_existing_loggers": False,
   "formatters": {"plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
@@ -36,7 +36,7 @@ logging.config.dictConfig(LOGGING)
 pip install "rbacx[jsonlog]"
 ```
 ```python
-import logging, logging.config, os
+import logging.config
 LOGGING = {
   "version": 1, "disable_existing_loggers": False,
   "formatters": {"json": {"class": "pythonjsonlogger.jsonlogger.JsonFormatter", "format": "%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s"}},

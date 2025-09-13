@@ -1,10 +1,9 @@
-
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Tuple
 
 try:  # Optional dependency boundary
-    from fastapi import HTTPException  # type: ignore
+    from fastapi import HTTPException, Request  # type: ignore
 except Exception:  # pragma: no cover
     HTTPException = None  # type: ignore
 
@@ -13,9 +12,11 @@ from ..core.model import Action, Context, Resource, Subject
 
 EnvBuilder = Callable[[Any], Tuple[Subject, Action, Resource, Context]]
 
+
 def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = False):
     """Return a FastAPI dependency that enforces access with optional reason headers."""
-    def dependency(request: Any) -> None:
+
+    def dependency(request: Request) -> None:
         sub, act, res, ctx = build_env(request)
         # Decide
         allowed = False
@@ -52,4 +53,5 @@ def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = F
         if HTTPException is None:
             raise RuntimeError("fastapi is required for adapters.fastapi")  # pragma: no cover
         raise HTTPException(status_code=403, detail={"reason": reason}, headers=headers)
+
     return dependency
