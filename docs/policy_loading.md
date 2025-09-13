@@ -86,20 +86,20 @@ from rbacx.policy.loader import HotReloader
 | Parameter | Description |
 | --- | --- |
 | `guard` | The `rbacx.core.engine.Guard` instance to update. |
-| `source` | Any `PolicySource` (File, HTTP, S3, custom, вЂ¦). |
+| `source` | Any `PolicySource` (File, HTTP, S3, custom, …). |
 | `initial_load: bool = False` | If `True`, **do not** prime the ETag so the **first** `check_and_reload()` will load the current policy. If `False` (default), the first check is a NO-OP unless the ETag changed (legacy behavior). |
 | `poll_interval: float = 5.0` | Default polling interval (seconds) used by `start()`. |
 
 ### Methods
 
 - `check_and_reload(*, force: bool = False) -> bool`  
-  Synchronously checks the sourceвЂ™s ETag; if changed, loads and applies the policy.  
+  Synchronously checks the source’s ETag; if changed, loads and applies the policy.  
   If `force=True`, loads and applies **regardless** of ETag. Returns `True` if a reload occurred.
 
 - `start(interval: float | None = None, *, initial_load: bool | None = None, force_initial: bool = False) -> None`  
   Starts background polling.  
-  - `interval` overrides the constructorвЂ™s `poll_interval`.  
-  - `initial_load` overrides the constructorвЂ™s flag **just for this start**.  
+  - `interval` overrides the constructor’s `poll_interval`.  
+  - `initial_load` overrides the constructor’s flag **just for this start**.  
   - If `initial_load` is truthy and `force_initial=True`, performs a synchronous load before starting the thread (ETag ignored for that initial load).
 
 - `stop(timeout: float | None = None) -> None`  
@@ -107,10 +107,10 @@ from rbacx.policy.loader import HotReloader
 
 ### Diagnostics / properties
 
-- `last_etag` вЂ” most recently seen ETag from the source.  
-- `last_reload_at` вЂ” timestamp of the last successful reload.  
-- `last_error` вЂ” the last exception encountered (if any).  
-- `suppressed_until` вЂ” time until which further attempts are delayed after errors (exponential backoff with jitter).
+- `last_etag` — most recently seen ETag from the source.  
+- `last_reload_at` — timestamp of the last successful reload.  
+- `last_error` — the last exception encountered (if any).  
+- `suppressed_until` — time until which further attempts are delayed after errors (exponential backoff with jitter).
 
 ---
 
@@ -161,9 +161,9 @@ If you need ultra-low detection latency, call `reloader.check_and_reload()` at t
 
 Out of the box, RBACX provides:
 
-- **FilePolicySource** вЂ” local JSON file or dict snapshot.
-- **HTTPPolicySource** вЂ” HTTP/HTTPS endpoint (ideal with ETag or Last-Modified validators).
-- **S3PolicySource** вЂ” Amazon S3 objects with ETag-based change detection.
+- **FilePolicySource** — local JSON file or dict snapshot.
+- **HTTPPolicySource** — HTTP/HTTPS endpoint (ideal with ETag or Last-Modified validators).
+- **S3PolicySource** — Amazon S3 objects with ETag-based change detection.
 
 Any custom source that implements `load()` and `etag()` is supported.
 
@@ -172,7 +172,7 @@ Any custom source that implements `load()` and `etag()` is supported.
 ## Operational guidance
 
 - **Atomic writes** (file sources): write to a temp file and `rename` to avoid readers seeing partial content.  
-- **Backoff & jitter**: on repeated failures, use exponential backoff **with jitter**; this avoids synchronized retries and thundering herds. RBACXвЂ™s reloader applies jitter by default.  
+- **Backoff & jitter**: on repeated failures, use exponential backoff **with jitter**; this avoids synchronized retries and thundering herds. RBACX’s reloader applies jitter by default.  
 - **Observability**: export metrics/counters for reload successes/failures and `last_reload_at`.  
 - **Fail-safe policy**: keep the last known good policy if a new load fails.  
 - **Security defaults**: default-deny policies are recommended until the first valid policy is loaded.
@@ -188,7 +188,7 @@ Any custom source that implements `load()` and `etag()` is supported.
 
 ## Changelog (excerpt)
 
-- `HotReloader(..., initial_load: bool = False)` вЂ” new flag to control startup behavior.  
-- `check_and_reload(force: bool = False)` вЂ” new `force` parameter to bypass ETag.  
-- `start(..., initial_load: bool | None = None, force_initial: bool = False)` вЂ” optional synchronous load before the polling thread starts.  
-- `ReloadingPolicyManager` and `rbacx.store.manager.PolicyManager` вЂ” **deprecated**; use `HotReloader`.
+- `HotReloader(..., initial_load: bool = False)` — new flag to control startup behavior.  
+- `check_and_reload(force: bool = False)` — new `force` parameter to bypass ETag.  
+- `start(..., initial_load: bool | None = None, force_initial: bool = False)` — optional synchronous load before the polling thread starts.  
+- `ReloadingPolicyManager` and `rbacx.store.manager.PolicyManager` — **deprecated**; use `HotReloader`.
