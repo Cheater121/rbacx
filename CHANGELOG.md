@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2 — 2025-09-13
+### Fixed
+- **HotReloader example** in README updated to new feature.
+
 ## 0.4.1 — 2025-09-13
 
 ### Added
