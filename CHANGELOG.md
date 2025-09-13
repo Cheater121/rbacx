@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.4.0 — 2025-09-13
+
+### Added
+- **S3PolicySource** with flexible change detection and checksum fallback.
+- **HotReloader**: unified, documented policy reloader with consistent behavior across sources.
+- Web adapters: robust `require_access(...)` wrappers for **Starlette** and **FastAPI** that always return ASGI-callable responses in route/decorator mode; optional denial headers (`x-rbacx-reason`) retained.
+- New/updated examples (including Litestar) and docs for adapters, policy stores, audit mode, and quickstart.
+
+### Changed
+- Storage: `FilePolicySource` and `HotReloader` internals streamlined; improved reload semantics and portability (Windows tempfiles).
+- Tests overhauled for web adapters; CI coverage badge updated.
+- Restored legacy `PolicyManager` constructor signature and initial apply semantics to preserve short-term compatibility (see **Deprecated**).
+
+### Deprecated
+- `rbacx.store.manager.PolicyManager` — use `rbacx.policy.loader.HotReloader` instead for consistent reload behavior.
+
+### Fixed
+- Starlette/FastAPI adapters: resolved coroutine vs callable issues and `JSONResponse` callability when tests monkeypatch response classes.
+- Django/DRF test flakiness and several example bugs:
+  - `basic_quickstart.py`: rule specificity now matches compiler bucket selection → correct **permit**.
+  - `conditions_time.py`: time condition reads `context.when` (not `context.attrs.when`).
+  - `hotreload_file.py`: prints decision effect and closes/rewrites temp files correctly on Windows.
+
+### Migration
+- Replace `PolicyManager` with `HotReloader`:
+
+  ```python
+  # BEFORE (deprecated)
+  from rbacx.store.manager import PolicyManager
+  mgr = PolicyManager(guard, source)
+
+  # AFTER
+  from rbacx.policy.loader import HotReloader
+  mgr = HotReloader(guard, source)
+  mgr.check_and_reload()
+
+
 ## 0.3.2 - 2025-09-11
 
 ### Fixed
