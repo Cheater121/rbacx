@@ -2,6 +2,8 @@ import pytest
 from starlette.testclient import TestClient
 
 fastapi = pytest.importorskip("fastapi")
+fastapi = pytest.importorskip("starlette")
+
 
 from dataclasses import dataclass
 
