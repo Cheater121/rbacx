@@ -1,9 +1,10 @@
-# tests/integration/adapters/litestar/test_litestar_middleware.py
 import importlib
 import sys
 import types
 
 import pytest
+
+starlette = pytest.importorskip("starlette")
 
 
 def _purge_litestar_modules() -> None:
