@@ -114,7 +114,7 @@ from rbacx.store import FilePolicySource
 from rbacx.policy.loader import HotReloader
 
 guard = Guard(policy={})
-mgr = HotReloader(guard, FilePolicySource("policy.json"))
+mgr = HotReloader(guard, FilePolicySource("policy.json"), initial_load=...)
 mgr.check_and_reload()        # initial load
 mgr.start(10)  # background polling thread
 ```
@@ -139,7 +139,7 @@ json.dump({
 }, open(policy_path, "w", encoding="utf-8"))
 
 guard = Guard({})
-mgr = HotReloader(guard, FilePolicySource(policy_path))
+mgr = HotReloader(guard, FilePolicySource(policy_path), initial_load=True)
 mgr.check_and_reload()  # initial load
 
 print(guard.evaluate_sync(
