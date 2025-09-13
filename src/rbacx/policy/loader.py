@@ -5,6 +5,7 @@ import logging
 import random
 import threading
 import time
+import warnings
 from typing import Optional
 
 from ..core.engine import Guard
@@ -28,6 +29,13 @@ class HotReloader:
       - If source.etag() returns None, we will attempt to load() and let the source decide.
       - Guard.set_policy(policy) is called only after a successful load().
       - This class is thread-safe for concurrent check_and_reload() calls.
+
+    Parameters:
+      initial_load:
+          Controls startup behavior.
+          - False (default): prime ETag at construction time; the first check will NO-OP
+            unless the policy changes. (Backwards-compatible with previous versions.)
+          - True: do not prime ETag; the first check will load the current policy.
     """
 
     def __init__(
@@ -35,6 +43,7 @@ class HotReloader:
         guard: Guard,
         source: PolicySource,
         *,
+        initial_load: bool = False,
         poll_interval: float | None = 5.0,
         backoff_min: float = 2.0,
         backoff_max: float = 30.0,
@@ -49,11 +58,17 @@ class HotReloader:
         self.jitter_ratio = float(jitter_ratio)
         self.thread_daemon = bool(thread_daemon)
 
-        # Initial state
+        self._initial_load = bool(initial_load)
+
+        # Initial state: either "prime" ETag (legacy) or make the first check load.
         try:
-            self._last_etag: Optional[str] = self.source.etag()
+            if self._initial_load:
+                self._last_etag: Optional[str] = None
+            else:
+                self._last_etag = self.source.etag()
         except Exception:
             self._last_etag = None
+
         self._suppress_until: float = 0.0
         self._backoff: float = self.backoff_min
         self._last_reload_at: float | None = None
@@ -66,9 +81,12 @@ class HotReloader:
 
     # Public API -------------------------------------------------------------
 
-    def check_and_reload(self) -> bool:
+    def check_and_reload(self, *, force: bool = False) -> bool:
         """
         Perform a single reload check.
+
+        Args:
+            force: If True, load/apply the policy regardless of ETag state.
 
         Returns:
             True if a new policy was loaded and applied; otherwise False.
@@ -79,6 +97,22 @@ class HotReloader:
                 return False
 
             try:
+                if force:
+                    # Force a load regardless of etag
+                    policy = self.source.load()
+                    self.guard.set_policy(policy)
+
+                    try:
+                        self._last_etag = self.source.etag()
+                    except Exception:
+                        self._last_etag = None
+
+                    self._last_reload_at = now
+                    self._last_error = None
+                    self._backoff = self.backoff_min
+                    logger.info("RBACX: policy force-loaded from %s", self._src_name())
+                    return True
+
                 etag = self.source.etag()
                 if etag is not None and etag == self._last_etag:
                     return False
@@ -98,6 +132,7 @@ class HotReloader:
             except FileNotFoundError as e:
                 self._register_error(now, e, level="warning", msg="RBACX: policy not found: %s")
             except Exception as e:  # pragma: no cover
+                logger.exception("RBACX: policy reload error", exc_info=e)
                 self._register_error(now, e, level="error", msg="RBACX: policy reload error")
 
             return False
@@ -109,18 +144,38 @@ class HotReloader:
     def poll_once(self) -> bool:
         return self.check_and_reload()
 
-    def start(self, interval: float | None = None) -> None:
+    def start(
+        self,
+        interval: float | None = None,
+        *,
+        initial_load: Optional[bool] = None,
+        force_initial: bool = False,
+    ) -> None:
         """
         Start the background polling thread.
 
         Args:
             interval: seconds between checks; if None, uses self.poll_interval (or 5.0 fallback).
+            initial_load: override constructor's initial_load just for this start().
+                          If True, perform a synchronous load/check before starting the thread.
+                          If False, skip any initial load.
+                          If None, inherit the constructor setting.
+            force_initial: if True and an initial load is requested, bypass the ETag check
+                           for that initial load (equivalent to check_and_reload(force=True)).
         """
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return
+
             poll_iv = float(interval if interval is not None else (self.poll_interval or 5.0))
             self._stop_event.clear()
+
+            # Optional synchronous initial check before the loop starts
+            want_initial = self._initial_load if initial_load is None else bool(initial_load)
+            if want_initial:
+                # RLock allows re-entrancy here
+                self.check_and_reload(force=force_initial)
+
             self._thread = threading.Thread(
                 target=self._run_loop, args=(poll_iv,), daemon=self.thread_daemon
             )
@@ -209,6 +264,8 @@ class HotReloader:
 
 class ReloadingPolicyManager:
     """
+    DEPRECATED: Use HotReloader instead.
+
     Compatibility wrapper that delegates to HotReloader.
 
     This keeps older imports/tests working:
@@ -216,6 +273,16 @@ class ReloadingPolicyManager:
     """
 
     def __init__(self, source: PolicySource, guard: Guard) -> None:
+        warnings.warn(
+            "ReloadingPolicyManager is deprecated and will be removed in a future release; "
+            "use HotReloader instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        logger.warning(
+            "RBACX: ReloadingPolicyManager is deprecated and will be removed in a future release; "
+            "use HotReloader instead."
+        )
         self._r = HotReloader(guard=guard, source=source)
 
     def refresh_if_needed(self) -> bool:

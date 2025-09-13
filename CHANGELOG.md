@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.4.1 — 2025-09-13
+
+### Added
+- **HotReloader** startup controls:
+  - `initial_load: bool = False` — when `True`, the first `check_and_reload()` loads the current policy without priming the ETag (safe startup).
+  - `check_and_reload(force: bool = False)` — `force=True` bypasses the ETag check and loads the policy unconditionally.
+  - `start(..., initial_load: bool | None = None, force_initial: bool = False)` — optional synchronous initial load before the polling thread starts; `force_initial=True` ignores ETag for that first load.
+- Diagnostics: exposed properties remain (`last_etag`, `last_reload_at`, `last_error`, `suppressed_until`) for observability.
+- Documentation: expanded **Policy loading (hot reload)** page with startup patterns and operational guidance.
+
+### Changed
+- Default behavior remains **backwards-compatible**: `initial_load=False` primes the ETag at construction; the first `check_and_reload()` is a NO-OP unless the source’s ETag changes.
+- Logging/robustness: clearer messages on force-loaded vs. ETag-driven reloads; unchanged backoff + jitter strategy on errors.
+
+### Deprecated
+- **`rbacx.policy.loader.ReloadingPolicyManager`** — constructing this wrapper now emits a `DeprecationWarning` and a log warning; it delegates to `HotReloader` with legacy semantics (`initial_load=False`).
+- Reminder: **`rbacx.store.manager.PolicyManager`** remains deprecated; prefer `HotReloader` with a `PolicySource` (e.g., `FilePolicySource`).
+
+### Tests
+- Added/updated integration tests to cover:
+  - `initial_load=True` (loads on the first check).
+  - `force=True` path regardless of ETag.
+  - `start(initial_load=True, force_initial=True)` synchronous bootstrap.
+  - Deprecation warnings for `ReloadingPolicyManager` and compatibility delegation.
+
+### Migration
+- For **safe startup**, construct `HotReloader(..., initial_load=True)` and call `check_and_reload()` during app boot, or call `start(initial_load=True, force_initial=True)`.
+- Replace `ReloadingPolicyManager` (and legacy `PolicyManager`) with `HotReloader`:
+
+  ```python
+  # BEFORE (deprecated)
+  from rbacx.store.manager import PolicyManager
+  mgr = PolicyManager(guard, source)
+
+  # AFTER
+  from rbacx.policy.loader import HotReloader
+  mgr = HotReloader(guard, source, initial_load=True)
+  mgr.check_and_reload()
+
+
 ## 0.4.0 — 2025-09-13
 
 ### Added
