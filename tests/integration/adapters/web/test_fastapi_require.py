@@ -1,12 +1,9 @@
 import pytest
-from fastapi.testclient import TestClient
-
 fastapi = pytest.importorskip("fastapi")
 
-
-from dataclasses import dataclass
-
 from fastapi import Depends, FastAPI
+from fastapi.testclient import TestClient
+from dataclasses import dataclass
 
 from rbacx.adapters.fastapi import require_access as fa_require
 
