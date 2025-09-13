@@ -1,13 +1,27 @@
 from datetime import datetime, timedelta, timezone
+
 from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx.core.model import Action, Context, Resource, Subject
+
 
 def main() -> None:
     now = datetime.now(timezone.utc)
-    policy = {"rules":[
-        {"id":"within", "effect":"permit", "actions":["read"], "resource":{"type":"doc"},
-         "condition":{"between":[ {"attr":"context.attrs.when"}, [now.isoformat(), (now + timedelta(hours=1)).isoformat()] ]}},
-    ]}
+    policy = {
+        "rules": [
+            {
+                "id": "within",
+                "effect": "permit",
+                "actions": ["read"],
+                "resource": {"type": "doc"},
+                "condition": {
+                    "between": [
+                        {"attr": "context.when"},
+                        [now.isoformat(), (now + timedelta(hours=1)).isoformat()],
+                    ]
+                },
+            }
+        ]
+    }
     g = Guard(policy)
     d = g.evaluate_sync(
         subject=Subject(id="u"),
@@ -16,6 +30,7 @@ def main() -> None:
         context=Context(attrs={"when": now.isoformat()}),
     )
     print(d.allowed, d.reason)  # True, matched
+
 
 if __name__ == "__main__":
     main()

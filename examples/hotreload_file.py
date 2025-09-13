@@ -8,26 +8,35 @@ from rbacx.policy.loader import HotReloader
 from rbacx.storage import FilePolicySource
 
 
+def _write_json(path: str, data: dict) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+        f.flush()
+        os.fsync(f.fileno())
+
+
 def main() -> None:
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+    fd, path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+
     try:
-        # initial policy
-        json.dump(
-            {
-                "rules": [
-                    {
-                        "id": "r1",
-                        "effect": "permit",
-                        "actions": ["read"],
-                        "resource": {"type": "doc"},
-                    }
-                ]
-            },
-            open(tmp.name, "w"),
-        )
-        guard = Guard(policy={})
-        mgr = HotReloader(guard, FilePolicySource(tmp.name))
-        mgr.poll_once()
+        policy_permit = {
+            "rules": [
+                {"id": "r1", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
+            ]
+        }
+        policy_deny = {
+            "rules": [
+                {"id": "r2", "effect": "deny", "actions": ["read"], "resource": {"type": "doc"}}
+            ]
+        }
+
+        guard = Guard(policy=policy_permit)
+
+        _write_json(path, policy_permit)
+
+        mgr = HotReloader(guard, FilePolicySource(path))
+
         print(
             "first:",
             guard.evaluate_sync(
@@ -35,25 +44,13 @@ def main() -> None:
                 action=type("A", (), {"name": "read"})(),
                 resource=type("R", (), {"type": "doc", "id": "1", "attrs": {}})(),
                 context=type("C", (), {"attrs": {}})(),
-            ).decision,
+            ).effect,
         )
 
-        # update policy
-        time.sleep(0.1)
-        json.dump(
-            {
-                "rules": [
-                    {
-                        "id": "deny",
-                        "effect": "deny",
-                        "actions": ["read"],
-                        "resource": {"type": "doc"},
-                    }
-                ]
-            },
-            open(tmp.name, "w"),
-        )
+        _write_json(path, policy_deny)
+        time.sleep(0.15)
         mgr.poll_once()
+
         print(
             "after:",
             guard.evaluate_sync(
@@ -61,10 +58,13 @@ def main() -> None:
                 action=type("A", (), {"name": "read"})(),
                 resource=type("R", (), {"type": "doc", "id": "1", "attrs": {}})(),
                 context=type("C", (), {"attrs": {}})(),
-            ).decision,
+            ).effect,
         )
     finally:
-        os.unlink(tmp.name)
+        try:
+            os.remove(path)
+        except PermissionError:
+            pass
 
 
 if __name__ == "__main__":

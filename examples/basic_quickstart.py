@@ -1,5 +1,6 @@
 from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx.core.model import Action, Context, Resource, Subject
+
 
 def main() -> None:
     policy = {
@@ -9,10 +10,15 @@ def main() -> None:
                 "id": "doc_read",
                 "effect": "permit",
                 "actions": ["read"],
-                "resource": {"type": "doc"},
-                "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
+                "resource": {"type": "doc", "attrs": {"archived": False}},
+                "condition": {"hasAny": [{"attr": "subject.roles"}, ["reader", "admin"]]},
             },
-            {"id": "deny_archived", "effect": "deny", "actions": ["*"], "resource": {"type": "doc", "attrs": {"archived": True}}},
+            {
+                "id": "deny_archived",
+                "effect": "deny",
+                "actions": ["*"],
+                "resource": {"type": "doc", "attrs": {"archived": True}},
+            },
         ],
     }
     g = Guard(policy)
@@ -23,6 +29,7 @@ def main() -> None:
         context=Context(attrs={}),
     )
     print(d.allowed, d.reason)  # True, "matched"
+
 
 if __name__ == "__main__":
     main()
