@@ -1,13 +1,15 @@
-
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from rbacx.core.ports import PolicySource
 
-class HTTPPolicySource:
+
+class HTTPPolicySource(PolicySource):
     """HTTP policy source using `requests` with ETag support.
     Extra: rbacx[http]
     """
+
     def __init__(self, url: str, *, headers: Dict[str, str] | None = None) -> None:
         self.url = url
         self.headers = headers or {}
@@ -17,7 +19,9 @@ class HTTPPolicySource:
         try:
             import requests  # type: ignore
         except Exception as e:  # pragma: no cover
-            raise RuntimeError("requests is required for HTTPPolicySource (pip install rbacx[http])") from e
+            raise RuntimeError(
+                "requests is required for HTTPPolicySource (pip install rbacx[http])"
+            ) from e
         hdrs = dict(self.headers)
         if self._etag:
             hdrs["If-None-Match"] = self._etag

@@ -4,8 +4,11 @@
 Install `rbacx[otel]` and wire `OTelMetrics`:
 
 ```python
-from rbacx.metrics.otel import OTelMetrics
-metrics = OTelMetrics("rbacx")
+from rbacx.core.engine import Guard
+
+from rbacx.metrics.otel import OpenTelemetryMetrics
+metrics = OpenTelemetryMetrics(meter_name="rbacx")
+policy = {"rules": [{"effect": "permit"}]}
 guard = Guard(policy, metrics=metrics)
 ```
 

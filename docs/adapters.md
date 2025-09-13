@@ -8,20 +8,46 @@ FastAPI / Flask / Litestar / Django examples are under `examples/`.
 
 ### FastAPI
 ```python
-from fastapi import FastAPI, Depends
-from rbacx.adapters.fastapi_guard import require
+from fastapi import FastAPI, Depends, Request
+from rbacx.adapters.fastapi import require_access
+from rbacx.core.engine import Guard
+from rbacx.core.model import Subject, Resource, Action, Context
 
-@app.get("/secure", dependencies=[Depends(require("read", "doc"))])
+# Demo policy (permit-all for brevity)
+policy = {"rules": [{"effect": "permit"}]}
+guard = Guard(policy)
+
+def build_env(request: Request):
+    user = request.headers.get("x-user", "anonymous")
+    return Subject(id=user), Action("read"), Resource(type="doc"), Context()
+
+app = FastAPI()
+
+@app.get("/secure", dependencies=[Depends(require_access(guard, build_env, add_headers=True))])
 def secure():
     return {"ok": True}
 ```
 
 ### Flask
 ```python
-from rbacx.adapters.flask_guard import require
+from flask import Flask, request
+from rbacx.adapters.flask import require_access
+from rbacx.core.engine import Guard
+from rbacx.core.model import Subject, Resource, Action, Context
+
+# Demo policy (permit-all for brevity)
+policy = {"rules": [{"effect": "permit"}]}
+guard = Guard(policy)
+
+def build_env(req=None):
+    req = req or request
+    user = req.headers.get("x-user", "anonymous")
+    return Subject(id=user), Action("read"), Resource(type="doc"), Context()
+
+app = Flask(__name__)
 
 @app.get("/secure")
-@require("read", "doc")
+@require_access(guard, build_env, add_headers=True)
 def secure():
     return {"ok": True}
 ```
@@ -32,6 +58,7 @@ from rbacx.adapters.django.decorators import require
 
 @require("read", "doc")
 def my_view(request):
+    # Tip: provide request.rbacx_guard via RbacxDjangoMiddleware
     ...
 ```
 
@@ -40,15 +67,38 @@ def my_view(request):
 from litestar import Litestar, get
 from litestar.di import Provide
 from rbacx.adapters.litestar_guard import require
-from rbacx.adapters.litestar import provide_guard
+from rbacx.core.engine import Guard
 
-@get("/secure", dependencies={"check": Provide(require("read","doc")), "rbacx_guard": Provide(provide_guard(guard))})
-def secure() -> dict: return {"ok": True}
+# Demo policy (permit-all for brevity)
+policy = {"rules": [{"effect": "permit"}]}
+guard = Guard(policy)
+
+@get(
+    "/secure",
+    dependencies={
+        "check": Provide(require("read", "doc")),   # performs the access check
+        "guard": Provide(lambda: guard),            # injected into the checker
+    },
+)
+def secure() -> dict:
+    return {"ok": True}
+
+app = Litestar(route_handlers=[secure])
 ```
 
 ## S3 policy source
 ```python
-from rbacx.storage.s3 import S3PolicySource
-source = S3PolicySource(bucket="policies", key="rbac.json")
+from rbacx.core.engine import Guard
+from rbacx.policy.loader import HotReloader
+from rbacx.store import S3PolicySource
+
+# Demo guard
+guard = Guard({"rules": [{"effect": "permit"}]})
+
+# Configure S3 policy source (bucket/key form)
+source = S3PolicySource("s3://policies/rbac.json")
+
+# Hot reloader (background polling)
 reloader = HotReloader(guard, source, poll_interval=1.0)
+reloader.start()
 ```
