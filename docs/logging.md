@@ -52,3 +52,25 @@ Use `rbacx.logging.context.TraceIdFilter` to inject `trace_id` into records.
 - ASGI (FastAPI, Litestar): `rbacx.adapters.asgi_logging.TraceIdMiddleware`.
 - Django: `rbacx.adapters.django.trace.TraceIdMiddleware`.
 - Flask: hooks in the example manage `X-Request-ID` header.
+
+## RBACX Decision Logger (audit sink)
+
+`rbacx.logging.decision_logger.DecisionLogger` implements the `DecisionLogSink` port. It can emit decision events either as text or JSON and supports sampling and redactions.
+
+**Options:**
+- `sample_rate: float` — probability in [0..1] to log the event.
+- `redactions: list[dict]` — obligations-style redactions applied to `env` before logging.
+- `as_json: bool` — when `True`, serialize the event to JSON; otherwise logs as `"decision {payload}"`.
+- `level: int` — Python logging level used for the event (defaults to `logging.INFO`).
+
+**Example:**
+```python
+import logging
+from rbacx.logging.decision_logger import DecisionLogger
+
+audit = logging.getLogger("rbacx.audit")
+audit.setLevel(logging.INFO)
+audit.addHandler(logging.StreamHandler())
+
+logger_sink = DecisionLogger(sample_rate=1.0, as_json=True, level=logging.INFO)
+```
