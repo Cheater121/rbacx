@@ -18,7 +18,6 @@
 ::: rbacx.adapters.django.middleware
 ::: rbacx.adapters.django.trace
 ::: rbacx.adapters.litestar
-::: rbacx.telemetry.decision_log
 
 
 ## Decision object
