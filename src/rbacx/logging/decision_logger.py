@@ -5,10 +5,11 @@ import logging
 import random
 from typing import Any, Dict, List
 
+from ..core.ports import DecisionLogSink
 from ..obligations.enforcer import apply_obligations
 
 
-class DecisionLogger:
+class DecisionLogger(DecisionLogSink):
     def __init__(
         self,
         *,
