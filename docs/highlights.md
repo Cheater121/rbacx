@@ -43,5 +43,5 @@
 
 ## Compatibility
 
-- **Python**: see project metadata (pyproject.toml / setup.cfg).
+- **Python**: see project metadata (pyproject.toml).
 - **Frameworks**: FastAPI, Flask, Django/DRF, Starlette/Litestar (via adapters).
