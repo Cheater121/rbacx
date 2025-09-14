@@ -11,7 +11,7 @@ from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
 from .policy import decide as decide_policy
 from .policyset import decide as decide_policyset
-from .ports import DecisionLogger, MetricsSink, ObligationChecker, RoleResolver
+from .ports import DecisionLogSink, MetricsSink, ObligationChecker, RoleResolver
 
 try:
     # optional compile step to speed up decision making
@@ -32,7 +32,7 @@ class Guard:
         self,
         policy: Dict[str, Any],
         *,
-        logger_sink: DecisionLogger | None = None,
+        logger_sink: DecisionLogSink | None = None,
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
@@ -188,11 +188,15 @@ class Guard:
 
     # convenience
 
-    def is_allowed_sync(self, subject: Subject, action: Action, resource: Resource, context: Context | None = None) -> bool:
+    def is_allowed_sync(
+        self, subject: Subject, action: Action, resource: Resource, context: Context | None = None
+    ) -> bool:
         d = self.evaluate_sync(subject, action, resource, context)
         return d.allowed
 
-    async def is_allowed_async(self, subject: Subject, action: Action, resource: Resource, context: Context | None = None) -> bool:
+    async def is_allowed_async(
+        self, subject: Subject, action: Action, resource: Resource, context: Context | None = None
+    ) -> bool:
         d = await self.evaluate_async(subject, action, resource, context)
         return d.allowed
 
