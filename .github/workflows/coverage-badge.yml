@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write   
+  contents: write
 
 jobs:
   coverage-badge:
@@ -24,7 +24,7 @@ jobs:
       - name: Install project (editable) + test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e .            
+          pip install -e .
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests with coverage (XML + terminal)
@@ -48,16 +48,24 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"pct={pct}\ncolor={color}\n")
           PY
-          
+
       - name: Generate SVG badge via Shields.io
         run: |
           PCT="${{ steps.cov.outputs.pct }}"
           COLOR="${{ steps.cov.outputs.color }}"
           curl -sS "https://img.shields.io/badge/coverage-${PCT}%25-${COLOR}.svg" -o coverage.svg
 
-      - name: Commit badge
+      - name: Prepare badge folder
+        run: |
+          mkdir -p _badge
+          mv coverage.svg _badge/
+
+      - name: Publish badge to 'badges' branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: peaceiris/actions-gh-pages@v3
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: badges
+          publish_dir: ./_badge
+          keep_files: true
           commit_message: "chore(ci): update coverage badge to ${{ steps.cov.outputs.pct }}%"
-          file_pattern: coverage.svg
