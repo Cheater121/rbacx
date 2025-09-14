@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.5.0 — 2025-09-14
+
+### Added
+- Decision logger: **JSON serialization option** for events and **configurable log level**.
+
+### Changed
+- Ports: renamed protocol `DecisionLogger` → `DecisionLogSink` to clarify outbound logging sink.
+- Docs: updated `highlights.md` and `index.md`.
+
+### Fixed
+- Metrics: `rbacx.metrics.otel` and `rbacx.metrics.prometheus` now explicitly import and implement `MetricsSink`, aligning implementations with the interface.
+
+### Removed
+- Telemetry: removed package marker and unused duplicate implementations (simple Prometheus sink and decision logger).
+- Docs: removed redundant `decision_log` section from `api.md`.
+
+### Migration / Notes
+- Update imports and type hints:
+  ```python
+  # before
+  from rbacx.core.ports import DecisionLogger
+  # after
+  from rbacx.core.ports import DecisionLogSink
+  ```
+- If you referenced removed telemetry implementations, switch to the sinks in `rbacx.metrics.prometheus` / `rbacx.metrics.otel` and the logging adapter in `rbacx.logging`.
+- To record latency histograms, implement optional `MetricsObserve` in your sink (e.g., `PrometheusMetricsObserver`).
+
+
 ## 0.4.3 — 2025-09-13
 
 ### Fixed

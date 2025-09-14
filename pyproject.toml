@@ -1,6 +1,6 @@
 [project]
 name = "rbacx"
-version = "0.4.3"
+version = "0.5.0"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
 requires-python = ">=3.8"

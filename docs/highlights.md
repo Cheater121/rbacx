@@ -3,7 +3,7 @@
 ## Architecture & Design
 
 - **Core vs. Adapters**: Authorization decision logic lives in `rbacx.core` (e.g., `Guard`), while framework-specific integration is implemented as adapters (FastAPI, Django, Flask, DRF, Starlette/Litestar). This separation keeps the core framework‑agnostic.
-- **Ports/Interfaces**: Core depends on abstract ports (e.g., `RoleResolver`, `DecisionLogger`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
+- **Ports/Interfaces**: Core depends on abstract ports (e.g., `RoleResolver`, `DecisionLogSink`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
 - **Security defaults**: The default combining algorithm is `deny-overrides` (deny-by-default). Other algorithms: `permit-overrides`, `first-applicable`.
 
 ## Policy Model (JSON)
@@ -32,7 +32,7 @@
 
 ## Testing
 
-- **Coverage**: Meets industry standards. Approximately **80+%** of the codebase.  
+- **Coverage**: Meets industry standards. Approximately **80+%** of the codebase.
 - **Scope**: Tests cover decision logic, rule combining, ABAC operators (including time and collection ops), obligations, policy loading/reloading, and linting.
 
 ## Performance Considerations
@@ -43,5 +43,5 @@
 
 ## Compatibility
 
-- **Python**: see project metadata (pyproject.toml / setup.cfg).
+- **Python**: see project metadata (pyproject.toml).
 - **Frameworks**: FastAPI, Flask, Django/DRF, Starlette/Litestar (via adapters).

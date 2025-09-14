@@ -1,30 +1,46 @@
-
 from __future__ import annotations
 
+import json
 import logging
 import random
 from typing import Any, Dict, List
 
+from ..core.ports import DecisionLogSink
 from ..obligations.enforcer import apply_obligations
 
 
-class DecisionLogger:
-    def __init__(self, *, sample_rate: float = 1.0, redactions: List[Dict[str, Any]] | None = None, logger_name: str = "rbacx.audit") -> None:
+class DecisionLogger(DecisionLogSink):
+    def __init__(
+        self,
+        *,
+        sample_rate: float = 1.0,
+        redactions: List[Dict[str, Any]] | None = None,
+        logger_name: str = "rbacx.audit",
+        as_json: bool = False,
+        level: int = logging.INFO,
+    ) -> None:
         self.sample_rate = float(sample_rate)
         self.redactions = redactions or []
         self.logger = logging.getLogger(logger_name)
+        self.as_json = as_json
+        self.level = level
 
     def log(self, payload: Dict[str, Any]) -> None:
-        if self.sample_rate <= 0.0:
+        if self.sample_rate <= 0.0 or random.random() > self.sample_rate:
             return
-        if random.random() > self.sample_rate:
-            return
+
         safe = dict(payload)
-        env = safe.get("env") or {}
-        # apply obligations to env copy if configured
+        env = dict(safe.get("env") or {})
         try:
             if self.redactions:
-                safe["env"] = apply_obligations(env, self.redactions)  # type: ignore[arg-type]
-        except Exception:  # pragma: no cover
+                env = apply_obligations(env, self.redactions)  # type: ignore[arg-type]
+            safe["env"] = env
+        except Exception:
             pass
-        self.logger.info("decision %s", safe)
+
+        if self.as_json:
+            msg = json.dumps(safe, ensure_ascii=False)
+        else:
+            msg = f"decision {safe}"
+
+        self.logger.log(self.level, msg)
