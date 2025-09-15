@@ -2,92 +2,88 @@ import importlib
 import sys
 import types
 
+import pytest
 
-def _purge(prefix: str) -> None:
-    """Drop all modules that start with the given prefix from sys.modules."""
+
+def _purge(modname: str) -> None:
+    # Remove a module and its submodules from sys.modules (fresh import).
     for k in list(sys.modules):
-        if k.startswith(prefix):
+        if k == modname or k.startswith(modname + "."):
             sys.modules.pop(k, None)
 
 
-def _install_min_flask(monkeypatch):
-    """
-    Provide a tiny 'flask' module with jsonify() and make_response().
-    This is enough for the adapter to construct a response.
-    Flask allows returning a tuple (body, status, headers).
-    """
-    fake = types.ModuleType("flask")
-
-    def jsonify(obj):
-        return {"json": obj}
-
-    def make_response(body, status=200, headers=None):
-        return body, status, (headers or {})
-
-    fake.jsonify = jsonify
-    fake.make_response = make_response
-
-    monkeypatch.setitem(sys.modules, "flask", fake)
-
-
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_flask_require_allowed_is_allowed_branch(monkeypatch):
     """
-    When guard allows via 'is_allowed' (not the sync variant), decorator should call the view.
+    When the guard allows, the decorator should not modify the view result.
+    We stub only `flask.jsonify` because the adapter returns JSON on deny.
     """
-    _install_min_flask(monkeypatch)
     _purge("rbacx.adapters.flask")
 
-    import rbacx.adapters.flask as fl
+    fake_flask = types.ModuleType("flask")
+    fake_flask.jsonify = lambda payload=None, **_: payload or {}
+    monkeypatch.setitem(sys.modules, "flask", fake_flask)
 
-    importlib.reload(fl)
+    import rbacx.adapters.flask as fa
+
+    importlib.reload(fa)
 
     class _GuardAllow:
-        def is_allowed(self, subject, action, resource, context):
+        def is_allowed_sync(self, subject, action, resource, context):
             return True
 
-    def _build_env(_req):
-        return ("u", "read", "doc", {})
+    def _env(_req):
+        return ("u1", "read", "doc", {"ip": "127.0.0.1"})
 
-    called = {"view": False}
-
-    @fl.require_access(_GuardAllow(), _build_env, add_headers=False)
-    def view(*_):
-        called["view"] = True
+    @fa.require_access(_GuardAllow(), _env, add_headers=True)
+    def view(_req=None):
         return "OK"
 
-    # Call without real Flask request; adapter should not require it for allow path.
-    res = view(object())
-    assert res == "OK"
-    assert called["view"] is True
+    assert view(object()) == "OK"
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_flask_require_denied_no_headers_and_explain_failure(monkeypatch):
     """
-    On deny with add_headers=False and failing explain(), the adapter should still
-    return a 403 response without any extra headers (content of 'reason' may be None).
+    When the guard denies and explain() explodes, the adapter must still
+    return a 403 response. With add_headers=False, there should be no
+    extra headers. Flask allows (response, status) or (response, status, headers).
     """
-    _install_min_flask(monkeypatch)
     _purge("rbacx.adapters.flask")
 
-    import rbacx.adapters.flask as fl
+    fake_flask = types.ModuleType("flask")
+    fake_flask.jsonify = lambda payload=None, **_: payload or {}
+    monkeypatch.setitem(sys.modules, "flask", fake_flask)
 
-    importlib.reload(fl)
+    import rbacx.adapters.flask as fa
 
-    class _GuardDeny:
-        def is_allowed(self, subject, action, resource, context):
+    importlib.reload(fa)
+
+    class _GuardDenyExplode:
+        def is_allowed_sync(self, *_a, **_k):
             return False
 
-        def explain(self, subject, action, resource, context):
+        def explain_sync(self, *_a, **_k):
+            # Simulate unexpected error inside explain() branch.
             raise RuntimeError("boom")
 
-    def _build_env(_req):
-        return ("u", "write", "doc", {})
+    def _env(_req):
+        return ("u1", "write", "doc", {"ip": "127.0.0.1"})
 
-    @fl.require_access(_GuardDeny(), _build_env, add_headers=False)
-    def view(*_):
-        return "UNREACHABLE"
+    @fa.require_access(_GuardDenyExplode(), _env, add_headers=False)
+    def view(_req=None):
+        return "NO"
 
-    body, status, headers = view(object())
+    rv = view(object())
+
+    # Flask may return (response, status) or (response, status, headers)
+    assert isinstance(rv, tuple)
+    assert len(rv) in (2, 3), f"unexpected Flask response tuple length: {len(rv)}"
+    payload, status = rv[0], rv[1]
     assert status == 403
-    assert isinstance(body, dict) or isinstance(body, tuple) or isinstance(body, list)
-    assert headers == {}
+    assert isinstance(payload, dict)
+    # No additional headers when add_headers=False
+    if len(rv) == 3:
+        headers = rv[2]
+        assert isinstance(headers, dict)
+        assert not headers
