@@ -14,18 +14,41 @@ def _purge(prefix: str) -> None:
 
 def test_otel_no_sdk_is_noop(monkeypatch):
     """
-    When OpenTelemetry SDK is not installed, importing the metrics module should not crash.
-    We simulate missing package by removing 'opentelemetry.metrics' from sys.modules.
+    This test must pass in both environments:
+
+    1) opentelemetry-api is NOT installed:
+       The adapter raises RuntimeError on construction, which we assert.
+
+    2) opentelemetry-api is installed but no SDK is configured:
+       Per OpenTelemetry API semantics, a no-op meter is returned, so our wrapper
+       constructs successfully and its methods are safe no-ops (no exceptions).
     """
-    sys.modules.pop("opentelemetry.metrics", None)
-
     _purge("rbacx.metrics.otel")
-    import rbacx.metrics.otel as otel
 
+    # Detect if the OpenTelemetry API package is importable on this runner.
+    try:
+        import opentelemetry.metrics  # noqa: F401
+        api_present = True
+    except Exception:
+        api_present = False
+
+    import rbacx.metrics.otel as otel
     importlib.reload(otel)
 
-    # Constructing helper should not raise even if SDK is absent.
-    _ = otel.OpenTelemetryMetrics()
+    if not api_present:
+        # API is missing: adapter signals the optional dependency clearly.
+        with pytest.raises(RuntimeError):
+            otel.OpenTelemetryMetrics()
+        return
+
+    # API is present (SDK may or may not be configured). Construction and calls
+    # should be no-ops and must not raise.
+    m = otel.OpenTelemetryMetrics()
+    m.inc("rbacx.decisions", labels={"path": "/", "method": "GET"})
+    m.observe("rbacx.decision.time", 12.5, labels={"path": "/", "method": "GET"})
+
+    # If we got here, the no-op path worked fine.
+    assert True
 
 
 def test_otel_instrument_creation_failure_is_handled(monkeypatch):
