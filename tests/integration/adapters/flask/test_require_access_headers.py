@@ -1,3 +1,9 @@
+import pytest
+
+pytest.importorskip("flask")
+
+import pytest
+
 from rbacx.adapters.flask import require_access
 
 

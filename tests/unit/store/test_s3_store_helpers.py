@@ -1,3 +1,8 @@
+import pytest
+
+boto3 = pytest.importorskip("boto3")
+botocore = pytest.importorskip("botocore")
+
 import json
 
 import pytest
