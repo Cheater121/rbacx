@@ -1,9 +1,8 @@
 import json
-import warnings
 
 from rbacx.core.engine import Guard
 from rbacx.core.model import Action, Context, Resource, Subject
-from rbacx.policy.loader import HotReloader, ReloadingPolicyManager, load_policy
+from rbacx.policy.loader import HotReloader, load_policy
 
 # Helper policies
 DENY_ALL = {
@@ -107,35 +106,6 @@ def test_hot_reloader_start_with_initial_load_and_force():
 
     # Clean up thread
     rld.stop()
-
-
-def test_reload_manager_is_deprecated_and_delegates():
-    """
-    ReloadingPolicyManager is deprecated and delegates to HotReloader(initial_load=False).
-    Therefore the first refresh is a NO-OP (etag primed), then a subsequent etag change triggers reload.
-    """
-    guard = Guard(DENY_ALL)
-    src = MemorySource(policy=PERMIT_READ, etag="x")
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        mgr = ReloadingPolicyManager(src, guard)
-        changed1 = mgr.refresh_if_needed()
-
-    # DeprecationWarning was emitted
-    assert any(
-        issubclass(ww.category, DeprecationWarning) for ww in w
-    ), "DeprecationWarning expected"
-
-    # First call is a NO-OP with initial_load=False + primed etag
-    assert changed1 is False
-    assert _eval_read(guard) == "deny"
-
-    # Simulate change and reload via legacy API
-    src.set(etag="y")
-    changed2 = mgr.refresh_if_needed()
-    assert changed2 is True
-    assert _eval_read(guard) == "permit"
 
 
 def test_load_policy_convenience(tmp_path):
