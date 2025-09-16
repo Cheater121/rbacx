@@ -55,7 +55,7 @@ pip install rbacx
 
 ### 3) Evaluate in Python
 ```python
-from rbacx.core.engine import Guard
+from rbacx import Guard
 
 policy = {...}  # load JSON as a dict
 g = Guard(policy)
@@ -77,7 +77,7 @@ print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 ```python
 from fastapi import FastAPI
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 
 app = FastAPI()
 

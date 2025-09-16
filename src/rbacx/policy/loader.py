@@ -5,7 +5,6 @@ import logging
 import random
 import threading
 import time
-import warnings
 from typing import Optional
 
 from ..core.engine import Guard
@@ -262,36 +261,9 @@ class HotReloader:
                 self._stop_event.wait(timeout=min(0.5, remaining))
 
 
-class ReloadingPolicyManager:
-    """
-    DEPRECATED: Use HotReloader instead.
-
-    Compatibility wrapper that delegates to HotReloader.
-
-    This keeps older imports/tests working:
-      from rbacx.policy.loader import ReloadingPolicyManager
-    """
-
-    def __init__(self, source: PolicySource, guard: Guard) -> None:
-        warnings.warn(
-            "ReloadingPolicyManager is deprecated and will be removed in a future release; "
-            "use HotReloader instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        logger.warning(
-            "RBACX: ReloadingPolicyManager is deprecated and will be removed in a future release; "
-            "use HotReloader instead."
-        )
-        self._r = HotReloader(guard=guard, source=source)
-
-    def refresh_if_needed(self) -> bool:
-        return self._r.check_and_reload()
-
-
 def load_policy(path: str) -> dict:
     """Convenience loader to satisfy tests that import a loader function."""
     return FilePolicySource(path).load()
 
 
-__all__ = ["HotReloader", "ReloadingPolicyManager", "FilePolicySource", "load_policy"]
+__all__ = ["HotReloader", "FilePolicySource", "load_policy"]

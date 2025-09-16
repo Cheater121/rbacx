@@ -4,7 +4,7 @@
 Install `rbacx[otel]` and wire `OTelMetrics`:
 
 ```python
-from rbacx.core.engine import Guard
+from rbacx import Guard
 
 from rbacx.metrics.otel import OpenTelemetryMetrics
 metrics = OpenTelemetryMetrics(meter_name="rbacx")

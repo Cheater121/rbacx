@@ -119,8 +119,8 @@ If a strategy is unavailable for a particular bucket/object, use `"etag"` (the m
 Any store can be connected to `HotReloader`:
 
 ```python
-from rbacx.core.engine import Guard
-from rbacx.policy.loader import HotReloader
+from rbacx import Guard
+from rbacx import HotReloader
 from rbacx.store import FilePolicySource, S3PolicySource
 from rbacx.store.http_store import HTTPPolicySource
 

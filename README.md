@@ -29,8 +29,8 @@ pip install rbacx
 
 ## Quickstart
 ```python
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx import Guard
+from rbacx import Subject, Action, Resource, Context
 
 policy = {
     "algorithm": "deny-overrides",
@@ -63,8 +63,9 @@ print(d.reason, d.rule_id)  # "matched", "doc_read"
 
 ### Decision schema
 - `decision`: `"permit"` or `"deny"`
-- `reason`: `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"resource_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
-- `rule_id` / `last_rule_id`
+- `reason`: one of `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
+- `rule_id` and `last_rule_id` (both included for compatibility; `last_rule_id` is the matched rule id)
+- `policy_id` (present for policy sets; `None` for single policies)
 - `obligations`: list passed to the obligation checker
 
 ### Policy sets
@@ -109,9 +110,9 @@ print(res.get("effect", res))  # -> "permit"
 ## Hot reloading
 Default algorithm is:
 ```python
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 
 guard = Guard(policy={})
 mgr = HotReloader(guard, FilePolicySource("policy.json"), initial_load=...)
@@ -123,10 +124,10 @@ If you want to test, try this:
 ```python
 import json
 import time
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx import Guard
+from rbacx import Subject, Action, Resource, Context
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 
 # create a tiny policy file next to the script
 policy_path = "policy.json"

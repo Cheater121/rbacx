@@ -1,23 +1,43 @@
+import time
 
-import types, time
-from rbacx.store.manager import PolicyManager
+from rbacx.policy.loader import HotReloader
+
 
 class Src:
-    def __init__(self): self._etag="1"; self.loads=0
-    def etag(self): return self._etag
-    def load(self): self.loads+=1; return {"rules":[]}
+    def __init__(self):
+        self._etag = "1"
+        self.loads = 0
+
+    def etag(self):
+        return self._etag
+
+    def load(self):
+        self.loads += 1
+        return {"rules": []}
+
+    def set(self, etag):
+        self._etag = etag
+
 
 class Guard:
-    def __init__(self): self.sets=0
-    def set_policy(self, p): self.sets+=1
+    def __init__(self):
+        self.sets = 0
 
-def test_policy_manager_poll_once_and_threading():
-    src=Src(); g=Guard()
-    m = PolicyManager(g, src)
-    assert m.poll_once() is True
+    def set_policy(self, p):
+        self.sets += 1
+
+
+def test_hot_reloader_check_and_threading():
+    src = Src()
+    g = Guard()
+    rld = HotReloader(g, src, initial_load=True, poll_interval=0.001)
+    # initial load forced
+    changed = rld.check_and_reload(force=True)
+    assert changed is True
     # second time same etag -> no
-    assert m.poll_once() is False
+    changed = rld.check_and_reload()
+    assert changed is False
     # start/stop thread quickly
-    m.start_polling(0.001)
+    rld.start(interval=0.001, initial_load=False)
     time.sleep(0.01)
-    m.stop()
+    rld.stop()
