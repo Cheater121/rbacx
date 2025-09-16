@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1 — 2025-09-16
+
+### Added
+- New compiler edge tests covering normalization of `actions` (dict keys, sets, generators), wildcard and list/tuple types for `resource.type`, and invalid inputs (None, wrong types).
+- Tests for policyset vs policy, empty rule selection, unknown algorithm fallback.
+- Integration test for Flask adapter: `require_access(add_headers=True)` verifying header and reason field behavior.
+
+### Fixed
+- Guard constructor signature aligned: removed deprecated `obligations` parameter usage in tests.
+- Flask adapter: reason header checked instead of JSON body field to match actual behavior.
+- S3 store checksum and ETag parsing corrections in tests; tests skip when `boto3` missing.
+
+### Coverage
+- Compiler module coverage raised from ~82% to ~95%, closing many branch-cases and guard paths.
+
+
 ## 0.5.0 — 2025-09-14
 
 ### Added
