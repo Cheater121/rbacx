@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.6.0 — 2025-09-17
+
+### Added
+- **Metrics adapters:** optional `observe(name, value, labels=None)` skeletons in both `PrometheusMetrics` and `OpenTelemetryMetrics`. Guard will call `observe` *iff* the adapter exposes it. No SDK → safe no-op.
+- **Policy schema:** support `algorithm: "first-applicable"` in `policy.schema.json`.
+- **Package root imports:** convenient re-exports — `from rbacx import Guard, Subject, Action, Resource, Context, HotReloader, load_policy`.
+
+### Changed
+- **Guard behavior — obligations:** when a policy returns *permit* but an obligation is **not** fulfilled, Guard now **denies** the request and sets `reason="obligation_failed"` (challenge is preserved if present). **BREAKING** for callers that previously treated unfulfilled obligations as “permit + challenge”.
+- **Metrics naming unified:**
+  - Counter → `rbacx_decisions_total{decision=...}`
+  - Latency histogram → `rbacx_decision_seconds`
+  Names follow Prometheus conventions (`_total`, include base unit in name), OTel uses `unit="s"` while keeping `_seconds` for Prometheus interoperability. **Update dashboards/alerts accordingly.**
+- **README — Decision schema:** clarified fields: `decision`, bounded `reason` set, `rule_id` **and** `last_rule_id`, optional `policy_id` (for policy sets).
+- **Docs — Policy format:** examples standardized on `actions` + `resource { type, attrs }` (removed legacy `target` example).
+- **Docs — Audit mode:** clarified that when a listed field is missing, enforcer still writes it in the logged `env` with a placeholder (masked or `[REDACTED]`) before logging.
+
+### Deprecated
+- _None._ (Previously deprecated APIs removed below.)
+
+### Removed
+- **Deprecated loaders/managers:**
+  - `rbacx.store.manager.PolicyManager` (module now raises a clear `ImportError` with the migration hint).
+  - `rbacx.policy.loader.ReloadingPolicyManager`.
+  Use `rbacx.policy.loader.HotReloader` instead.
+
+### Fixed / Tooling
+- **mypy:** explicit attribute types for metrics adapters (`_counter`, `_hist`) to resolve “Cannot determine type” errors.
+- **Tests:**
+  - New unit tests for metrics `observe(...)` (SDK present vs. absent).
+  - Updated tests to `HotReloader` and to the new Guard obligation behavior.
+  - Metrics adapter tests updated to the unified names.
+
+### Documentation
+- **New page:** *Custom PolicySource (minimal)* — in-memory example + checklist/best practices; added to MkDocs navigation under **Policy** (right after “Policy loading (hot reload)”).
+- **README / guides** updated to use simplified imports: `from rbacx import Guard, ...`.
+
+---
+
+## Migration guide
+
+**Obligations auto-deny (BREAKING):**
+- If your application relied on “permit with unmet obligations”, expect **deny** now (with `reason="obligation_failed"`).
+- Ensure your obligation checker returns `ok=True` only when obligations are truly satisfied; clients should continue to honor any `challenge` provided.
+
+**Metrics:**
+- Update dashboards/alerts to the new names:
+  - `rbacx_decisions_total{decision=...}`
+  - `rbacx_decision_seconds`
+  Naming follows Prometheus best practices; OTel keeps `unit="s"`.
+
+**Imports:**
+- Prefer concise imports:
+  ```python
+  from rbacx import Guard, Subject, Action, Resource, Context, HotReloader, load_policy
+  ```
+
+**Loaders:**
+- Replace `PolicyManager` / `ReloadingPolicyManager` with `HotReloader`.
+
+**Policy schema:**
+- You can now use `algorithm: "first-applicable"` in policy sets.
+
+
 ## 0.5.2 — 2025-09-16
 
 **Critical hotfix — please update.**
