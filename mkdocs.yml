@@ -54,6 +54,7 @@ nav:
       - Time operators: time_operators.md
       - Policy stores: policy_stores.md
       - Policy loading (hot reload): policy_loading.md
+      - Custom PolicySource: custom_policy_source.md
       - HTTP mapping: http_mapping.md
   - Integration:
       - Web adapters: web_adapters.md
