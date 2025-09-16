@@ -2,8 +2,8 @@
 
 This page shows how to install RBACX and its optional extras.
 
-RBACX keeps the **core lightweight** and avoids pulling heavy dependencies by default.  
-This helps keep it framework‑agnostic and reduces conflicts in real projects.  
+RBACX keeps the **core lightweight** and avoids pulling heavy dependencies by default.
+This helps keep it framework‑agnostic and reduces conflicts in real projects.
 If you need integrations or helpers, install **extras** selectively.
 
 ## Install
@@ -38,7 +38,8 @@ RBACX ships a simple linter for policies.
 
 ```bash
 pip install rbacx
-rbacx lint --policy examples/fastapi_demo/policy.json
+rbacx lint --policy examples/policies/ok_policy.json
+rbacx lint --policy examples/policies/bad_policy.json
 ```
 
 See the repository **README** for a minimal policy example and a short Hot‑Reload snippet.
