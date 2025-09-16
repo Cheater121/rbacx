@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2 — 2025-09-16
+
+**Critical hotfix — please update.**
+
+### Security
+- Guard’s decision logging now passes the entire evaluation environment under `env` to the `DecisionLogSink`. This ensures `DecisionLogger` can apply redaction/obligation rules consistently. Previous versions could emit sensitive fields in cleartext at the top level; this release protects logs via proper redaction.
+
+### Fixed
+- Declare and enforce `Requires-Python >= 3.10` (package metadata + runtime check) to prevent import/collection errors on older interpreters.
+
+_No public API changes._
+
+
 ## 0.5.1 — 2025-09-16
 
 ### Added

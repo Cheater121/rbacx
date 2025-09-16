@@ -1,14 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "rbacx"
-version = "0.5.1"
+version = "0.5.2"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Cheater121", email = "cheater1211@gmail.com" }]
 keywords = ["rbac", "abac", "policy", "authorization"]
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "License :: OSI Approved :: MIT License",
   "Typing :: Typed",
 ]
@@ -46,6 +52,7 @@ rbacx = "rbacx.cli:main"
 
 [tool.ruff]
 line-length = 100
+target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = ["I", "B"]
@@ -69,7 +76,7 @@ where = ["src"]
 rbacx = ["py.typed", "dsl/policy.schema.json"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 strict = false
 
 [[tool.mypy.overrides]]
