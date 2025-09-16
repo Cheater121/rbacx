@@ -52,9 +52,9 @@ def test_opentelemetry_happy_path_counter(monkeypatch):
     m = otel.OpenTelemetryMetrics()
 
     # Current adapter signature: inc(name, labels=None)
-    m.inc("rbacx.decisions", labels={"path": "/", "method": "GET"})
+    m.inc("rbacx_decisions_total", labels={"decision": "allow"})
 
     # Some builds of the adapter may intentionally no-op if the SDK/pipeline is not configured.
     # Accept both behaviors; if the call reached the underlying counter we should see exactly one add().
     if calls:
-        assert calls == [(1, {"path": "/", "method": "GET"})]
+        assert calls == [(1, {"decision": "allow"})]
