@@ -161,10 +161,7 @@ class Guard:
             try:
                 self.logger_sink.log(
                     {
-                        "subject": env.get("subject"),
-                        "action": env.get("action"),
-                        "resource": env.get("resource"),
-                        "context": env.get("context"),
+                        "env": env,
                         "decision": d.effect,
                         "allowed": d.allowed,
                         "rule_id": d.rule_id,
