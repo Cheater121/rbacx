@@ -123,6 +123,11 @@ class Guard:
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch
+                # Auto-deny when an obligation is not met
+                if not allowed:
+                    effect = "deny"
+                    # override reason to signal obligation failure
+                    raw["reason"] = "obligation_failed"
             except Exception:
                 # do not fail on obligation checker errors
                 pass

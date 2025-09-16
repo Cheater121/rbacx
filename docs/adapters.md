@@ -10,7 +10,7 @@ FastAPI / Flask / Litestar / Django examples are under `examples/`.
 ```python
 from fastapi import FastAPI, Depends, Request
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 # Demo policy (permit-all for brevity)
@@ -32,7 +32,7 @@ def secure():
 ```python
 from flask import Flask, request
 from rbacx.adapters.flask import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 # Demo policy (permit-all for brevity)
@@ -67,7 +67,7 @@ def my_view(request):
 from litestar import Litestar, get
 from litestar.di import Provide
 from rbacx.adapters.litestar_guard import require
-from rbacx.core.engine import Guard
+from rbacx import Guard
 
 # Demo policy (permit-all for brevity)
 policy = {"rules": [{"effect": "permit"}]}
@@ -88,8 +88,8 @@ app = Litestar(route_handlers=[secure])
 
 ## S3 policy source
 ```python
-from rbacx.core.engine import Guard
-from rbacx.policy.loader import HotReloader
+from rbacx import Guard
+from rbacx import HotReloader
 from rbacx.store import S3PolicySource
 
 # Demo guard

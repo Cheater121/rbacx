@@ -7,7 +7,7 @@ RBACX ships simple adapters for popular frameworks.
 ```python
 from fastapi import FastAPI, Depends, Request
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 policy = {"algorithm": "deny-overrides", "rules": [
@@ -35,7 +35,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from rbacx.adapters.starlette import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 policy = {"algorithm": "deny-overrides", "rules": [
@@ -62,7 +62,7 @@ async def docs(request: Request):
 ```python
 from flask import Flask, jsonify
 from rbacx.adapters.flask import require_access
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 policy = {"algorithm": "deny-overrides", "rules": [
@@ -90,7 +90,7 @@ def docs():
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rbacx.adapters.drf import make_permission
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.core.model import Subject, Resource, Action, Context
 
 policy = {"algorithm": "deny-overrides", "rules": [

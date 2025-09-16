@@ -23,9 +23,9 @@ RBACX supports hot-reloading policies from external sources via a production-gra
 Ensures a valid policy is loaded at boot, then enables background polling.
 
 ```python
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 
 guard = Guard(policy={})
 source = FilePolicySource("policy.json")
@@ -66,19 +66,19 @@ reloader.start(initial_load=True, force_initial=True)
 ```
 
 Steps:
-1) Start with an initial or empty policy  
-2) Choose source (Local filesystem in examples)  
-3) Create the reloader (optionally enable `initial_load`)  
-4) Optional: force a one-time check at startup  
-5) Optional: run background polling  
-6) Your app runs between `start()` and `stop()`  
+1) Start with an initial or empty policy
+2) Choose source (Local filesystem in examples)
+3) Create the reloader (optionally enable `initial_load`)
+4) Optional: force a one-time check at startup
+5) Optional: run background polling
+6) Your app runs between `start()` and `stop()`
 
 ---
 
 ## HotReloader API
 
 ```python
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 ```
 
 ### Constructor parameters
@@ -92,34 +92,34 @@ from rbacx.policy.loader import HotReloader
 
 ### Methods
 
-- `check_and_reload(*, force: bool = False) -> bool`  
-  Synchronously checks the source’s ETag; if changed, loads and applies the policy.  
+- `check_and_reload(*, force: bool = False) -> bool`
+  Synchronously checks the source’s ETag; if changed, loads and applies the policy.
   If `force=True`, loads and applies **regardless** of ETag. Returns `True` if a reload occurred.
 
-- `start(interval: float | None = None, *, initial_load: bool | None = None, force_initial: bool = False) -> None`  
-  Starts background polling.  
-  - `interval` overrides the constructor’s `poll_interval`.  
-  - `initial_load` overrides the constructor’s flag **just for this start**.  
+- `start(interval: float | None = None, *, initial_load: bool | None = None, force_initial: bool = False) -> None`
+  Starts background polling.
+  - `interval` overrides the constructor’s `poll_interval`.
+  - `initial_load` overrides the constructor’s flag **just for this start**.
   - If `initial_load` is truthy and `force_initial=True`, performs a synchronous load before starting the thread (ETag ignored for that initial load).
 
-- `stop(timeout: float | None = None) -> None`  
+- `stop(timeout: float | None = None) -> None`
   Stops background polling; optionally waits up to `timeout` seconds for the current check.
 
 ### Diagnostics / properties
 
-- `last_etag` — most recently seen ETag from the source.  
-- `last_reload_at` — timestamp of the last successful reload.  
-- `last_error` — the last exception encountered (if any).  
+- `last_etag` — most recently seen ETag from the source.
+- `last_reload_at` — timestamp of the last successful reload.
+- `last_error` — the last exception encountered (if any).
 - `suppressed_until` — time until which further attempts are delayed after errors (exponential backoff with jitter).
 
 ---
 
 ## Typical reload cycle
 
-1. Ask the `PolicySource` for its current ETag.  
-2. If the ETag is new (or `etag()` is `None`), call `load()` to fetch the policy.  
-3. Validate (if the source performs schema checks).  
-4. Apply the policy to `guard` **only after a successful load**.  
+1. Ask the `PolicySource` for its current ETag.
+2. If the ETag is new (or `etag()` is `None`), call `load()` to fetch the policy.
+3. Validate (if the source performs schema checks).
+4. Apply the policy to `guard` **only after a successful load**.
 5. On errors (parse, network, permissions), keep the **previous working** policy, log the error, and schedule the next attempt using exponential backoff with jitter.
 
 ---
@@ -132,9 +132,9 @@ Use `HotReloader` with your middleware to check for changes before handling requ
 
 ```python
 from rbacx.adapters.asgi import RbacxMiddleware
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 from litestar import Litestar, get
 from litestar.middleware import DefineMiddleware
 
@@ -171,10 +171,10 @@ Any custom source that implements `load()` and `etag()` is supported.
 
 ## Operational guidance
 
-- **Atomic writes** (file sources): write to a temp file and `rename` to avoid readers seeing partial content.  
-- **Backoff & jitter**: on repeated failures, use exponential backoff **with jitter**; this avoids synchronized retries and thundering herds. RBACX’s reloader applies jitter by default.  
-- **Observability**: export metrics/counters for reload successes/failures and `last_reload_at`.  
-- **Fail-safe policy**: keep the last known good policy if a new load fails.  
+- **Atomic writes** (file sources): write to a temp file and `rename` to avoid readers seeing partial content.
+- **Backoff & jitter**: on repeated failures, use exponential backoff **with jitter**; this avoids synchronized retries and thundering herds. RBACX’s reloader applies jitter by default.
+- **Observability**: export metrics/counters for reload successes/failures and `last_reload_at`.
+- **Fail-safe policy**: keep the last known good policy if a new load fails.
 - **Security defaults**: default-deny policies are recommended until the first valid policy is loaded.
 
 ---
@@ -188,7 +188,7 @@ Any custom source that implements `load()` and `etag()` is supported.
 
 ## Changelog (excerpt)
 
-- `HotReloader(..., initial_load: bool = False)` — new flag to control startup behavior.  
-- `check_and_reload(force: bool = False)` — new `force` parameter to bypass ETag.  
-- `start(..., initial_load: bool | None = None, force_initial: bool = False)` — optional synchronous load before the polling thread starts.  
+- `HotReloader(..., initial_load: bool = False)` — new flag to control startup behavior.
+- `check_and_reload(force: bool = False)` — new `force` parameter to bypass ETag.
+- `start(..., initial_load: bool | None = None, force_initial: bool = False)` — optional synchronous load before the polling thread starts.
 - `ReloadingPolicyManager` and `rbacx.store.manager.PolicyManager` — **deprecated**; use `HotReloader`.

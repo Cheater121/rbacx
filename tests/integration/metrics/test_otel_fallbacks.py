@@ -33,8 +33,15 @@ def test_otel_no_sdk_is_noop(monkeypatch):
     importlib.reload(otel)
 
     if not api_present:
-        with pytest.raises(RuntimeError):
-            otel.OpenTelemetryMetrics()
+        # No SDK -> constructor should succeed and methods should no-op
+        m = otel.OpenTelemetryMetrics()
+        m.inc("rbacx.decisions", labels={"path": "/", "method": "GET"})
+        # optional timing method
+        for meth in ("observe", "record"):
+            fn = getattr(m, meth, None)
+            if callable(fn):
+                fn("rbacx.decision.time", 12.5, labels={"path": "/", "method": "GET"})
+                break
         return
 
     # API present: methods should be safe no-ops.
