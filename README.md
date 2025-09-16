@@ -63,8 +63,9 @@ print(d.reason, d.rule_id)  # "matched", "doc_read"
 
 ### Decision schema
 - `decision`: `"permit"` or `"deny"`
-- `reason`: `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"resource_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
-- `rule_id` / `last_rule_id`
+- `reason`: one of `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
+- `rule_id` and `last_rule_id` (both included for compatibility; `last_rule_id` is the matched rule id)
+- `policy_id` (present for policy sets; `None` for single policies)
 - `obligations`: list passed to the obligation checker
 
 ### Policy sets
