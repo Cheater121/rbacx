@@ -29,8 +29,8 @@ pip install rbacx
 
 ## Quickstart
 ```python
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx import Guard
+from rbacx import Subject, Action, Resource, Context
 
 policy = {
     "algorithm": "deny-overrides",
@@ -110,9 +110,9 @@ print(res.get("effect", res))  # -> "permit"
 ## Hot reloading
 Default algorithm is:
 ```python
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 
 guard = Guard(policy={})
 mgr = HotReloader(guard, FilePolicySource("policy.json"), initial_load=...)
@@ -124,10 +124,10 @@ If you want to test, try this:
 ```python
 import json
 import time
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Action, Resource, Context
+from rbacx import Guard
+from rbacx import Subject, Action, Resource, Context
 from rbacx.store import FilePolicySource
-from rbacx.policy.loader import HotReloader
+from rbacx import HotReloader
 
 # create a tiny policy file next to the script
 policy_path = "policy.json"

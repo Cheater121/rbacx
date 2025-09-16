@@ -13,7 +13,7 @@ RBACX can **log authorization decisions** for observability **without enforcing*
 
 ```python
 import logging
-from rbacx.core.engine import Guard
+from rbacx import Guard
 from rbacx.logging.decision_logger import DecisionLogger
 
 audit = logging.getLogger("rbacx.audit")
