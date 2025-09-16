@@ -15,7 +15,14 @@ class PrometheusMetrics(MetricsSink):
 
     Exposes:
       - rbacx_decisions_total{decision="allow|deny|..."}
-      - rbacx_decision_seconds (Histogram)  — declared for symmetry; not used here.
+      - rbacx_decision_seconds (Histogram) — optional latency distribution
+
+    Notes:
+      * Counter uses the `_total` suffix and latency uses `_seconds` to follow Prometheus/OpenMetrics naming.
+      * :meth:`observe` is **optional**. Guard checks for it via ``hasattr(metrics, "observe")``
+        and will safely skip if missing. This adapter provides a no-op/optional implementation
+        so users can see how to wire it; if the Prometheus client is not installed or the
+        histogram wasn't created, the call is a no-op.
     """
 
     # Explicit attribute annotations for mypy
@@ -37,6 +44,7 @@ class PrometheusMetrics(MetricsSink):
             "Total RBACX decisions by effect.",
             labelnames=("decision",),
         )
+        # Latency histogram in **seconds** (no labels by default)
         self._hist = Histogram(
             "rbacx_decision_seconds",
             "RBACX decision evaluation duration in seconds.",
@@ -58,4 +66,28 @@ class PrometheusMetrics(MetricsSink):
             self._counter.labels(decision=decision).inc()  # type: ignore[call-arg]
         except Exception:  # pragma: no cover
             # never raise from metrics path
+            pass
+
+    # ----------------------------- Optional extension --------------------------
+    def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None:
+        """Optionally record a latency distribution **in seconds**.
+
+        This is a **carcass method** so users can see how to implement it. Guard will call it
+        only if present (checked via ``hasattr``). If Prometheus is unavailable or the histogram
+        wasn't created, this method safely no-ops.
+
+        Parameters
+        ----------
+        name: str
+            Metric name. Accepted for compatibility and future extensions; ignored here.
+        value: float
+            Duration **in seconds** (as exposed by Guard).
+        labels: Dict[str, str] | None
+            Currently unused (histogram has no labels by default).
+        """
+        if self._hist is None:
+            return
+        try:
+            self._hist.observe(float(value))  # seconds
+        except Exception:  # pragma: no cover
             pass

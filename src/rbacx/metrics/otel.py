@@ -16,6 +16,12 @@ class OpenTelemetryMetrics(MetricsSink):
     Creates:
       - Counter: rbacx_decisions_total (labels: decision)
       - Histogram: rbacx_decision_seconds (unit: s)
+
+    Notes:
+      * OTEL recommends carrying the **unit** in metadata; we also keep `_seconds` in the name
+        for Prometheus/OpenMetrics interoperability.
+      * :meth:`observe` is **optional**; if no SDK is configured or histogram creation fails,
+        the method will no-op safely.
     """
 
     # Explicit attribute annotations for mypy
@@ -69,5 +75,30 @@ class OpenTelemetryMetrics(MetricsSink):
         try:
             # OpenTelemetry Counter expects amount (int/float) and attributes (labels)
             self._counter.add(1, {"decision": decision})  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover
+            pass
+
+    # ----------------------------- Optional extension --------------------------
+    def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None:
+        """Optionally record a latency distribution **in seconds**.
+
+        This is a **carcass method** so users can see how to implement it. Guard will call it
+        only if present (checked via ``hasattr``). If no OTEL SDK/pipeline is configured or
+        the histogram wasn't created, this method safely no-ops.
+
+        Parameters
+        ----------
+        name: str
+            Metric name. Accepted for compatibility and future extensions; ignored here.
+        value: float
+            Duration **in seconds** (as exposed by Guard).
+        labels: Dict[str, str] | None
+            OTEL Histogram accepts attributes; we pass them through if present.
+        """
+        if self._hist is None:
+            return
+        try:
+            # Histogram.record(value, attributes=labels) is the conventional API.
+            self._hist.record(float(value), attributes=dict(labels or {}))  # type: ignore[attr-defined]
         except Exception:  # pragma: no cover
             pass
