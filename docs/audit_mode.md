@@ -6,7 +6,7 @@ RBACX can **log authorization decisions** for observability **without enforcing*
 - Pass a **`DecisionLogSink`** implementation (e.g., `DecisionLogger`) to `Guard` via `logger_sink=...`.
 - Each decision is emitted to the Python logger `rbacx.audit`. Set `as_json=True` to serialize the event as **JSON**; otherwise a compact text form (`decision {...}`) is logged. You can also control the log level via the `level` parameter.
 - Optional sampling (`sample_rate`) helps manage log volume in high-traffic environments.
-- Redactions reuse obligation formats (e.g. `"mask_fields"`, `"redact_fields"`) and are applied *before* the event is logged.
+- Redactions reuse obligation formats (e.g. `"mask_fields"`, `"redact_fields"`) and are applied *before* the event is logged; if a listed field is missing in the request context, the enforcer will still create it in the logged `env` with the appropriate placeholder (mask or `[REDACTED]`).
 - It is best practice to log security-relevant events using structured/centralized logs, and to avoid logging sensitive fields.
 
 ## Example (framework-agnostic)
