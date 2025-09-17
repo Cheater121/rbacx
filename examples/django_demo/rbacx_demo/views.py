@@ -1,19 +1,16 @@
-from dataclasses import dataclass
+from __future__ import annotations
 
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 
-
-@dataclass
-class DemoSubject:
-    id: str
-    roles: list[str]
+from rbacx.core.model import Action, Context, Resource, Subject
 
 
 @require_GET
 def index(request):
     return HttpResponse(
-        "Django demo is alive. Visit /admin/ for the admin site.", content_type="text/plain"
+        "Django demo is alive. Visit /admin/ for the admin site.",
+        content_type="text/plain",
     )
 
 
@@ -26,26 +23,19 @@ def health(request):
 def doc(request):
     guard = getattr(request, "rbacx_guard", None)
     if guard is None:
-        return JsonResponse(
-            {"allowed": False, "reason": "guard is not attached by middleware"}, status=500
-        )
+        return JsonResponse({"error": "RBACX guard is not configured"}, status=500)
 
-    subject = DemoSubject(id="anonymous", roles=["demo_user"])
-    decision = guard.evaluate_sync(subject, "read", "doc", context={})
+    user = request.headers.get("x-user", "anonymous")
+    subject = Subject(id=user, roles=["user"])  # roles used by the demo policy
+    action = Action("read")
+    resource = Resource(type="doc")
+    context = Context()
 
-    # Normalize decision
-    allowed = False
-    if isinstance(decision, dict):
-        allowed = bool(decision.get("allowed", False))
-        reason = decision.get("reason")
-    else:
-        allowed = bool(getattr(decision, "allowed", False))
-        reason = getattr(decision, "reason", None)
+    decision = guard.evaluate_sync(subject, action, resource, context)
 
-    if not allowed:
-        return JsonResponse({"allowed": False, "reason": reason or "forbidden"}, status=403)
+    if not decision.allowed:
+        # If the engine returned reason/challenge, expose it to make the demo informative.
+        payload = {"allowed": False, "reason": decision.reason or "forbidden"}
+        return JsonResponse(payload, status=403)
 
-    data = {"allowed": True, "docs": ["doc-1", "doc-2"]}
-    if reason:
-        data["reason"] = reason
-    return JsonResponse(data)
+    return JsonResponse({"allowed": True, "docs": ["doc-1", "doc-2"]})
