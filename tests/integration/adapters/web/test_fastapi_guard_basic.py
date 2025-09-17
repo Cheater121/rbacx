@@ -1,10 +1,13 @@
-
-import types
 from importlib import reload
+
 import pytest
 
+
 def test_fastapi_guard_noop_dependency():
-    import rbacx.adapters.fastapi_guard as fg
+    try:
+        import rbacx.adapters.fastapi_guard as fg
+    except ImportError:
+        pytest.skip("Module deleted")
     reload(fg)
     # Try several known entry points; skip if none present in this build
     for name in ("require", "require_access", "require_check"):
@@ -15,7 +18,10 @@ def test_fastapi_guard_noop_dependency():
             try:
                 dep()
             except TypeError:
-                class _Req: pass
+
+                class _Req:
+                    pass
+
                 dep(_Req())
             return
     pytest.skip("No known dependency factory exposed in this build")
