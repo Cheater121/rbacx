@@ -1,8 +1,8 @@
+from pathlib import Path
 
-from __future__ import annotations
-import os, logging.config
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SECRET_KEY = "rbacx-demo-secret-key"
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = "demo-secret-key-not-for-production"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rbacx_demo",
 ]
 
 MIDDLEWARE = [
@@ -23,30 +24,47 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "rbacx.adapters.django.trace.TraceIdMiddleware",
+    # Attach RBACX guard per request:
     "rbacx.adapters.django.middleware.RbacxDjangoMiddleware",
 ]
 
 ROOT_URLCONF = "rbacx_demo.urls"
-TEMPLATES = []
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
 WSGI_APPLICATION = "rbacx_demo.wsgi.application"
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.path.join(BASE_DIR, "db.sqlite3")}}
-
-LOGGING = {
-  "version": 1,
-  "disable_existing_loggers": False,
-  "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
-  "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple", "filters": ["trace"]}},
-  "filters": {"trace": {"()": "rbacx.logging.context.TraceIdFilter"}},
-  "root": {"level": "INFO", "handlers": ["console"]},
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
 }
 
-RBACX_GUARD_FACTORY = "rbacx_demo.rbacx_factory.build_guard"
+AUTH_PASSWORD_VALIDATORS = []
 
-# Optional JSON logging
-if os.getenv("RBACX_LOG_JSON") == "1":
-    LOGGING["formatters"]["simple"] = {
-        "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
-        "format": "%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s"
-    }
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "/static/"
+
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+# RBACX: tell the middleware how to build the guard
+RBACX_GUARD_FACTORY = "rbacx_demo.rbacx_factory.build_guard"
