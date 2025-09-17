@@ -33,7 +33,7 @@ python examples/django_demo/manage.py migrate
 python examples/django_demo/manage.py runserver 127.0.0.1:8000
 # Test:
 curl -i http://127.0.0.1:8000/health
-curl -i http://127.0.0.1:8000/docs
+curl -i http://127.0.0.1:8000/doc
 ```
 
 **Endpoints**
@@ -85,7 +85,7 @@ The dependency `require_access(guard, build_env, add_headers=True)` checks acces
 flask --app examples/flask_demo/app.py run --port 8003
 # Test:
 curl -i http://127.0.0.1:8003/ping
-curl -i http://127.0.0.1:8003/docs
+curl -i http://127.0.0.1:8003/doc
 ```
 
 **Endpoints**
