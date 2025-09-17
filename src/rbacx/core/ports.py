@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Awaitable
+from typing import Any, Awaitable, Dict, List, Optional, Protocol, Tuple
 
 
 class DecisionLogSink(Protocol):
@@ -8,7 +8,9 @@ class DecisionLogSink(Protocol):
 
 
 class ObligationChecker(Protocol):
-    def check(self, result: Dict[str, Any], context: Any) -> Tuple[bool, Optional[str]] | Awaitable[Tuple[bool, Optional[str]]]: ...
+    def check(
+        self, result: Dict[str, Any], context: Any
+    ) -> Tuple[bool, Optional[str]] | Awaitable[Tuple[bool, Optional[str]]]: ...
 
 
 class MetricsSink(Protocol):
@@ -27,4 +29,6 @@ class RoleResolver(Protocol):
 
 # Optional extension: sinks MAY implement observe() for histograms (adapters will check via hasattr).
 class MetricsObserve(Protocol):
-    def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None | Awaitable[None]: ...
+    def observe(
+        self, name: str, value: float, labels: Dict[str, str] | None = None
+    ) -> None | Awaitable[None]: ...
