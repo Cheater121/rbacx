@@ -21,9 +21,11 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # in real life this authenticates users, in demo - XUserDemo...
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # middleware below ONLY for demo:
+    "rbacx_demo.middleware.XUserDemoAuthMiddleware",
     # Attach RBACX guard per request:
     "rbacx.adapters.django.middleware.RbacxDjangoMiddleware",
 ]
