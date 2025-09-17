@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.7.0 — 2025-09-17
+
+*“Async-first core, zero new deps, full sync compatibility.”*
+
+### Added
+- **Async evaluation core** in `Guard`:
+  - `evaluate_async(...)` and `is_allowed_async(...)` for ASGI frameworks.
+  - CPU-bound policy evaluation (`policy` / `policyset` / compiled fn) is offloaded via `asyncio.to_thread(...)` to keep the event loop responsive.
+- **Optional async DI ports** (Variant A typing):
+  - `DecisionLogSink.log`, `MetricsSink.inc/observe`, `RoleResolver.expand`, `ObligationChecker.check`, and `PolicySource.load/etag` now accept **sync or async** implementations (`T | Awaitable[T]`).
+- **Async-aware reloader**:
+  - `HotReloader.check_and_reload_async(...)` (single source of truth).
+  - The sync method `check_and_reload(...)` bridges safely from sync code and from within a running event loop.
+- **New tests** covering async DI, thread offload, obligation auto-deny, reloader suppression/backoff, and sync-wrapper-in-event-loop scenarios.
+  
+### Changed
+- **Single source of truth**: both sync and async paths delegate to one async core in `Guard` and `HotReloader`, removing duplication.
+- **Non-blocking behavior**:
+  - In async contexts, heavy/CPU work is offloaded with `to_thread`; sync wrappers run the core in a helper thread if a loop is already running.
+  - Obligation checks, metrics, and logging are **conditionally awaited** when async; otherwise called as-is.
+- **Ports typing** (`rbacx.core.ports`):
+  - Protocols widened to `T | Awaitable[T]` for DI points listed above (no runtime dependency added).
+- **Docs**:
+  - `policy_loading.md`: added “Sync vs Async usage” and clarified that `PolicySource` may be sync **or** async.
+  - `policy_stores.md`: updated protocol snippet to the new union types.
+  - `highlights.md`: noted async support in `Guard`/`HotReloader` and sync/async-friendly ports.
+
+### Fixed
+- **Python 3.12 event-loop compatibility**: legacy `get_event_loop().run_until_complete(...)` flows no longer error—`Guard` gently ensures a current loop when needed.
+- **Obligations**: unfulfilled obligations now consistently switch effect to `deny` with `reason="obligation_failed"` and propagate `challenge`.
+
+### Performance & Reliability
+- Reduced event-loop blocking under ASGI due to thread offloading.
+- Reloader avoids holding locks across awaits and continues to apply exponential backoff + jitter after errors.
+
+### Compatibility
+- **No breaking changes.** Existing **sync** adapters, sources, and sinks continue to work unchanged.
+- **Type-safety note**: if your own code declared **stricter** custom Protocols for ports, update them to the new `T | Awaitable[T]` shape to match the official interfaces.
+
+
 ## 0.6.0 — 2025-09-17
 
 ### Added

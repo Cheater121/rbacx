@@ -3,8 +3,8 @@
 
 RBACX supports hot-reloading policies from external sources via a production-grade reloader.
 
-- A policy source implements the `PolicySource` protocol:
-  `load() -> dict` and `etag() -> Optional[str]`.
+- A policy source implements the `PolicySource` protocol (sync **or** async):
+  `load() -> Dict[str, Any] | Awaitable[Dict[str, Any]]` and `etag() -> Optional[str] | Awaitable[Optional[str]]`.
 - The `HotReloader` watches a source: when its ETag changes, it loads the new policy and applies it to a running `Guard`. (If `etag()` returns `None`, the reloader will attempt a load and let the source decide change detection.) ETag is a standard content version identifier in HTTP and storage systems.
 
 ---
@@ -178,6 +178,30 @@ Any custom source that implements `load()` and `etag()` is supported.
 - **Security defaults**: default-deny policies are recommended until the first valid policy is loaded.
 
 ---
+
+
+## Sync vs Async usage
+
+`HotReloader` exposes both a synchronous and an asynchronous API:
+
+- `check_and_reload(...)` — **sync wrapper** over the async core. Safe to call in synchronous apps (Flask/CLI) and even inside a running event loop; the reloader will delegate work to a helper thread.
+- `check_and_reload_async(...)` — **async-native** method for ASGI/async tasks.
+
+Examples:
+
+**Sync (Flask/CLI/Celery)**
+
+```python
+reloader = HotReloader(guard, source)
+changed = reloader.check_and_reload()
+```
+
+**Async (FastAPI background task / asyncio)**
+
+```python
+reloader = HotReloader(guard, source)
+changed = await reloader.check_and_reload_async()
+```
 
 ## Deprecated API
 

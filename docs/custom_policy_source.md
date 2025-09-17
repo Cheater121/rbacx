@@ -1,224 +1,243 @@
-# Creating a Custom `PolicySource`
+# Creating a Custom `PolicySource` (concise + best practices)
 
-This guide shows how to implement your own **PolicySource** for RBACX (e.g., HTTP, DB, Redis, S3, etc.), and how to plug it into the hot reloader.
+RBACX accepts any object that implements the `PolicySource` protocol:
 
-> **Contract (Protocol)** — a `PolicySource` exposes two methods:
->
-> ```python
-> class PolicySource(Protocol):
->     def load(self) -> Dict[str, Any]: ...
->     def etag(self) -> Optional[str]: ...
-> ```
->
-> - `etag()` must return a **stable identifier** for the *current* policy version (e.g., file hash, HTTP `ETag`, DB version). It can return `None` if your source cannot compute one up front.
-> - `load()` must return a **Policy or PolicySet** as a Python `dict` (parsed JSON). If `etag()` changes, RBACX will call `load()` and apply the new policy via `HotReloader`.
+```python
+class PolicySource(Protocol):
+    def load(self) -> Dict[str, Any] | Awaitable[Dict[str, Any]]: ...
+    def etag(self) -> Optional[str] | Awaitable[Optional[str]]: ...
+```
 
-See: `rbacx.core.ports.PolicySource` and `rbacx.policy.loader.HotReloader`.
+**Built-ins:** File, HTTP (sync), and S3 (sync) sources already ship with RBACX. But you can write your own — including **async** sources. This page keeps **one small example** (in-memory) and focuses on **how to design your own** source robustly.
 
 ---
 
-## Quick start: minimal in-memory source
+## Minimal in-memory source
 
 ```python
 from typing import Any, Dict, Optional
 from rbacx import HotReloader, Guard
+from rbacx.core.ports import PolicySource
 
-class MemorySource:
+class MemorySource(PolicySource):
     def __init__(self, policy: Dict[str, Any], etag: str = "v1"):
         self._policy = policy
         self._etag = etag
 
     def etag(self) -> Optional[str]:
+        # Return a cheap, stable version for the current policy
         return self._etag
 
     def load(self) -> Dict[str, Any]:
+        # Return a dict representing a Policy or PolicySet
         return self._policy
 
 # Usage
-guard = Guard(policy={"rules": []})  # initial
-src = MemorySource(policy={"rules": [{"id":"allow","actions":["read"],"resource":{"type":"doc"},"effect":"permit"}]}, etag="v2")
-reloader = HotReloader(guard, src, initial_load=True)  # does an immediate load when etag differs
+guard = Guard(policy={"rules": []})
+src = MemorySource(policy={
+    "rules": [
+        {"id": "allow_read", "actions": ["read"], "resource": {"type": "doc"}, "effect": "permit"}
+    ]
+}, etag="v2")
+reloader = HotReloader(guard, src, initial_load=True)  # loads immediately when etag differs
 ```
 
 ---
 
-## Recommended design rules (high-level)
+## Design guidelines (what good sources do)
 
-1. **Return a strong “version” from `etag()` and keep it cheap.**
-   - For **HTTP**, reuse the server’s `ETag` and conditional requests (`If-None-Match`) on your side if you’re doing your own polling; HTTP semantics are standardized in RFC 9110. citeturn0search4
-   - For **S3**, beware: the S3 `ETag` is **not always MD5** for multipart uploads; prefer **`VersionId`** (if buckets are versioned) or your own checksum. citeturn0search1turn0search5turn0search21
-2. **Make `load()` deterministic and validate JSON** before returning (you can call `rbacx validate` separately during CI).
-3. **Be resilient**: use **timeouts**, **retries**, and **exponential backoff with jitter** for remote sources to avoid thundering herds. citeturn0search6turn0search2
-4. **Secure transport**: use TLS, consider **mTLS / pinning** for internal services; verify checksums when possible.
-5. **Keep the schema stable**: Follow the documented policy format (`rules` / `policies`, `actions`, `resource.type`, `resource.attrs`).
+* **Cheap/stable versioning via `etag()`**
 
----
+  * Return a value that changes **only** when the policy changes (hash, version id, last-modified, etc.).
+  * Prefer values your backend already guarantees (e.g., HTTP `ETag`, S3 `VersionId`). If not available, compute one (e.g., hash) in `load()` and cache it. For HTTP, `ETag` and conditional requests (`If-None-Match` → `304 Not Modified`) minimize transfer and are standard practice.
 
-## Example: File-based source (hash + mtime)
+* **Deterministic `load()`**
 
-```python
-import json, hashlib, os
-from typing import Any, Dict, Optional
+  * Always return a fully parsed **`dict`** (Policy or PolicySet), never partially filled structures.
+  * Validate input if you transform from YAML → JSON, and fail fast on invalid schema.
 
-class FilePolicySource:
-    def __init__(self, path: str):
-        self._path = path
+* **Resilience & fairness**
 
-    def etag(self) -> Optional[str]:
-        try:
-            st = os.stat(self._path)
-            # Combine size+mtime to avoid reading the file on every poll.
-            return f"{int(st.st_mtime_ns)}-{st.st_size}"
-        except OSError:
-            return None  # let HotReloader attempt load()
+  * For remote backends: use **timeouts**, **retries**, **exponential backoff with jitter**, and a **max backoff cap**.
+  * Surface meaningful exceptions in logs; don’t swallow permanent errors.
 
-    def load(self) -> Dict[str, Any]:
-        with open(self._path, "rb") as f:
-            data = f.read()
-        # Optional stronger tag: hash of contents (more expensive).
-        # self._etag_cache = hashlib.sha256(data).hexdigest()
-        return json.loads(data.decode("utf-8"))
-```
+* **Integrity & security**
 
-**When to use content-hash vs. metadata:** if the file is large / polled often, prefer metadata-derived `etag()` and compute a hash only inside `load()` on change detection.
+  * Verify payload integrity when possible (signed artifact, checksum, or versioned objects).
+  * Secure transport: TLS; consider **mTLS / pinning** for internal services.
+  * For HTTP caches/validators, see HTTP semantics (RFC 9110) for strong/weak validators and conditional requests. 
+
+* **Sensible defaults**
+
+  * If `etag()` can’t be computed upfront, return `None`; `HotReloader` will still call `load()` when forced or on scheduled runs.
+  * Keep `load()` side-effect free (no writes).
 
 ---
 
-## Example: HTTP source (ETag + If-None-Match)
+## Async sources with `httpx` (example)
+
+RBACX’s `HotReloader` supports both sync **and async** `PolicySource` implementations. Below is a production-style **async** HTTP source using `httpx`:
+
+* Uses `httpx.AsyncClient` with explicit **timeouts**. Default HTTPX timeouts are \~5s of inactivity; set your own per your SLOs. 
+* Supports **ETag** caching and conditional GET via `If-None-Match` to receive `304 Not Modified` when the policy hasn’t changed. 
+* Implements **capped exponential backoff with jitter** on transient failures — no extra dependencies.
 
 ```python
-import json, urllib.request
+import asyncio
+import json
+import math
+import random
 from typing import Any, Dict, Optional
 
-class HttpPolicySource:
-    def __init__(self, url: str, timeout: float = 5.0):
+import httpx  # pip install https
+
+from rbacx.core.ports import PolicySource
+
+
+class AsyncHTTPPolicySource(PolicySource):
+    """
+    Async PolicySource that fetches a JSON policy from an HTTP endpoint.
+
+    - Caches ETag and last good policy in-memory.
+    - Uses conditional requests (If-None-Match) to avoid re-downloading unchanged payloads.
+    - Applies capped exponential backoff with jitter on transient errors.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        timeout: float = 5.0,
+        max_retries: int = 3,
+        backoff_base: float = 0.5,
+        backoff_cap: float = 8.0,
+        http2: bool = False,
+        verify: bool | str = True,
+    ) -> None:
         self._url = url
         self._timeout = timeout
+        self._max_retries = max_retries
+        self._backoff_base = backoff_base
+        self._backoff_cap = backoff_cap
         self._etag: Optional[str] = None
+        self._cached_policy: Optional[Dict[str, Any]] = None
+        self._client = httpx.AsyncClient(http2=http2, verify=verify)
 
-    def etag(self) -> Optional[str]:
-        # Use a cheap HEAD probe to read ETag if your endpoint supports it;
-        # else keep the last seen ETag from GET.
-        return self._etag
+    async def close(self) -> None:
+        await self._client.aclose()
 
-    def load(self) -> Dict[str, Any]:
-        req = urllib.request.Request(self._url, method="GET")
-        if self._etag:
-            req.add_header("If-None-Match", self._etag)
-        with urllib.request.urlopen(req, timeout=self._timeout) as resp:
-            if resp.status == 304:  # Not Modified
-                raise RuntimeError("No change detected; loader should not call load() without etag change")
-            new_etag = resp.headers.get("ETag")
-            body = resp.read().decode("utf-8")
-            policy = json.loads(body)
-        if new_etag:
-            self._etag = new_etag
-        return policy
-```
+    # ---- PolicySource API -------------------------------------------------
 
-- `ETag` and conditional requests (`If-None-Match`) are part of HTTP’s caching model; use them when your policy endpoint supports it. citeturn0search4turn0search12turn0search24
-
-> Tip: If your endpoint cannot serve `ETag`, expose a **version field**, **hash**, or **monotonic integer**; return it from `etag()`.
-
----
-
-## Example: Amazon S3 source (VersionId-aware)
-
-```python
-import json
-from typing import Any, Dict, Optional
-try:
-    import boto3  # optional
-except Exception:  # pragma: no cover
-    boto3 = None  # type: ignore
-
-class S3PolicySource:
-    def __init__(self, bucket: str, key: str, s3_client=None):
-        self._bucket = bucket
-        self._key = key
-        self._s3 = s3_client or (boto3 and boto3.client("s3"))
-        self._version: Optional[str] = None  # prefer VersionId; ETag can be misleading
-
-    def etag(self) -> Optional[str]:
-        if not self._s3:
+    async def etag(self) -> Optional[str]:
+        # If we've seen an ETag before, return it cheaply.
+        if self._etag is not None:
+            return self._etag
+        # Otherwise, try to fetch headers via a HEAD; fallback to GET if HEAD not allowed.
+        try:
+            r = await self._client.head(self._url, timeout=self._timeout)
+            if r.status_code == 405:  # Method Not Allowed -> fall back to GET headers
+                r = await self._client.get(self._url, headers={"Range": "bytes=0-0"}, timeout=self._timeout)
+            r.raise_for_status()
+            et = r.headers.get("ETag")
+            if et:
+                self._etag = et
+            return self._etag
+        except Exception:
+            # If anything fails, signal unknown etag; the reloader can still force-load.
             return None
-        resp = self._s3.head_object(Bucket=self._bucket, Key=self._key)
-        # Prefer VersionId when bucket versioning is enabled; fall back to ETag otherwise.
-        return resp.get("VersionId") or resp.get("ETag")
 
-    def load(self) -> Dict[str, Any]:
-        if not self._s3:
-            raise RuntimeError("boto3 not installed")
-        resp = self._s3.get_object(Bucket=self._bucket, Key=self._key, VersionId=self._version)
-        body = resp["Body"].read().decode("utf-8")
-        self._version = resp.get("VersionId") or resp.get("ETag")
-        return json.loads(body)
+    async def load(self) -> Dict[str, Any]:
+        """
+        Fetch and parse the policy JSON. Uses If-None-Match to avoid full body when unchanged.
+        Retries transient failures with capped exponential backoff + jitter.
+        """
+        last_etag = self._etag
+        headers = {"Accept": "application/json"}
+        if last_etag:
+            headers["If-None-Match"] = last_etag
+
+        attempt = 0
+        while True:
+            try:
+                r = await self._client.get(self._url, headers=headers, timeout=self._timeout)
+                # 304: unchanged -> return cached policy if available
+                if r.status_code == 304 and self._cached_policy is not None:
+                    return self._cached_policy
+
+                r.raise_for_status()
+                # Success path: parse JSON, update cache + etag
+                policy = r.json()
+                if not isinstance(policy, dict):
+                    raise ValueError("policy must be a JSON object")
+                self._etag = r.headers.get("ETag", self._etag)
+                self._cached_policy = policy
+                return policy
+
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.RemoteProtocolError, httpx.HTTPStatusError) as e:
+                # Retry on common transient network/protocol errors and 5xx responses
+                if isinstance(e, httpx.HTTPStatusError) and (400 <= e.response.status_code < 500) and e.response.status_code != 429:
+                    # Non-retryable 4xx (except 429)
+                    raise
+                attempt += 1
+                if attempt > self._max_retries:
+                    raise
+                # Exponential backoff with full jitter
+                base = self._backoff_base * (2 ** (attempt - 1))
+                sleep_s = min(self._backoff_cap, base) * random.uniform(0.0, 1.0)
+                await asyncio.sleep(sleep_s)
 ```
 
-Why not rely solely on S3 `ETag`? For multipart uploads, the `ETag` **is not a true MD5 of the full object** and should not be used as an integrity check; if you need integrity, use checksums or VersionId. citeturn0search1turn0search5turn0search21
+> **Notes**
+>
+> * HTTP semantics for ETags and conditional requests: MDN (`ETag`, `If-None-Match`, `304`) and RFC 9110 are the authoritative references. 
+> * HTTPX async client, timeouts, and options (e.g., `http2`, `verify`): see official docs. 
+> * Backoff with **jitter** is recommended to avoid retry storms. 
 
----
-
-## Plug into the reloader
+### Using it with the reloader
 
 ```python
 from rbacx import Guard, HotReloader
 
 guard = Guard(policy={"rules": []})
-source = HttpPolicySource("https://policies.example.com/current.json")
-rld = HotReloader(guard, source, initial_load=True, poll_interval=5.0)
-rld.start()           # background polling
-# ...
-rld.stop()
+src = AsyncHTTPPolicySource("https://policies.example.com/current.json", http2=True, timeout=3.0)
+
+# One-shot (sync), even inside an async app:
+changed = HotReloader(guard, src).check_and_reload(force=True)  # the reloader handles event loop bridging
+
+# Or async:
+# changed = await HotReloader(guard, src).check_and_reload_async(force=True)
 ```
 
-The `HotReloader`:
-- calls `source.etag()`; if it changed, calls `source.load()` and then `guard.set_policy(...)`;
-- supports synchronous `.check_and_reload()` and a background `.start()/stop()` loop with jitter/backoff.
+**Cleanup:** If you construct long-lived sources, remember to close the `AsyncClient` when done:
 
-> **Why Protocols?** RBACX uses Python’s `typing.Protocol` (PEP 544) so your custom class is accepted if it **structurally** matches the required methods — no inheritance needed. citeturn0search7turn0search11
+```python
+await src.close()
+```
 
 ---
 
 ## Operational tips
 
-- Use **timeouts and capped exponential backoff with jitter** for remote calls. citeturn0search6turn0search2turn0search22
-- Log failures at **warning/error** level with context (source, attempt, delay).
-- Consider **signature verification** (e.g., signed policy artifacts) or **TLS client auth** for internal endpoints.
-- If you down-convert from YAML → JSON, validate against the RBACX schema and reject on error.
-- For HTTP: prefer **`If-None-Match`** over polling entire payloads; a 304 short-circuit saves bandwidth and reduces latency. citeturn0search12
+* **Polling**: Pick an interval that fits your update cadence; add small random jitter to reduce thundering herds. For HTTP, prefer conditional requests so unchanged policies return `304 Not Modified`. 
+* **Observability**: Log failures with context (source, attempt, delay), add metrics (reload success/failure, last apply time).
+* **Circuit-breakers**: If your backend is unstable, short-circuit after N attempts and try later.
+* **Rollouts**: Version your policies; keep a quick rollback path (e.g., previous `VersionId` / artifact).
 
 ---
 
 ## Testing your source
 
-- Unit test `etag()` stability for **no-change** scenarios and change detection on updates.
-- Unit test `load()` error handling (timeouts, non-JSON, 5xx).
-- Integration test with `HotReloader.check_and_reload(force=True)` and background `start()/stop()`.
-
-**Example pytest snippet**
-
-```python
-def test_custom_source_integration(monkeypatch):
-    guard = Guard(policy={"rules": []})
-
-    # Fake source that toggles etag after first call
-    class Src:
-        def __init__(self): self.i = 0
-        def etag(self): self.i += 1; return "v2" if self.i > 1 else "v1"
-        def load(self): return {"rules":[{"id":"p","actions":["read"],"resource":{"type":"doc"},"effect":"permit"}]}
-
-    rld = HotReloader(guard, Src(), initial_load=False)
-    changed = rld.check_and_reload(force=True)  # first load
-    assert changed is True
-```
+* **Unit**: Prove `etag()` stability for no-change scenarios; verify change detection and that `load()` rejects malformed data.
+* **Integration**: Exercise `HotReloader.check_and_reload(force=True)` and the background `start()/stop()` loop.
+* **Failure modes**: Simulate timeouts/5xx and ensure backoff+jitter take effect and logs are clear. AWS guidance on timeouts/retries/jitter is a good reference. 
 
 ---
 
 ## Checklist
 
-- [ ] `etag()` returns a stable, cheap version string (or `None` if unknown).
-- [ ] `load()` returns **valid JSON dict** of a Policy/PolicySet.
-- [ ] Remote sources: timeouts, retries, **backoff with jitter**, and secure transport. citeturn0search6
-- [ ] Prefer **VersionId** over `ETag` for S3 buckets with versioning. citeturn0search21
-- [ ] Document the source’s **failure modes** and monitoring (metrics/logging).
+* [ ] `etag()` returns a cheap, stable value that changes only when policy changes (or `None` if unknown).
+* [ ] `load()` returns a valid **dict** (Policy/PolicySet).
+* [ ] Remote backends: timeouts, retries, **exponential backoff with jitter**, max cap.
+* [ ] Integrity/security measures in place (versioning, checksums, signatures, TLS/mTLS).
+* [ ] Good logs/metrics for visibility; clear rollback path.
+

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import inspect
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
 from .decision import Decision
@@ -22,10 +25,34 @@ except Exception:  # pragma: no cover - compiler is optional
 logger = logging.getLogger("rbacx.engine")
 
 
+def _now() -> float:
+    """Monotonic time for durations."""
+    return time.perf_counter()
+
+
+async def _maybe_await(x: Any) -> Any:
+    """
+    Await a value if it's awaitable, otherwise return it as-is.
+    Lets us call sync/async DI uniformly.
+    """
+    if inspect.isawaitable(x):
+        return await x  # type: ignore[return-value]
+    return x
+
+
 class Guard:
     """Policy evaluation engine.
 
     Holds a policy or a policy set and evaluates access decisions.
+
+    Design:
+      - Single async core `_evaluate_core_async` (one source of truth).
+      - Sync API wraps the async core; if a loop is already running, uses a helper thread.
+      - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `_maybe_await`.
+      - CPU-bound evaluation is offloaded to a thread via `asyncio.to_thread`.
+      - On init we ensure a current event loop exists in this thread so
+        legacy tests using `asyncio.get_event_loop().run_until_complete(...)`
+        don’t crash on Python 3.12+.
     """
 
     def __init__(
@@ -44,6 +71,20 @@ class Guard:
         self.role_resolver = role_resolver
         self.policy_etag: Optional[str] = None
         self._compiled: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+
+        # Provide a "current" loop if missing (helps tests on Py3.12+).
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            try:
+                asyncio.get_event_loop()
+            except RuntimeError:
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                except Exception:  # pragma: no cover
+                    pass
+
         self._recompute_etag()
 
     # ---------------------------------------------------------------- set/update
@@ -57,22 +98,41 @@ class Guard:
         """Alias kept for backward-compatibility."""
         self.set_policy(policy)
 
-    # ---------------------------------------------------------------- env
+    # ---------------------------------------------------------------- decision core (async only)
 
-    def _make_env(
+    async def _decide_async(self, env: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Async decision that keeps the event loop responsive:
+        compiled/policy/policyset functions are sync -> offload via to_thread.
+        """
+        fn = self._compiled
+        try:
+            if fn is not None:
+                return await asyncio.to_thread(fn, env)
+        except Exception:  # pragma: no cover
+            logger.exception("RBACX: compiled decision failed; falling back")
+        if "policies" in self.policy:
+            return await asyncio.to_thread(decide_policyset, self.policy, env)
+        return await asyncio.to_thread(decide_policy, self.policy, env)
+
+    # ---------------------------------------------------------------- evaluation core (single source of truth)
+
+    async def _evaluate_core_async(
         self,
         subject: Subject,
         action: Action,
         resource: Resource,
         context: Context | None,
-    ) -> Dict[str, Any]:
-        # Expand roles if resolver provided
+    ) -> Decision:
+        start = _now()
+
+        # Build env (resolver may be sync or async)
         roles: List[str] = list(subject.roles or [])
         if self.role_resolver is not None:
             try:
-                roles = self.role_resolver.expand(roles)
-            except Exception:  # pragma: no cover
-                logger.exception("RBACX: role resolver failed")
+                roles = await _maybe_await(self.role_resolver.expand(roles))  # type: ignore[misc]
+            except Exception:
+                logger.exception("RBACX: role resolver failed", exc_info=True)
         env: Dict[str, Any] = {
             "subject": {"id": subject.id, "roles": roles, "attrs": dict(subject.attrs or {})},
             "action": action.name,
@@ -83,33 +143,8 @@ class Guard:
             },
             "context": dict(getattr(context, "attrs", {}) or {}),
         }
-        return env
 
-    def _decide(self, env: Dict[str, Any]) -> Dict[str, Any]:
-        # Use compiled function if available and matches shape
-        fn = self._compiled
-        try:
-            if fn is not None:
-                return fn(env)
-        except Exception:  # pragma: no cover
-            logger.exception("RBACX: compiled decision failed; falling back")
-        if "policies" in self.policy:
-            return decide_policyset(self.policy, env)
-        return decide_policy(self.policy, env)
-
-    # ---------------------------------------------------------------- evaluate
-
-    def evaluate_sync(
-        self,
-        subject: Subject,
-        action: Action,
-        resource: Resource,
-        context: Context | None = None,
-    ) -> Decision:
-        start = time.time()
-        env = self._make_env(subject, action, resource, context)
-
-        raw = self._decide(env)
+        raw = await self._decide_async(env)
 
         # determine effect/allowed with obligations
         decision_str = str(raw.get("decision"))
@@ -117,20 +152,20 @@ class Guard:
         obligations_list = list(raw.get("obligations") or [])
         challenge = raw.get("challenge")
         allowed = decision_str == "permit"
+
         if allowed:
             try:
-                ok, ch = self.obligations.check(raw, context)
+                ok, ch = await _maybe_await(self.obligations.check(raw, context))  # type: ignore[misc]
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch
                 # Auto-deny when an obligation is not met
                 if not allowed:
                     effect = "deny"
-                    # override reason to signal obligation failure
                     raw["reason"] = "obligation_failed"
             except Exception:
                 # do not fail on obligation checker errors
-                pass
+                logger.exception("RBACX: obligation checker failed", exc_info=True)
 
         d = Decision(
             allowed=allowed,
@@ -142,30 +177,35 @@ class Guard:
             reason=raw.get("reason"),
         )
 
-        # metrics
+        # metrics (do not use return values; conditionally await)
         if self.metrics is not None:
             labels = {"decision": d.effect}
             try:
-                self.metrics.inc("rbacx_decisions_total", labels)
+                inc = getattr(self.metrics, "inc", None)
+                if inc is not None:
+                    if inspect.iscoroutinefunction(inc):  # type: ignore[arg-type]
+                        await inc("rbacx_decisions_total", labels)  # type: ignore[misc]
+                    else:
+                        inc("rbacx_decisions_total", labels)  # type: ignore[misc]
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: metrics.inc failed")
             try:
-                # observe duration if sink supports it
-                if hasattr(self.metrics, "observe"):
-                    # typed as Protocol; adapter will check dynamically
-                    self.metrics.observe(  # type: ignore[attr-defined]
-                        "rbacx_decision_seconds",
-                        max(0.0, time.time() - start),
-                        labels,
-                    )
+                observe = getattr(self.metrics, "observe", None)
+                if observe is not None:
+                    dur = max(0.0, _now() - start)
+                    if inspect.iscoroutinefunction(observe):  # type: ignore[arg-type]
+                        await observe("rbacx_decision_seconds", dur, labels)  # type: ignore[misc]
+                    else:
+                        observe("rbacx_decision_seconds", dur, labels)  # type: ignore[misc]
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: metrics.observe failed")
 
-        # logging
+        # logging (do not use return value; conditionally await)
         if self.logger_sink is not None:
             try:
-                self.logger_sink.log(
-                    {
+                log = getattr(self.logger_sink, "log", None)
+                if log is not None:
+                    payload = {
                         "env": env,
                         "decision": d.effect,
                         "allowed": d.allowed,
@@ -173,10 +213,45 @@ class Guard:
                         "policy_id": d.policy_id,
                         "reason": d.reason,
                     }
-                )
+                    if inspect.iscoroutinefunction(log):  # type: ignore[arg-type]
+                        await log(payload)  # type: ignore[misc]
+                    else:
+                        log(payload)  # type: ignore[misc]
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: decision logging failed")
+
         return d
+
+    # ---------------------------------------------------------------- public APIs
+
+    def evaluate_sync(
+        self,
+        subject: Subject,
+        action: Action,
+        resource: Resource,
+        context: Context | None = None,
+    ) -> Decision:
+        """
+        Synchronous wrapper for the async core.
+        - If no running loop in this thread: use asyncio.run(...)
+        - If a loop is running: run the async core in a helper thread with its own loop.
+        """
+        try:
+            asyncio.get_running_loop()
+            loop_running = True
+        except RuntimeError:
+            loop_running = False
+
+        if not loop_running:
+            return asyncio.run(self._evaluate_core_async(subject, action, resource, context))
+
+        # Avoid interacting with the already running loop from sync code.
+        def _runner() -> Decision:
+            return asyncio.run(self._evaluate_core_async(subject, action, resource, context))
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_runner)
+            return fut.result()
 
     async def evaluate_async(
         self,
@@ -185,8 +260,8 @@ class Guard:
         resource: Resource,
         context: Context | None = None,
     ) -> Decision:
-        # current implementation is sync; keep async signature for frameworks
-        return self.evaluate_sync(subject, action, resource, context)
+        """True async API for ASGI frameworks."""
+        return await self._evaluate_core_async(subject, action, resource, context)
 
     # convenience
 

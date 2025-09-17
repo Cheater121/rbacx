@@ -3,7 +3,7 @@
 ## Architecture & Design
 
 - **Core vs. Adapters**: Authorization decision logic lives in `rbacx.core` (e.g., `Guard`), while framework-specific integration is implemented as adapters (FastAPI, Django, Flask, DRF, Starlette/Litestar). This separation keeps the core framework‑agnostic.
-- **Ports/Interfaces**: Core depends on abstract ports (e.g., `RoleResolver`, `DecisionLogSink`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
+- **Ports/Interfaces**: Core depends on abstract ports (sync/async-friendly; e.g., `RoleResolver`, `DecisionLogSink`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
 - **Security defaults**: The default combining algorithm is `deny-overrides` (deny-by-default). Other algorithms: `permit-overrides`, `first-applicable`.
 
 ## Policy Model (JSON)
@@ -45,3 +45,9 @@
 
 - **Python**: see project metadata (pyproject.toml).
 - **Frameworks**: FastAPI, Flask, Django/DRF, Starlette/Litestar (via adapters).
+
+
+## Async support
+
+- `Guard` provides both `evaluate_sync(...)` and `evaluate_async(...)`. Injected ports (resolver, obligations, metrics, logger) can be synchronous **or** asynchronous; both forms are supported.
+- `HotReloader` provides `check_and_reload(...)` (sync) and `check_and_reload_async(...)` (async) and accepts `PolicySource` implementations with sync or async `load()`/`etag()`.
