@@ -3,11 +3,11 @@
 Policy sources implement a single protocol:
 
 ```python
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol, Awaitable
 
 class PolicySource(Protocol):
-    def load(self) -> Dict[str, Any]: ...
-    def etag(self) -> Optional[str]: ...
+    def load(self) -> Dict[str, Any] | Awaitable[Dict[str, Any]]: ...
+    def etag(self) -> Optional[str] | Awaitable[Optional[str]]: ...
 ```
 
 Out of the box, three stores are available: **File**, **HTTP**, **S3**.
