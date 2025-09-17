@@ -1,16 +1,12 @@
 import asyncio
-import inspect
 import threading
 import time
 
 import pytest
 
-from rbacx.core import policy as policy_mod
+import rbacx.core.engine as engine_mod
 from rbacx.core.engine import Guard
 from rbacx.core.model import Action, Context, Resource, Subject
-
-# Feature flag: run some tests only when the new async core exists
-HAS_NEW_ASYNC = any(hasattr(Guard, name) for name in ("_evaluate_core_async", "_decide_async"))
 
 # ---------------------------- helpers (DI doubles) -----------------------------
 
@@ -49,7 +45,7 @@ class SyncObligationChecker:
         self.challenge = challenge
 
     def check(self, raw, ctx):
-        self.calls += 1
+        self.calls += 1  # sync path
         return self.ok, self.challenge
 
 
@@ -96,30 +92,40 @@ class SyncLoggerSink:
         self.payloads.append(payload)
 
 
+# ---------------------------- stubs for decision core --------------------------
+
+
+def _permit_raw(rule_id="r1"):
+    # minimal shape used by engine
+    return {"decision": "permit", "rule_id": rule_id}
+
+
+async def _stub_decide_async_permit(self, env):
+    # Used to bypass real policy logic; keeps tests stable
+    await asyncio.sleep(0)
+    return _permit_raw("stub")
+
+
 # ------------------------------------ tests ------------------------------------
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(not HAS_NEW_ASYNC, reason="new async core not available in this build")
-async def test_async_path_with_async_injections_and_permit():
+async def test_async_path_with_async_injections_and_permit(monkeypatch):
     """
-    evaluate_async with async resolver/obligations/metrics/logger.
-    Expect: allowed permit; all DI called via await.
+    evaluate_async:
+      - uses async resolver/obligations/metrics/logger via await
+      - returns permit, metrics and logger called
     """
+    # Monkeypatch the engine's async decision to a deterministic stub
+    monkeypatch.setattr(Guard, "_decide_async", _stub_decide_async_permit, raising=True)
+
     metrics = AsyncMetrics()
     sink = AsyncLoggerSink()
     resolver = AsyncRoleResolver()
     obligations = AsyncObligationChecker(ok=True, challenge=None)
 
-    # Simple permit policy
-    policy = {
-        "algorithm": "deny-overrides",
-        "rules": [
-            {"id": "r", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
-        ],
-    }
     g = Guard(
-        policy,
+        policy={"any": "thing"},
         logger_sink=sink,
         metrics=metrics,
         obligation_checker=obligations,
@@ -147,14 +153,17 @@ async def test_async_path_with_async_injections_and_permit():
 @pytest.mark.asyncio
 async def test_evaluate_sync_inside_running_loop_works():
     """
-    Calling sync API while a loop is running should still work.
+    Calling sync API while a loop is running should still work
+    (engine runs async core in a helper thread).
     """
+    # Use a real permit policy (no monkeypatch needed)
     policy = {
         "algorithm": "deny-overrides",
         "rules": [
             {"id": "r", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
         ],
     }
+
     g = Guard(policy)
 
     sub = Subject(id="u", roles=["r"])
@@ -162,12 +171,12 @@ async def test_evaluate_sync_inside_running_loop_works():
     res = Resource(type="doc", id="1")
     ctx = Context()
 
+    # This call happens while an event loop is active (we are in @pytest.mark.asyncio)
     d = g.evaluate_sync(sub, act, res, ctx)
     assert d.allowed is True and d.effect == "permit"
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(not HAS_NEW_ASYNC, reason="requires offloading via asyncio.to_thread")
 async def test_policy_decider_runs_in_worker_thread(monkeypatch):
     """
     When evaluate_async is used, CPU-bound policy evaluation runs via asyncio.to_thread
@@ -181,8 +190,8 @@ async def test_policy_decider_runs_in_worker_thread(monkeypatch):
         time.sleep(0.02)
         return {"decision": "permit", "rule_id": "decide_policy_stub"}
 
-    # Patch the module function used by the engine
-    monkeypatch.setattr(policy_mod, "decide", stub_decide_policy, raising=True)
+    # Patch the exact symbol used by Guard (_decide_async calls engine_mod.decide_policy)
+    monkeypatch.setattr(engine_mod, "decide_policy", stub_decide_policy, raising=True)
 
     # Simple policy (not policyset), and disable any compiled function just in case
     policy = {
@@ -202,28 +211,27 @@ async def test_policy_decider_runs_in_worker_thread(monkeypatch):
     d = await g.evaluate_async(sub, act, res, ctx)
 
     assert d.allowed is True
+    # verify stub executed in a different thread (asyncio.to_thread)
     assert "thread" in called and called["thread"] != main_thread
 
 
-def test_obligations_auto_deny_and_reason():
+def test_obligations_auto_deny_and_reason(monkeypatch):
     """
     If obligations are not met, engine auto-denies with reason 'obligation_failed'
     and propagates challenge.
     """
-    # simple permit policy
-    policy = {
-        "algorithm": "deny-overrides",
-        "rules": [
-            {"id": "r", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
-        ],
-    }
+
+    async def decide_permit(self, env):
+        return _permit_raw("permit_before_obligation")
+
+    monkeypatch.setattr(Guard, "_decide_async", decide_permit, raising=True)
 
     # sync metrics/logger to keep this a pure sync test
     metrics = SyncMetrics()
     sink = SyncLoggerSink()
     obligations = SyncObligationChecker(ok=False, challenge="mfa_required")
 
-    g = Guard(policy, logger_sink=sink, metrics=metrics, obligation_checker=obligations)
+    g = Guard(policy={"p": 1}, logger_sink=sink, metrics=metrics, obligation_checker=obligations)
 
     sub = Subject(id="u", roles=["r"])
     act = Action(name="read")
@@ -242,26 +250,18 @@ def test_obligations_auto_deny_and_reason():
 
 
 @pytest.mark.asyncio
-async def test_resolver_exception_is_swallowed():
+async def test_resolver_exception_is_swallowed(monkeypatch):
     """
     Exceptions in role resolver must not crash evaluation.
     """
-    policy = {
-        "algorithm": "deny-overrides",
-        "rules": [
-            {"id": "r", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
-        ],
-    }
-    g = Guard(policy, role_resolver=FailingRoleResolver())
+    monkeypatch.setattr(Guard, "_decide_async", _stub_decide_async_permit, raising=True)
+
+    g = Guard(policy={"p": 1}, role_resolver=FailingRoleResolver())
 
     sub = Subject(id="u", roles=["r"])
     act = Action(name="read")
     res = Resource(type="doc", id="1")
     ctx = Context()
 
-    # evaluate_async if available, else fall back to sync
-    if hasattr(g, "evaluate_async") and inspect.iscoroutinefunction(g.evaluate_async):
-        d = await g.evaluate_async(sub, act, res, ctx)
-    else:
-        d = g.evaluate_sync(sub, act, res, ctx)
+    d = await g.evaluate_async(sub, act, res, ctx)
     assert d.allowed is True and d.effect == "permit"

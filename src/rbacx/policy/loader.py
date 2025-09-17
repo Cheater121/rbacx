@@ -74,9 +74,12 @@ class HotReloader:
             if self._initial_load:
                 self._last_etag: Optional[str] = None
             else:
-                et = self.source.etag()
-                # If the source exposes only async etag(), do not store a coroutine here.
-                self._last_etag = et if not inspect.isawaitable(et) else None  # type: ignore[assignment]
+                # IMPORTANT: do not call async etag() here (would create an un-awaited coroutine).
+                etag_attr = getattr(self.source, "etag", None)
+                if etag_attr is not None and not inspect.iscoroutinefunction(etag_attr):
+                    self._last_etag = self.source.etag()  # type: ignore[assignment]
+                else:
+                    self._last_etag = None
         except Exception:
             self._last_etag = None
 
