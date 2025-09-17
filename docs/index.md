@@ -126,7 +126,7 @@ def docs():
 **Integration**
 - [Web adapters](web_adapters.md)
 - [Adapters (API)](adapters.md)
-- [DRF example](drf_example.md)
+- [Try examples](try_examples.md)
 
 **Observability**
 - [Metrics](metrics.md)

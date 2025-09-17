@@ -13,7 +13,7 @@ guard = Guard(policy)
 
 def build_env(req):
     user = (req or request).headers.get("x-user", "anonymous")
-    return Subject(id=user, roles=["user"]), Action("read"), Resource(type="docs"), Context()
+    return Subject(id=user, roles=["user"]), Action("read"), Resource(type="doc"), Context()
 
 
 app = Flask(__name__)
@@ -24,7 +24,7 @@ def ping():
     return {"pong": True}
 
 
-@app.get("/docs")
+@app.get("/doc")
 @require_access(guard, build_env, add_headers=True)
-def docs():
+def doc():
     return {"ok": True}

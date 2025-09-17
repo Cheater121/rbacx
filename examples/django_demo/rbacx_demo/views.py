@@ -23,7 +23,7 @@ def health(request):
 
 
 @require_GET
-def docs(request):
+def doc(request):
     guard = getattr(request, "rbacx_guard", None)
     if guard is None:
         return JsonResponse(
