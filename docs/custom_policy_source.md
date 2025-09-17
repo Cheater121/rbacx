@@ -17,8 +17,9 @@ class PolicySource(Protocol):
 ```python
 from typing import Any, Dict, Optional
 from rbacx import HotReloader, Guard
+from rbacx.core.ports import PolicySource
 
-class MemorySource:
+class MemorySource(PolicySource):
     def __init__(self, policy: Dict[str, Any], etag: str = "v1"):
         self._policy = policy
         self._etag = etag
@@ -88,9 +89,12 @@ import math
 import random
 from typing import Any, Dict, Optional
 
-import httpx  # pip install httpx
+import httpx  # pip install https
 
-class AsyncHTTPPolicySource:
+from rbacx.core.ports import PolicySource
+
+
+class AsyncHTTPPolicySource(PolicySource):
     """
     Async PolicySource that fetches a JSON policy from an HTTP endpoint.
 
