@@ -8,7 +8,7 @@ class PolicySource(Protocol):
     def etag(self) -> Optional[str]: ...
 ```
 
-**Built-ins:** File, HTTP, and S3 sources already ship with RBACX. This page keeps **one small example** (in‑memory) and focuses on **how to design your own** source robustly.
+**Built-ins:** File, HTTP (sync), and S3 (sync) sources already ship with RBACX. But you can write your own (async for example). This page keeps **one small example** (in‑memory) and focuses on **how to design your own** source robustly.
 
 ---
 
