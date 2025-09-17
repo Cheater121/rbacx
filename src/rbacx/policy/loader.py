@@ -1,17 +1,27 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 import json
 import logging
 import random
 import threading
 import time
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Optional
 
 from ..core.engine import Guard
 from ..core.ports import PolicySource
 from ..store.file_store import FilePolicySource  # re-exported here for convenience
 
 logger = logging.getLogger("rbacx.policy.loader")
+
+
+async def _maybe_await(x: Any) -> Any:
+    """Await the value if it is awaitable; otherwise return it as-is."""
+    if inspect.isawaitable(x):
+        return await x  # type: ignore[return-value]
+    return x
 
 
 class HotReloader:
@@ -64,7 +74,9 @@ class HotReloader:
             if self._initial_load:
                 self._last_etag: Optional[str] = None
             else:
-                self._last_etag = self.source.etag()
+                et = self.source.etag()
+                # If the source exposes only async etag(), do not store a coroutine here.
+                self._last_etag = et if not inspect.isawaitable(et) else None  # type: ignore[assignment]
         except Exception:
             self._last_etag = None
 
@@ -73,7 +85,7 @@ class HotReloader:
         self._last_reload_at: float | None = None
         self._last_error: Exception | None = None
 
-        # Concurrency
+        # Concurrency primitives
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
@@ -82,7 +94,7 @@ class HotReloader:
 
     def check_and_reload(self, *, force: bool = False) -> bool:
         """
-        Perform a single reload check.
+        Perform a single reload check (sync wrapper over the async core).
 
         Args:
             force: If True, load/apply the policy regardless of ETag state.
@@ -90,51 +102,82 @@ class HotReloader:
         Returns:
             True if a new policy was loaded and applied; otherwise False.
         """
+        # If no running loop in this thread: run the async core directly.
+        try:
+            asyncio.get_running_loop()
+            loop_running = True
+        except RuntimeError:
+            loop_running = False
+
+        if not loop_running:
+            return asyncio.run(self.check_and_reload_async(force=force))
+
+        # If an event loop is already running (e.g., under ASGI), run work in a helper thread.
+        def _runner() -> bool:
+            return asyncio.run(self.check_and_reload_async(force=force))
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_runner)
+            return fut.result()
+
+    async def check_and_reload_async(self, *, force: bool = False) -> bool:
+        """
+        Async-aware reload check:
+          - supports sync/async PolicySource.etag()/load() via _maybe_await
+          - never holds the thread lock while awaiting
+        """
         now = time.time()
+
+        # Early-suppress fast path without holding the lock for long
         with self._lock:
-            if now < self._suppress_until:
+            if now < self._suppress_until and not force:
                 return False
+            last_etag = self._last_etag
 
-            try:
-                if force:
-                    # Force a load regardless of etag
-                    policy = self.source.load()
+        try:
+            if force:
+                # Full load regardless of current ETag.
+                policy = await _maybe_await(self.source.load())
+                try:
+                    new_etag = await _maybe_await(self.source.etag())
+                except Exception:
+                    new_etag = None
+
+                with self._lock:
                     self.guard.set_policy(policy)
-
-                    try:
-                        self._last_etag = self.source.etag()
-                    except Exception:
-                        self._last_etag = None
-
+                    self._last_etag = new_etag
                     self._last_reload_at = now
                     self._last_error = None
                     self._backoff = self.backoff_min
-                    logger.info("RBACX: policy force-loaded from %s", self._src_name())
-                    return True
+                logger.info("RBACX: policy force-loaded from %s", self._src_name())
+                return True
 
-                etag = self.source.etag()
-                if etag is not None and etag == self._last_etag:
-                    return False
+            etag_obj = await _maybe_await(self.source.etag())
+            etag = etag_obj  # type: ignore[assignment]
 
-                policy = self.source.load()
+            if etag is not None and etag == last_etag:
+                return False
+
+            policy = await _maybe_await(self.source.load())
+
+            with self._lock:
                 self.guard.set_policy(policy)
-
                 self._last_etag = etag
                 self._last_reload_at = now
                 self._last_error = None
                 self._backoff = self.backoff_min
-                logger.info("RBACX: policy reloaded from %s", self._src_name())
-                return True
+            logger.info("RBACX: policy reloaded from %s", self._src_name())
+            return True
 
-            except json.JSONDecodeError as e:
-                self._register_error(now, e, level="error", msg="RBACX: invalid policy JSON")
-            except FileNotFoundError as e:
-                self._register_error(now, e, level="warning", msg="RBACX: policy not found: %s")
-            except Exception as e:  # pragma: no cover
-                logger.exception("RBACX: policy reload error", exc_info=e)
-                self._register_error(now, e, level="error", msg="RBACX: policy reload error")
+        except json.JSONDecodeError as e:
+            self._register_error(now, e, level="error", msg="RBACX: invalid policy JSON")
+        except FileNotFoundError as e:
+            self._register_error(now, e, level="warning", msg="RBACX: policy not found: %s")
+        except Exception as e:  # pragma: no cover
+            logger.exception("RBACX: policy reload error", exc_info=e)
+            self._register_error(now, e, level="error", msg="RBACX: policy reload error")
 
-            return False
+        return False
 
     # Backwards-compatible aliases
     def refresh_if_needed(self) -> bool:
@@ -220,21 +263,22 @@ class HotReloader:
 
     def _register_error(self, now: float, err: Exception, *, level: str, msg: str) -> None:
         """Log error/warning, advance backoff window with jitter, and set suppression."""
-        self._last_error = err
+        with self._lock:
+            self._last_error = err
 
-        log_msg = msg
-        log_args: tuple[object, ...] = ()
-        if "%s" in msg:
-            log_args = (self._src_name(),)
+            log_msg = msg
+            log_args: tuple[object, ...] = ()
+            if "%s" in msg:
+                log_args = (self._src_name(),)
 
-        if level == "warning":
-            logger.warning(log_msg, *log_args)
-        else:
-            logger.exception(log_msg, *log_args, exc_info=err)
+            if level == "warning":
+                logger.warning(log_msg, *log_args)
+            else:
+                logger.exception(log_msg, *log_args, exc_info=err)
 
-        self._backoff = min(self.backoff_max, max(self.backoff_min, self._backoff * 2.0))
-        jitter = self._backoff * self.jitter_ratio * random.uniform(-1.0, 1.0)
-        self._suppress_until = now + max(0.2, self._backoff + jitter)
+            self._backoff = min(self.backoff_max, max(self.backoff_min, self._backoff * 2.0))
+            jitter = self._backoff * self.jitter_ratio * random.uniform(-1.0, 1.0)
+            self._suppress_until = now + max(0.2, self._backoff + jitter)
 
     def _run_loop(self, base_interval: float) -> None:
         """Background loop: periodically call check_and_reload() until stopped."""
