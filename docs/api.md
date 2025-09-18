@@ -31,3 +31,14 @@ Fields returned by `Guard.evaluate*`:
 - `rule_id: Optional[str]`
 - `policy_id: Optional[str]`
 - `reason: Optional[str]`
+
+
+### YAML policies
+
+All built-in policy sources accept JSON and, with the optional `rbacx[yaml]` extra, YAML.
+
+- File: detected by extension `.yaml` / `.yml`.
+- HTTP: detected by `Content-Type` (e.g., `application/yaml`, `application/x-yaml`, `text/yaml`) or URL suffix.
+- S3: detected by key suffix `.yaml` / `.yml`.
+
+> Internally YAML is parsed and validated against the same JSON Schema as JSON.

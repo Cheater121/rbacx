@@ -118,3 +118,13 @@ curl -i http://127.0.0.1:8004/docs/1
 
 - Authorization failures generally return **403** with a short JSON body. If your decision includes an **authentication challenge** (e.g., MFA required), returning **401** with an appropriate `WWW-Authenticate` or custom challenge header may be more appropriate. See **Mapping Decision reasons to HTTP responses**.
 - Only the FastAPI and Flask demos read `X-User`; DRF uses `request.user`; Django demo uses a hard-coded demo subject with the `demo_user` role.
+
+
+### YAML policies
+
+You can also try YAML policies:
+
+```bash
+rbacx lint --policy examples/policies/ok_policy.yaml
+rbacx lint --policy examples/policies/bad_policy.yaml
+```
