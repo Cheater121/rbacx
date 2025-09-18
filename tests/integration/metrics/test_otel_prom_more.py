@@ -5,67 +5,71 @@ from importlib import reload
 import pytest
 
 
+# ---- OTEL fake metrics (aligned with implementation in src/rbacx/metrics/otel.py) ----
 def install_fake_otel(monkeypatch):
     class _Hist:
         def __init__(self):
             self.values = []
 
-        def record(self, v):
+        def record(self, v, *, attributes=None):
+            # record(float) is used by the implementation; attributes is accepted and ignored in fake
             self.values.append(float(v))
 
     class _Counter:
         def __init__(self):
-            self.n = 0
+            self.values = []
 
-        def add(self, v, attributes=None):
-            self.n += int(v)
+        def add(self, n, *, attributes=None):
+            # add(int) is used by the implementation; attributes is accepted and ignored in fake
+            self.values.append(int(n))
 
     class _Meter:
-        def create_counter(self, *a, **k):
-            return _Counter()
+        def __init__(self):
+            self.hist = _Hist()
+            self.cnt = _Counter()
 
-        def create_histogram(self, *a, **k):
-            return _Hist()
+        def create_histogram(self, *_a, **_k):
+            return self.hist
 
-    def get_meter(*a, **k):
+        def create_counter(self, *_a, **_k):
+            return self.cnt
+
+    # Fake 'opentelemetry.metrics' module with get_meter() as used by the code
+    otel_pkg = types.ModuleType("opentelemetry")
+    metrics_mod = types.ModuleType("opentelemetry.metrics")
+
+    def get_meter(*_a, **_k):
         return _Meter()
 
-    mod = types.ModuleType("opentelemetry.metrics")
-    mod.get_meter = get_meter
-    monkeypatch.setitem(sys.modules, "opentelemetry.metrics", mod)
+    metrics_mod.get_meter = get_meter  # what rbacx.metrics.otel imports
+    monkeypatch.setitem(sys.modules, "opentelemetry", otel_pkg)
+    monkeypatch.setitem(sys.modules, "opentelemetry.metrics", metrics_mod)
 
 
-def test_otel_observe_seconds_to_ms(monkeypatch):
+def test_otel_histogram_and_counter(monkeypatch):
     install_fake_otel(monkeypatch)
-    import rbacx.metrics.otel as m
+    import rbacx.metrics.otel as otel
 
-    reload(m)
-    o = m.OpenTelemetryMetrics()
-    # seconds name converts to ms; if the observe API is absent in the wrapper — skip
-    if hasattr(o, "observe"):
-        o.observe("rbacx_decision_seconds", 0.2)
-        o.observe("rbacx_decision_duration_ms", 7)
-        o.observe("rbacx_decision_seconds", "0.5")
-    else:
-        pytest.skip("OpenTelemetryMetrics.observe() is not exposed in this build")
+    reload(otel)
+    # Class name in implementation is OpenTelemetryMetrics
+    m = otel.OpenTelemetryMetrics()
+    m.observe("rbacx_decision_seconds", 0.12, {"decision": "permit"})
+    m.inc("rbacx_decisions_total", {"decision": "permit"})
 
 
-def test_prometheus_runtime_error_when_missing(monkeypatch):
-    # If prometheus_client is present in the environment/cache,
-    # the wrapper's behavior legitimately does NOT raise an exception.
-    try:
-        import prometheus_client  # noqa: F401
+# ---- Prometheus: run when client is installed ----
+prometheus_client = pytest.importorskip(
+    "prometheus_client",
+    exc_type=ImportError,
+    reason="Optional dep: prometheus_client not installed",
+)
 
-        pytest.skip("prometheus_client is available in environment")
-    except Exception:
-        pass
-    if "prometheus_client" in sys.modules:
-        del sys.modules["prometheus_client"]
+
+def test_prometheus_metrics_present_path():
     import rbacx.metrics.prometheus as prom
 
     reload(prom)
     m = prom.PrometheusMetrics()
-    # Should be safe no-op when client missing
     m.inc("rbacx_decisions_total", {"decision": "permit"})
     if hasattr(m, "observe"):
         m.observe("rbacx_decision_seconds", 0.1, {"decision": "permit"})
