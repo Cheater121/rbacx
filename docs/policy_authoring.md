@@ -4,8 +4,8 @@
 This guide outlines how to write clear and maintainable RBAC/ABAC policies.
 
 ## Core concepts
-- **RBAC** – users get **roles**, roles carry **permissions**. Keep roles stable, map users to roles dynamically.  
-- **ABAC** – decisions come from evaluating **attributes** of subject, resource, action, and environment against **rules**.  
+- **RBAC** – users get **roles**, roles carry **permissions**. Keep roles stable, map users to roles dynamically.
+- **ABAC** – decisions come from evaluating **attributes** of subject, resource, action, and environment against **rules**.
 - **Combining algorithms** – `deny-overrides`, `permit-overrides`, `first-applicable`. Choose the one that matches your risk posture.
 
 ## Recommendations
@@ -37,3 +37,22 @@ This guide outlines how to write clear and maintainable RBAC/ABAC policies.
 
 ### First-applicable
 Stops on the first matched permit/deny, useful for ordered policies.
+
+#### YAML example
+
+```yaml
+algorithm: permit-overrides
+rules:
+  - id: p1
+    effect: permit
+    actions: [read]
+    resource: { type: doc }
+    condition:
+      hasAny:
+        - attr: subject.roles
+        - [user, viewer]
+  - id: d1
+    effect: deny
+    actions: [delete]
+    resource: { type: doc }
+```
