@@ -1,6 +1,8 @@
-# Modernized Django adapter tests.
-# Runs even if Django isn't installed by stubbing minimal modules.
-# Comments are in English by project rule.
+# Modernized Django adapter tests with robust stubbing.
+# If a partial 'django' package exists without 'conf'/'http', we still install a stub.
+# The stub marks 'django' as a package and exposes 'conf' and 'http' as attributes to
+# allow both 'import django.conf' and attribute access 'django.conf'.
+# Comments in English by project rule.
 import sys
 import types
 
@@ -13,14 +15,25 @@ class _Resp:
 
 
 def _ensure_fake_django(monkeypatch):
+    need_stub = False
     try:
         import django  # noqa: F401
 
-        return False  # real Django present
+        # If django exists but lacks expected submodules, we will stub them.
+        try:
+            import django.conf  # type: ignore  # noqa: F401
+            import django.http  # type: ignore  # noqa: F401
+        except Exception:
+            need_stub = True
     except Exception:
-        pass
-    # Create a minimal fake 'django.conf.settings' and 'django.http' API
+        need_stub = True
+
+    if not need_stub:
+        return False  # Real and usable Django present
+
+    # Create a minimal fake 'django' package with 'conf' and 'http' submodules
     django_pkg = types.ModuleType("django")
+    django_pkg.__path__ = []  # mark as package so 'import django.conf' works
     conf_mod = types.ModuleType("django.conf")
     http_mod = types.ModuleType("django.http")
 
@@ -36,6 +49,11 @@ def _ensure_fake_django(monkeypatch):
     settings = types.SimpleNamespace(RBACX_GUARD_FACTORY=None)
     conf_mod.settings = settings
 
+    # Link submodules as attributes on package for attribute access 'django.conf'
+    django_pkg.conf = conf_mod
+    django_pkg.http = http_mod
+
+    # Register/override modules in sys.modules
     monkeypatch.setitem(sys.modules, "django", django_pkg)
     monkeypatch.setitem(sys.modules, "django.conf", conf_mod)
     monkeypatch.setitem(sys.modules, "django.http", http_mod)
@@ -65,8 +83,7 @@ def test_decorator_forbidden_and_audit_modes(monkeypatch):
 
 
 def test_middleware_factory_loading_success(monkeypatch):
-    # Ensure Django stub present (or real Django)
-    fake = _ensure_fake_django(monkeypatch)
+    _ensure_fake_django(monkeypatch)
     from rbacx.adapters.django import middleware as mw
 
     # Provide dotted factory target that yields a permissive guard
@@ -81,16 +98,9 @@ def test_middleware_factory_loading_success(monkeypatch):
     sys.modules["tests.dotted"] = dotted_mod
     dotted_mod.factory = factory
 
-    # If using fake Django, set settings on the stub
-    if fake:
-        import django.conf  # type: ignore
-
-        django.conf.settings.RBACX_GUARD_FACTORY = "tests.dotted.factory"
-    else:
-        # If real Django is present, set attribute on real settings
-        from django.conf import settings as dj_settings  # type: ignore
-
-        dj_settings.RBACX_GUARD_FACTORY = "tests.dotted.factory"
+    # Set the value on the SAME settings object that middleware imported.
+    # This avoids leakage from other tests and works even with partial/real Django.
+    mw.settings.RBACX_GUARD_FACTORY = "tests.dotted.factory"
 
     def get_response(_request):
         return _Resp(200)
@@ -100,5 +110,4 @@ def test_middleware_factory_loading_success(monkeypatch):
     req = types.SimpleNamespace(path="/", method="GET", META={}, headers={})
     resp = cls(get_response)(req)
     assert resp.status_code == 200
-    # Guard should be injected for downstream use
     assert hasattr(req, "rbacx_guard")
