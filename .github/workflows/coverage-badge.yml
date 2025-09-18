@@ -20,11 +20,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: |
+            **/pyproject.toml
+            **/requirements*.txt
 
       - name: Install project (editable) + test deps
         run: |
           python -m pip install --upgrade pip
           pip install -e .
+          pip install -e '.[yaml,adapters-fastapi,adapters-flask,adapters-drf,adapters-litestar,metrics,dates,http,s3,otel,tests]'
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests with coverage (XML + terminal)
