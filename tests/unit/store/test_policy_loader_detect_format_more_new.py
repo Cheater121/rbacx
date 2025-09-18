@@ -1,5 +1,4 @@
 # Extra format-detection tests for PolicyLoader.
-# Skip YAML-specific branches if PyYAML is not installed (CI scenario).
 # Comments in English by project rule.
 import pytest
 
@@ -7,7 +6,7 @@ yaml = pytest.importorskip("yaml", exc_type=ImportError, reason="PyYAML required
 
 from importlib import reload
 
-import rbacx.policy.loader as pl
+import rbacx.store.policy_loader as pl
 
 
 def test_parse_policy_text_uses_filename_extension_when_no_content_type():
