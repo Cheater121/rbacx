@@ -70,10 +70,10 @@ class S3PolicySource(PolicySource):
 
         This function is isolated to make unit-testing easier (tests monkeypatch it).
         """
-        import boto3  # type: ignore[import-not-found]
+        import boto3  # type: ignore[import-untyped,import-not-found]
 
         try:
-            from botocore.config import Config  # type: ignore[import-not-found]
+            from botocore.config import Config  # type: ignore[import-untyped,import-not-found]
         except Exception:  # pragma: no cover - very old botocore
             Config = None  # type: ignore[assignment]
 
@@ -180,8 +180,10 @@ class S3PolicySource(PolicySource):
         }
 
         # If the preferred algorithm is present, use it
-        if self.prefer_checksum and candidates.get(self.prefer_checksum):
-            return self.prefer_checksum, candidates[self.prefer_checksum]  # type: ignore[index]
+        if self.prefer_checksum:
+            val = candidates.get(self.prefer_checksum)
+            if val:
+                return self.prefer_checksum, val
 
         # Otherwise, pick the first available in a deterministic order
         for algo in ("sha256", "crc32c", "sha1", "crc32", "crc64nvme"):
