@@ -119,14 +119,14 @@ def docs():
 - [Policy authoring](policy_authoring.md)
 - [Policy catalog](policy_catalog.md)
 - [Time operators](time_operators.md)
-- [Policy stores](policy_stores.md)
 - [Policy loading (hot reload)](policy_loading.md)
+- [Policy stores](policy_stores.md)
 - [HTTP mapping](http_mapping.md)
 
 **Integration**
 - [Web adapters](web_adapters.md)
 - [Adapters (API)](adapters.md)
-- [DRF example](drf_example.md)
+- [Try examples](try_examples.md)
 
 **Observability**
 - [Metrics](metrics.md)

@@ -47,8 +47,10 @@ def current_context() -> Context:
     return Context(attrs={"mfa": True})
 
 
-@get("/docs/{doc_id:int}", dependencies={"rbacx_guard": Provide(lambda: guard)})
-def get_doc(doc_id: int, rbacx_guard: Guard) -> dict:
+@get(
+    "/docs/{doc_id:int}", dependencies={"rbacx_guard": Provide(lambda: guard, sync_to_thread=True)}
+)
+async def get_doc(doc_id: int, rbacx_guard: Guard) -> dict:
     return {
         "allowed": rbacx_guard.is_allowed_sync(
             current_subject(),
@@ -72,5 +74,5 @@ app = Litestar(
 
 
 @get("/health")
-def health() -> dict:
+async def health() -> dict:
     return {"ok": True}

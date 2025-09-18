@@ -86,19 +86,3 @@ def secure() -> dict:
 app = Litestar(route_handlers=[secure])
 ```
 
-## S3 policy source
-```python
-from rbacx import Guard
-from rbacx import HotReloader
-from rbacx.store import S3PolicySource
-
-# Demo guard
-guard = Guard({"rules": [{"effect": "permit"}]})
-
-# Configure S3 policy source (bucket/key form)
-source = S3PolicySource("s3://policies/rbac.json")
-
-# Hot reloader (background polling)
-reloader = HotReloader(guard, source, poll_interval=1.0)
-reloader.start()
-```

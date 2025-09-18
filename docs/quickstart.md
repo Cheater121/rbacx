@@ -8,6 +8,8 @@ If you need integrations or helpers, install **extras** selectively.
 
 ## Install
 
+Minimal install:
+
 ```bash
 pip install rbacx
 ```
@@ -25,6 +27,8 @@ pip install rbacx
 | `http`             | HTTP policy source (requests)                    | `pip install rbacx[http]`                  |
 | `s3`               | S3 policy source (boto3)                         | `pip install rbacx[s3]`                    |
 | `dates`            | Time operators support (python‑dateutil)         | `pip install rbacx[dates]`                 |
+| `yaml`             | YAML policies support                            | `pip install rbacx[yaml]`                  |
+
 
 You can combine extras:
 
@@ -32,14 +36,73 @@ You can combine extras:
 pip install 'rbacx[adapters-fastapi,metrics,otel]'
 ```
 
-## CLI
+> **Why a separate YAML extra?**
+> YAML is optional. If you want to author policies in YAML, install `rbacx[yaml]`.
+> YAML’s official media type is `application/yaml` (see RFC 9512). For security, we parse YAML with `yaml.safe_load`. 
 
-RBACX ships a simple linter for policies.
+## Define a policy (JSON or YAML)
 
-```bash
-pip install rbacx
-rbacx lint --policy examples/policies/ok_policy.json
-rbacx lint --policy examples/policies/bad_policy.json
+Both JSON and YAML are supported. They’re parsed into a `dict` and validated against the same JSON Schema.
+
+**JSON:**
+
+```json
+{
+  "algorithm": "permit-overrides",
+  "rules": [
+    {"id": "p1", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}},
+    {"id": "d1", "effect": "deny",   "actions": ["delete"], "resource": {"type": "doc"}}
+  ]
+}
 ```
 
-See the repository **README** for a minimal policy example and a short Hot‑Reload snippet.
+**YAML:**
+
+```yaml
+algorithm: permit-overrides
+rules:
+  - id: p1
+    effect: permit
+    actions: [read]
+    resource: { type: doc }
+  - id: d1
+    effect: deny
+    actions: [delete]
+    resource: { type: doc }
+```
+
+## Load a policy
+
+You can load policies from **files**, **HTTP**, or **S3** or create your policy source.
+
+```python
+from rbacx import Guard
+from rbacx.store.file_store import FilePolicySource
+from rbacx.store.http_store import HTTPPolicySource
+from rbacx.store.s3_store import S3PolicySource
+
+guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.json"))
+# guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.yaml"))  # requires rbacx[yaml]
+
+# HTTP: YAML detected by Content-Type (application/yaml) or URL suffix .yaml/.yml
+# guard = Guard(policy=HTTPPolicySource("https://example.com/policy.yaml"))
+
+# S3: YAML detected by key suffix .yaml/.yml
+# guard = Guard(policy=S3PolicySource("s3://my-bucket/policy.yaml"))
+```
+
+## CLI
+
+Lint a policy file (JSON or YAML):
+
+```bash
+rbacx lint --policy examples/policies/ok_policy.json
+rbacx lint --policy examples/policies/ok_policy.yaml
+rbacx lint --policy examples/policies/bad_policy.json
+rbacx lint --policy examples/policies/bad_policy.yaml
+```
+
+The CLI prints JSON diagnostics. A non-empty list means warnings/errors were found.
+
+---
+Need more? See the full docs site for adapters, middleware, metrics, and advanced configuration.

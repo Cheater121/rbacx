@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, Literal, Optional, Tuple
 
 from ..core.ports import PolicySource
+from .policy_loader import parse_policy_bytes
 
 logger = logging.getLogger("rbacx.store.s3")
 
@@ -115,7 +115,7 @@ class S3PolicySource(PolicySource):
     def load(self) -> Dict[str, Any]:
         """Fetch the object via GetObject and parse JSON; optionally validate schema."""
         body = self._get_object_bytes()
-        policy = json.loads(body.decode("utf-8"))
+        policy = parse_policy_bytes(body, filename=self.loc.key)
 
         if self.validate_schema:
             try:

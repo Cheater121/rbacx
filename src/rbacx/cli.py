@@ -5,6 +5,7 @@ import json
 from typing import Dict, List
 
 from .dsl.lint import analyze_policy, analyze_policyset
+from .store.policy_loader import parse_policy_text
 
 
 def _parse_require_attrs(s: str | None) -> Dict[str, List[str]]:
@@ -21,7 +22,8 @@ def _parse_require_attrs(s: str | None) -> Dict[str, List[str]]:
 
 def cmd_lint(args: argparse.Namespace) -> None:
     with open(args.policy, "r", encoding="utf-8") as f:
-        data = json.load(f)
+        text = f.read()
+    data = parse_policy_text(text, filename=args.policy)
     req = _parse_require_attrs(getattr(args, "require_attrs", None))
     issues = (
         analyze_policyset(data, require_attrs=req)
@@ -35,8 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser("rbacx", description="RBACX CLI")
     sub = p.add_subparsers(dest="command")
 
-    pl = sub.add_parser("lint", help="Lint policy or policyset JSON")
-    pl.add_argument("--policy", required=True, help="Path to policy JSON")
+    pl = sub.add_parser("lint", help="Lint policy or policyset (JSON/YAML)")
+    pl.add_argument("--policy", required=True, help="Path to policy file (.json/.yaml/.yml)")
     pl.add_argument(
         "--require-attrs",
         dest="require_attrs",

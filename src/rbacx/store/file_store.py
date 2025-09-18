@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import os
 import tempfile
 from typing import Any, Dict, Optional, Tuple
 
 from ..core.ports import PolicySource
+from .policy_loader import parse_policy_text
 
 logger = logging.getLogger("rbacx.store.file")
 
@@ -98,7 +98,7 @@ class FilePolicySource(PolicySource):
     def load(self) -> Dict[str, Any]:
         with open(self.path, "r", encoding="utf-8") as f:
             text = f.read()
-        policy = json.loads(text)
+        policy = parse_policy_text(text, filename=self.path)
 
         if self.validate_schema:
             try:

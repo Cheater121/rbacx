@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.8.0 - 2025-09-18
+
+### Added
+
+* **YAML policy support** across all built-in sources:
+
+  * `FilePolicySource` detects `.yaml` / `.yml` automatically.
+  * `HTTPPolicySource` detects YAML via `Content-Type` (e.g., `application/yaml`, `application/x-yaml`, `text/yaml`) or URL suffix.
+  * `S3PolicySource` detects YAML via object key suffix.
+* **CLI** now accepts YAML files for `rbacx lint --policy ...`.
+* **Optional dependency**: `rbacx[yaml]` (uses `PyYAML>=6.0`) for YAML parsing.
+
+### Changed
+
+* **Docs & examples** updated with YAML usage (Quickstart, API notes, policy authoring) and two YAML sample policies (`examples/policies/ok_policy.yaml`, `examples/policies/bad_policy.yaml`).
+* `HTTPPolicySource` made more robust and backwards compatible:
+
+  * Prefer `response.json()` for non-YAML content (keeps existing tests/mocks working).
+  * Fallback to text/content parsing; case-insensitive headers (captures `ETag` regardless of header casing).
+
+### Security
+
+* YAML is parsed with `yaml.safe_load` to avoid executing arbitrary constructors.
+
+### Tests
+
+* Added comprehensive tests for YAML flows and S3/HTTP sources, including negative cases and optional-dependency skips for CI.
+
+### Migration notes
+
+* To use YAML policies, install the extra:
+
+  ```bash
+  pip install "rbacx[yaml]"
+  ```
+* No HTTP contracts or JSON Schema changed; YAML policies are validated against the same schema as JSON.
+
+
 ## 0.7.0 — 2025-09-17
 
 *“Async-first core, zero new deps, full sync compatibility.”*
