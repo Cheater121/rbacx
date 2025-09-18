@@ -41,7 +41,7 @@ def _has_id(rule: Dict[str, Any]) -> bool:
 
 def _has_attrs(rule: Dict[str, Any]) -> bool:
     r = rule.get("resource") or {}
-    attrs = r.get("attrs") or r.get("attributes") or {}
+    attrs = r.get("attrs") or r.get("attributes") or {}  # attributes is also accepted for backward compatibility
     return isinstance(attrs, dict) and len(attrs) > 0
 
 
