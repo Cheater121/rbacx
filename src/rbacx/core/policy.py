@@ -29,7 +29,7 @@ def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
 
     r_type = rdef.get("type")
     r_id = rdef.get("id")
-    r_attrs = rdef.get("attrs") or rdef.get("attributes") or {}
+    r_attrs = rdef.get("attrs") or rdef.get("attributes") or {}  # canonical key: \"attrs\" (\"attributes\" supported for backward compatibility)
 
     res_type = resource.get("type")
     res_id = resource.get("id")
