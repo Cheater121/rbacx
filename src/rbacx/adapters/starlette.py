@@ -93,13 +93,13 @@ def _eval_guard(guard: Any, env: tuple[Any, Any, Any, Any]) -> tuple[bool, Optio
 def _deny_headers(reason: Optional[str], add_headers: bool) -> dict[str, str]:
     """
     Compose denial headers. We only set additional headers if requested.
-    Tests rely on 'x-rbacx-reason' being present when `add_headers=True`.
+    Canonical header: 'X-RBACX-Reason' when `add_headers=True`.
     """
     if not add_headers:
         return {}
     headers: dict[str, str] = {}
     if reason:
-        headers["x-rbacx-reason"] = str(reason)
+        headers["X-RBACX-Reason"] = str(reason)
     return headers
 
 
