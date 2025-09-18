@@ -63,10 +63,12 @@ print(d.reason, d.rule_id)  # "matched", "doc_read"
 
 ### Decision schema
 - `decision`: `"permit"` or `"deny"`
-- `reason`: one of `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"no_match"`
+- `reason`: one of `"matched"`, `"explicit_deny"`, `"action_mismatch"`, `"condition_mismatch"`, `"condition_type_mismatch"`, `"resource_mismatch"`, `"no_match"`, `"obligation_failed"`
 - `rule_id` and `last_rule_id` (both included for compatibility; `last_rule_id` is the matched rule id)
 - `policy_id` (present for policy sets; `None` for single policies)
-- `obligations`: list passed to the obligation checker
+- `obligations`: list passed to the obligation checker (if a permit was gated)
+- *(optional)* `challenge`: present when an authentication/step-up is required (e.g., for MFA); may be used to return `401` with the appropriate challenge header
+
 
 ### Policy sets
 Default algorithm is:

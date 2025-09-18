@@ -14,61 +14,75 @@ class HTTPPolicySource(PolicySource):
 
     def __init__(self, url: str, *, headers: Dict[str, str] | None = None) -> None:
         self.url = url
-        self.headers = headers or {}
+        self.headers = dict(headers or {})
         self._etag: Optional[str] = None
+        self._policy_cache: Optional[Dict[str, Any]] = None
 
     def load(self) -> Dict[str, Any]:
         try:
-            import requests  # type: ignore
-        except Exception as e:  # pragma: no cover
-            raise RuntimeError(
-                "requests is required for HTTPPolicySource (pip install rbacx[http])"
-            ) from e
+            import requests  # type: ignore[import-untyped,import-not-found]
+        except Exception as e:  # pragma: no cover - optional extra
+            raise RuntimeError("requests is required (install rbacx[http])") from e
 
-        hdrs = dict(self.headers)
+        # Build request headers, preserving user-specified values
+        hdrs: Dict[str, str] = dict(self.headers)
         if self._etag:
-            hdrs["If-None-Match"] = self._etag
+            # Conditional GET to avoid downloading body if unchanged
+            hdrs.setdefault("If-None-Match", self._etag)
 
-        r = requests.get(self.url, headers=hdrs, timeout=10)
+        r = requests.get(self.url, headers=hdrs, timeout=5)
 
-        # Normalize headers dict for case-insensitive access (stubs may use plain dict)
-        raw_headers = getattr(r, "headers", {}) or {}
-        headers_ci: Dict[str, str] = {}
-        try:
-            # requests provides a CaseInsensitiveDict, which is already case-insensitive,
-            # but to support plain dict stubs we normalize keys to lowercase.
-            for k, v in raw_headers.items():
-                headers_ci[k.lower()] = v
-        except Exception:
-            # In case headers is not iterable/mapping-like
-            headers_ci = {}
-
-        if r.status_code == 304 and self._etag:
-            # Not modified, return empty dict so caller can skip processing
+        # 304 Not Modified: return previously cached policy without mutation
+        if getattr(r, "status_code", None) == 304:
+            # No change; keep existing ETag (server didn't send a new one)
+            if self._policy_cache is not None:
+                return self._policy_cache
+            # Defensive: on first load with 304 (shouldn't happen), return empty dict
             return {}
 
-        r.raise_for_status()
+        # Any other non-2xx should raise
+        if hasattr(r, "raise_for_status"):
+            r.raise_for_status()
 
-        # Update ETag case-insensitively
-        self._etag = headers_ci.get("etag", self._etag)
+        # Update cached ETag if server provided it (case-insensitive)
+        etag_header = None
+        try:
+            # requests' Headers are case-insensitive, but stubs may be plain dicts
+            etag_header = r.headers.get("ETag") if hasattr(r, "headers") else None  # type: ignore[assignment]
+            if etag_header is None and isinstance(getattr(r, "headers", None), dict):
+                # try lowercase key for simple stubs
+                etag_header = r.headers.get("etag")  # type: ignore[assignment]
+        except Exception:
+            etag_header = None
+        if isinstance(etag_header, str) and etag_header:
+            self._etag = etag_header
 
-        # Content-Type for format hinting
-        content_type = headers_ci.get("content-type", "")
-        ct_lower = (content_type or "").lower()
-        is_yaml = ("yaml" in ct_lower) or self.url.lower().endswith((".yaml", ".yml"))
-
-        # Prefer JSON when it's not YAML and .json() exists (backward compatible with test stubs)
-        if not is_yaml and hasattr(r, "json"):
+        # JSON fast-path: if a .json() method exists, try it regardless of headers.
+        # Many tests/stubs provide only .json() with no .text/.content or Content-Type.
+        if hasattr(r, "json"):
             try:
-                return r.json()  # type: ignore[no-any-return]
+                obj = r.json()  # type: ignore[assignment]
+                if isinstance(obj, dict):
+                    self._policy_cache = obj
+                    return obj
             except Exception:
-                # Fall back to text-based parsing below
+                # fall through to text parsing below
                 pass
 
-        # Text/content fallback (covers YAML and text bodies)
-        body_text = getattr(r, "text", None)
+        # Determine content-type for parser hints
+        content_type = None
+        try:
+            ctype = r.headers.get("Content-Type") if hasattr(r, "headers") else None  # type: ignore[assignment]
+            if ctype is None and isinstance(getattr(r, "headers", None), dict):
+                ctype = r.headers.get("content-type")  # type: ignore[assignment]
+            if isinstance(ctype, str):
+                content_type = ctype
+        except Exception:
+            content_type = None
+
+        # Obtain text body; some stubs provide only .text, others only .content
+        body_text: Optional[str] = getattr(r, "text", None)  # type: ignore[assignment]
         if body_text is None:
-            # Some stubs don't provide .text; use .content if available
             content = getattr(r, "content", None)
             if isinstance(content, (bytes, bytearray)):
                 try:
@@ -78,7 +92,10 @@ class HTTPPolicySource(PolicySource):
             else:
                 body_text = ""
 
-        return parse_policy_text(body_text, filename=self.url, content_type=content_type)
+        policy = parse_policy_text(body_text or "", filename=self.url, content_type=content_type)
+        # Cache the last successfully parsed policy for 304 reuse
+        self._policy_cache = policy
+        return policy
 
     def etag(self) -> Optional[str]:
         return self._etag

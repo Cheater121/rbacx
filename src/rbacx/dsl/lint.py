@@ -41,7 +41,7 @@ def _rid(rule: Dict[str, Any]) -> Optional[str]:
 
 def _rattrs(rule: Dict[str, Any]) -> Dict[str, Any]:
     r = rule.get("resource") or {}
-    attrs = r.get("attrs") or r.get("attributes") or {}
+    attrs = r.get("attrs") or r.get("attributes") or {}  # canonical key: \"attrs\" (\"attributes\" supported for backward compatibility)
     return attrs if isinstance(attrs, dict) else {}
 
 

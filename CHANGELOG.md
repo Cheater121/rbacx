@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.1 — 2025-09-18
+
+### Fixed
+
+* **HTTP policy source:** on `304 Not Modified` returns the previously cached policy (no accidental empty policy reloads).
+
+### Improved
+
+* **S3 checksums:** correct algorithm labels (e.g., `crc32` is reported as `crc32`), plus support for `crc64nvme`.
+  Unified marker format: `ck:<algo>:<value>`.
+* **Change markers:** consistent prefixes across strategies:
+
+  * ETag → `etag:<value>`
+  * VersionId → `vid:<value>`
+  * Checksum → `ck:<algo>:<value>`
+    (fallback to `etag:<…>` when data is unavailable)
+* **Response headers:** Starlette now emits the canonical header **`X-RBACX-Reason`** (aligned with FastAPI/Flask).
+
+> No breaking changes. Default `add_headers=False` remains unchanged.
+
+
 ## 0.8.0 - 2025-09-18
 
 ### Added
