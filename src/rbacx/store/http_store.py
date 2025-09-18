@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 
 from rbacx.core.ports import PolicySource
 
+from .policy_loader import parse_policy_text
+
 
 class HTTPPolicySource(PolicySource):
     """HTTP policy source using `requests` with ETag support.
@@ -31,7 +33,9 @@ class HTTPPolicySource(PolicySource):
             return {}
         r.raise_for_status()
         self._etag = r.headers.get("ETag", self._etag)
-        return r.json()
+        return parse_policy_text(
+            r.text, filename=self.url, content_type=r.headers.get("Content-Type")
+        )
 
     def etag(self) -> Optional[str]:
         return self._etag

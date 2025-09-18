@@ -27,6 +27,7 @@ Changelog  = "https://github.com/Cheater121/rbacx/blob/main/CHANGELOG.md"
 Documentation = "https://cheater121.github.io/rbacx/"
 
 [project.optional-dependencies]
+yaml = ["PyYAML>=6.0"]
 adapters-fastapi = ["fastapi>=0.110","starlette>=0.37"]
 adapters-flask = ["flask>=2.3"]
 adapters-drf = ["django>=4.2","djangorestframework>=3.14"]
