@@ -1,6 +1,10 @@
 # Quickstart
 
-This guide gets you productive with **RBACX** quickly.
+This page shows how to install RBACX and its optional extras.
+
+RBACX keeps the **core lightweight** and avoids pulling heavy dependencies by default.
+This helps keep it framework‑agnostic and reduces conflicts in real projects.
+If you need integrations or helpers, install **extras** selectively.
 
 ## Install
 
@@ -10,29 +14,31 @@ Minimal install:
 pip install rbacx
 ```
 
-### Extras
+## Optional features (extras)
 
-RBACX ships optional extras so you can install only what you need:
+| Extra              | Enables                                         | Install command                            |
+|--------------------|--------------------------------------------------|--------------------------------------------|
+| `adapters-fastapi` | FastAPI / Starlette adapters                     | `pip install rbacx[adapters-fastapi]`      |
+| `adapters-flask`   | Flask adapters                                   | `pip install rbacx[adapters-flask]`        |
+| `adapters-drf`     | Django + DRF adapters                            | `pip install rbacx[adapters-drf]`          |
+| `adapters-litestar`| Litestar adapters                                | `pip install rbacx[adapters-litestar]`     |
+| `metrics`          | Prometheus client metrics                        | `pip install rbacx[metrics]`               |
+| `otel`             | OpenTelemetry API/SDK helpers                    | `pip install rbacx[otel]`                  |
+| `http`             | HTTP policy source (requests)                    | `pip install rbacx[http]`                  |
+| `s3`               | S3 policy source (boto3)                         | `pip install rbacx[s3]`                    |
+| `dates`            | Time operators support (python‑dateutil)         | `pip install rbacx[dates]`                 |
+| `yaml`             | YAML policies support                            | `pip install rbacx[yaml]`                  |
+
+
+You can combine extras:
 
 ```bash
-# Framework adapters
-pip install "rbacx[adapters-fastapi]"
-pip install "rbacx[adapters-flask]"
-pip install "rbacx[adapters-django]"
-pip install "rbacx[adapters-litestar]"
-pip install "rbacx[adapters-drf]"
-
-# HTTP/S3 policy sources
-pip install "rbacx[http]"
-pip install "rbacx[s3]"
-
-# YAML policy support
-pip install "rbacx[yaml]"
+pip install 'rbacx[adapters-fastapi,metrics,otel]'
 ```
 
 > **Why a separate YAML extra?**
 > YAML is optional. If you want to author policies in YAML, install `rbacx[yaml]`.
-> YAML’s official media type is `application/yaml` (see RFC 9512). For security, we parse YAML with `yaml.safe_load`. citeturn0search16turn0search5turn0search21
+> YAML’s official media type is `application/yaml` (see RFC 9512). For security, we parse YAML with `yaml.safe_load`. 
 
 ## Define a policy (JSON or YAML)
 
@@ -67,7 +73,7 @@ rules:
 
 ## Load a policy
 
-You can load policies from **files**, **HTTP**, or **S3**.
+You can load policies from **files**, **HTTP**, or **S3** or create your policy source.
 
 ```python
 from rbacx import Guard
