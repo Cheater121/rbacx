@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from rbacx.core.ports import MetricsSink
 
 try:
-    from prometheus_client import Counter, Histogram  # type: ignore
+    from prometheus_client import Counter, Histogram
 except Exception:  # pragma: no cover
     Counter = Histogram = None  # type: ignore
 
@@ -63,7 +63,7 @@ class PrometheusMetrics(MetricsSink):
         decision = (labels or {}).get("decision", "unknown")
         try:
             # prometheus_client's Counter.labels returns a Child; we keep type loose (Any)
-            self._counter.labels(decision=decision).inc()  # type: ignore[call-arg]
+            self._counter.labels(decision=decision).inc()
         except Exception:  # pragma: no cover
             # never raise from metrics path
             pass

@@ -4,7 +4,7 @@ import logging
 from importlib import import_module
 from typing import Any, Callable
 
-from django.conf import settings  # type: ignore[import-untyped]
+from django.conf import settings
 
 logger = logging.getLogger("rbacx.adapters.django")
 

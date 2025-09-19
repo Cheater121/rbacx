@@ -41,7 +41,9 @@ def _has_id(rule: Dict[str, Any]) -> bool:
 
 def _has_attrs(rule: Dict[str, Any]) -> bool:
     r = rule.get("resource") or {}
-    attrs = r.get("attrs") or r.get("attributes") or {}  # attributes is also accepted for backward compatibility
+    attrs = (
+        r.get("attrs") or r.get("attributes") or {}
+    )  # attributes is also accepted for backward compatibility
     return isinstance(attrs, dict) and len(attrs) > 0
 
 
@@ -81,7 +83,7 @@ def compile(policy: Dict[str, Any]) -> Any:
     """
     # PolicySet: delegate to policyset evaluator (no compilation here)
     if "policies" in policy:
-        return lambda env: decide_policyset(policy, env)  # type: ignore[misc]
+        return lambda env: decide_policyset(policy, env)
 
     rules = policy.get("rules") or []
     algo = (policy.get("algorithm") or "permit-overrides").lower()

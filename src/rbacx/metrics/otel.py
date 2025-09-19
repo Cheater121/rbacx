@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from rbacx.core.ports import MetricsSink
 
 try:
-    from opentelemetry.metrics import get_meter  # type: ignore
+    from opentelemetry.metrics import get_meter
 except Exception:  # pragma: no cover
     get_meter = None  # type: ignore
 
@@ -39,7 +39,7 @@ class OpenTelemetryMetrics(MetricsSink):
         meter = get_meter("rbacx.metrics")
         # Counter
         try:
-            self._counter = meter.create_counter(  # type: ignore[attr-defined]
+            self._counter = meter.create_counter(
                 name="rbacx_decisions_total",
                 description="Total RBACX decisions by effect.",
             )
@@ -51,7 +51,7 @@ class OpenTelemetryMetrics(MetricsSink):
             # Some SDKs use create_histogram, others use meter.create_histogram
             create_hist = getattr(meter, "create_histogram", None)
             if create_hist is not None:
-                self._hist = create_hist(  # type: ignore[misc]
+                self._hist = create_hist(
                     name="rbacx_decision_seconds",
                     description="RBACX decision evaluation duration in seconds.",
                     unit="s",
@@ -74,7 +74,7 @@ class OpenTelemetryMetrics(MetricsSink):
         decision = (labels or {}).get("decision", "unknown")
         try:
             # OpenTelemetry Counter expects amount (int/float) and attributes (labels)
-            self._counter.add(1, {"decision": decision})  # type: ignore[attr-defined]
+            self._counter.add(1, {"decision": decision})
         except Exception:  # pragma: no cover
             pass
 
@@ -99,6 +99,6 @@ class OpenTelemetryMetrics(MetricsSink):
             return
         try:
             # Histogram.record(value, attributes=labels) is the conventional API.
-            self._hist.record(float(value), attributes=dict(labels or {}))  # type: ignore[attr-defined]
+            self._hist.record(float(value), attributes=dict(labels or {}))
         except Exception:  # pragma: no cover
             pass

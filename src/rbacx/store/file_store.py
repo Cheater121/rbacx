@@ -102,7 +102,7 @@ class FilePolicySource(PolicySource):
 
         if self.validate_schema:
             try:
-                from rbacx.dsl.validate import validate_policy  # type: ignore[import-not-found]
+                from rbacx.dsl.validate import validate_policy
 
                 validate_policy(policy)
             except Exception as e:  # pragma: no cover

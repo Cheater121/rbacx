@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Tuple
 
 try:  # Optional dependency boundary
-    from fastapi import HTTPException, Request  # type: ignore
+    from fastapi import HTTPException, Request
 except Exception:  # pragma: no cover
     HTTPException = None  # type: ignore
 
@@ -21,9 +21,9 @@ def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = F
         # Decide
         allowed = False
         if hasattr(guard, "is_allowed_sync"):
-            allowed = guard.is_allowed_sync(sub, act, res, ctx)  # type: ignore[attr-defined]
+            allowed = guard.is_allowed_sync(sub, act, res, ctx)
         elif hasattr(guard, "is_allowed"):
-            allowed = guard.is_allowed(sub, act, res, ctx)  # type: ignore[attr-defined]
+            allowed = guard.is_allowed(sub, act, res, ctx)
         if allowed:
             return
 
@@ -32,11 +32,11 @@ def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = F
         if add_headers:
             expl = None
             if hasattr(guard, "explain_sync"):
-                expl = guard.explain_sync(sub, act, res, ctx)  # type: ignore[attr-defined]
+                expl = guard.explain_sync(sub, act, res, ctx)
             elif hasattr(guard, "explain"):
                 # best-effort sync call if available
                 try:
-                    expl = guard.explain(sub, act, res, ctx)  # type: ignore[attr-defined]
+                    expl = guard.explain(sub, act, res, ctx)
                 except Exception:  # pragma: no cover
                     expl = None
             if expl is not None:

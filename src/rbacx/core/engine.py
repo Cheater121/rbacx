@@ -18,7 +18,7 @@ from .ports import DecisionLogSink, MetricsSink, ObligationChecker, RoleResolver
 
 try:
     # optional compile step to speed up decision making
-    from .compiler import compile as compile_policy  # type: ignore[attr-defined]
+    from .compiler import compile as compile_policy
 except Exception:  # pragma: no cover - compiler is optional
     compile_policy = None  # type: ignore[assignment]
 
@@ -36,7 +36,7 @@ async def _maybe_await(x: Any) -> Any:
     Lets us call sync/async DI uniformly.
     """
     if inspect.isawaitable(x):
-        return await x  # type: ignore[return-value]
+        return await x
     return x
 
 
@@ -130,7 +130,7 @@ class Guard:
         roles: List[str] = list(subject.roles or [])
         if self.role_resolver is not None:
             try:
-                roles = await _maybe_await(self.role_resolver.expand(roles))  # type: ignore[misc]
+                roles = await _maybe_await(self.role_resolver.expand(roles))
             except Exception:
                 logger.exception("RBACX: role resolver failed", exc_info=True)
         env: Dict[str, Any] = {
@@ -155,7 +155,7 @@ class Guard:
 
         if allowed:
             try:
-                ok, ch = await _maybe_await(self.obligations.check(raw, context))  # type: ignore[misc]
+                ok, ch = await _maybe_await(self.obligations.check(raw, context))
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch
@@ -183,20 +183,20 @@ class Guard:
             try:
                 inc = getattr(self.metrics, "inc", None)
                 if inc is not None:
-                    if inspect.iscoroutinefunction(inc):  # type: ignore[arg-type]
-                        await inc("rbacx_decisions_total", labels)  # type: ignore[misc]
+                    if inspect.iscoroutinefunction(inc):
+                        await inc("rbacx_decisions_total", labels)
                     else:
-                        inc("rbacx_decisions_total", labels)  # type: ignore[misc]
+                        inc("rbacx_decisions_total", labels)
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: metrics.inc failed")
             try:
                 observe = getattr(self.metrics, "observe", None)
                 if observe is not None:
                     dur = max(0.0, _now() - start)
-                    if inspect.iscoroutinefunction(observe):  # type: ignore[arg-type]
-                        await observe("rbacx_decision_seconds", dur, labels)  # type: ignore[misc]
+                    if inspect.iscoroutinefunction(observe):
+                        await observe("rbacx_decision_seconds", dur, labels)
                     else:
-                        observe("rbacx_decision_seconds", dur, labels)  # type: ignore[misc]
+                        observe("rbacx_decision_seconds", dur, labels)
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: metrics.observe failed")
 
@@ -213,10 +213,10 @@ class Guard:
                         "policy_id": d.policy_id,
                         "reason": d.reason,
                     }
-                    if inspect.iscoroutinefunction(log):  # type: ignore[arg-type]
-                        await log(payload)  # type: ignore[misc]
+                    if inspect.iscoroutinefunction(log):
+                        await log(payload)
                     else:
-                        log(payload)  # type: ignore[misc]
+                        log(payload)
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: decision logging failed")
 
@@ -288,6 +288,6 @@ class Guard:
         # compile if compiler available
         try:
             if compile_policy is not None:
-                self._compiled = compile_policy(self.policy)  # type: ignore[misc]
+                self._compiled = compile_policy(self.policy)
         except Exception:
             self._compiled = None

@@ -32,7 +32,7 @@ __all__ = [
 def _detect_version() -> str:
     try:
         if version is None:
-            raise PackageNotFoundError  # type: ignore[misc]
+            raise PackageNotFoundError
         return version("rbacx")
     except Exception:
         return "0.1.0"

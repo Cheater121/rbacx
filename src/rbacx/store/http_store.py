@@ -20,7 +20,7 @@ class HTTPPolicySource(PolicySource):
 
     def load(self) -> Dict[str, Any]:
         try:
-            import requests  # type: ignore[import-untyped,import-not-found]
+            import requests  # type: ignore[import-untyped]
         except Exception as e:  # pragma: no cover - optional extra
             raise RuntimeError("requests is required (install rbacx[http])") from e
 
@@ -48,10 +48,10 @@ class HTTPPolicySource(PolicySource):
         etag_header = None
         try:
             # requests' Headers are case-insensitive, but stubs may be plain dicts
-            etag_header = r.headers.get("ETag") if hasattr(r, "headers") else None  # type: ignore[assignment]
+            etag_header = r.headers.get("ETag") if hasattr(r, "headers") else None
             if etag_header is None and isinstance(getattr(r, "headers", None), dict):
                 # try lowercase key for simple stubs
-                etag_header = r.headers.get("etag")  # type: ignore[assignment]
+                etag_header = r.headers.get("etag")
         except Exception:
             etag_header = None
         if isinstance(etag_header, str) and etag_header:
@@ -61,7 +61,7 @@ class HTTPPolicySource(PolicySource):
         # Many tests/stubs provide only .json() with no .text/.content or Content-Type.
         if hasattr(r, "json"):
             try:
-                obj = r.json()  # type: ignore[assignment]
+                obj = r.json()
                 if isinstance(obj, dict):
                     self._policy_cache = obj
                     return obj
@@ -72,16 +72,16 @@ class HTTPPolicySource(PolicySource):
         # Determine content-type for parser hints
         content_type = None
         try:
-            ctype = r.headers.get("Content-Type") if hasattr(r, "headers") else None  # type: ignore[assignment]
+            ctype = r.headers.get("Content-Type") if hasattr(r, "headers") else None
             if ctype is None and isinstance(getattr(r, "headers", None), dict):
-                ctype = r.headers.get("content-type")  # type: ignore[assignment]
+                ctype = r.headers.get("content-type")
             if isinstance(ctype, str):
                 content_type = ctype
         except Exception:
             content_type = None
 
         # Obtain text body; some stubs provide only .text, others only .content
-        body_text: Optional[str] = getattr(r, "text", None)  # type: ignore[assignment]
+        body_text: Optional[str] = getattr(r, "text", None)
         if body_text is None:
             content = getattr(r, "content", None)
             if isinstance(content, (bytes, bytearray)):

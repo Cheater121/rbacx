@@ -20,7 +20,7 @@ logger = logging.getLogger("rbacx.policy.loader")
 async def _maybe_await(x: Any) -> Any:
     """Await the value if it is awaitable; otherwise return it as-is."""
     if inspect.isawaitable(x):
-        return await x  # type: ignore[return-value]
+        return await x
     return x
 
 
@@ -156,7 +156,7 @@ class HotReloader:
                 return True
 
             etag_obj = await _maybe_await(self.source.etag())
-            etag = etag_obj  # type: ignore[assignment]
+            etag = etag_obj
 
             if etag is not None and etag == last_etag:
                 return False

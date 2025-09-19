@@ -70,12 +70,12 @@ class S3PolicySource(PolicySource):
 
         This function is isolated to make unit-testing easier (tests monkeypatch it).
         """
-        import boto3  # type: ignore[import-untyped,import-not-found]
+        import boto3  # type: ignore[import-untyped]
 
         try:
-            from botocore.config import Config  # type: ignore[import-untyped,import-not-found]
+            from botocore.config import Config  # type: ignore[import-untyped]
         except Exception:  # pragma: no cover - very old botocore
-            Config = None  # type: ignore[assignment]
+            Config = None
 
         # Build a default Config if none provided
         if cfg is None and Config is not None:
@@ -93,7 +93,7 @@ class S3PolicySource(PolicySource):
             try:
                 sess = boto3.session.Session()
             except Exception:  # pragma: no cover - fallback if aliasing differs
-                sess = boto3.Session()  # type: ignore[attr-defined]
+                sess = boto3.Session()
 
         if cfg is not None:
             return sess.client("s3", config=cfg, **(extra or {}))
@@ -132,7 +132,7 @@ class S3PolicySource(PolicySource):
         """HEAD the object safely, returning a (possibly empty) dict."""
         try:
             return self._client.head_object(Bucket=self.loc.bucket, Key=self.loc.key)
-        except getattr(self._client, "exceptions", object()).__dict__.get("NoSuchKey", Exception):  # type: ignore[attr-defined]
+        except getattr(self._client, "exceptions", object()).__dict__.get("NoSuchKey", Exception):
             return {}
         except Exception:  # pragma: no cover - network/credentials issues
             logger.debug("RBACX: S3 head_object failed", exc_info=True)
@@ -163,7 +163,7 @@ class S3PolicySource(PolicySource):
                 Key=self.loc.key,
                 ObjectAttributes=["Checksum"],
             )
-        except getattr(self._client, "exceptions", object()).__dict__.get("NoSuchKey", Exception):  # type: ignore[attr-defined]
+        except getattr(self._client, "exceptions", object()).__dict__.get("NoSuchKey", Exception):
             return None
         except Exception:
             # API not available or permissions denied
@@ -217,7 +217,7 @@ class S3PolicySource(PolicySource):
 
         if self.validate_schema:
             try:
-                from rbacx.dsl.validate import validate_policy  # type: ignore[import-not-found]
+                from rbacx.dsl.validate import validate_policy
 
                 validate_policy(policy)
             except Exception as e:  # pragma: no cover

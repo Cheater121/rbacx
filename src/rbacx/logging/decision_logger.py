@@ -33,7 +33,7 @@ class DecisionLogger(DecisionLogSink):
         env = dict(safe.get("env") or {})
         try:
             if self.redactions:
-                env = apply_obligations(env, self.redactions)  # type: ignore[arg-type]
+                env = apply_obligations(env, self.redactions)
             safe["env"] = env
         except Exception:
             pass

@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, ParamSpec, TypeVar
 # ---------------------------------------------------------------------------
 
 try:  # Real ASGI JSONResponse used for router-wrapped endpoints.
-    from starlette.responses import JSONResponse as _ASGIJSONResponse  # type: ignore
+    from starlette.responses import JSONResponse as _ASGIJSONResponse
 except Exception:  # pragma: no cover - Starlette not installed in some envs
     _ASGIJSONResponse = None  # type: ignore
 
@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 try:
     # When Starlette is available, use its implementation (keeps the exact signature).
-    from starlette.concurrency import run_in_threadpool as run_in_threadpool  # type: ignore
+    from starlette.concurrency import run_in_threadpool as run_in_threadpool
 except Exception:  # pragma: no cover - fallback when Starlette isn't available
 
     async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
@@ -65,7 +65,7 @@ def _coerce_asgi_json_response(
     if _ASGIJSONResponse is None:  # Starlette missing; fall back to whatever is patched
         if JSONResponse is None:
             raise RuntimeError("JSONResponse is not available")  # pragma: no cover
-        return JSONResponse(data, status_code=status_code, headers=headers)  # type: ignore[misc]
+        return JSONResponse(data, status_code=status_code, headers=headers)
 
     # Use the real Starlette class which is ASGI-callable.
     return _ASGIJSONResponse(data, status_code=status_code, headers=headers)
@@ -142,7 +142,7 @@ def require_access(
         if JSONResponse is None:
             # If nothing is available (unlikely in tests), fall back to ASGI response.
             return _coerce_asgi_json_response(payload, 403, headers=hdrs)
-        return JSONResponse(payload, status_code=403, headers=hdrs)  # type: ignore[misc]
+        return JSONResponse(payload, status_code=403, headers=hdrs)
 
     def _decorator(handler: Any):
         # Being explicit: if someone tries to "await the decorator" by calling it with
