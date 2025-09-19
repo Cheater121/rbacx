@@ -1,0 +1,25 @@
+{
+  "algorithm": "deny-overrides",
+  "rules": [
+    {
+      "id": "tenant_read",
+      "effect": "permit",
+      "actions": [
+        "read"
+      ],
+      "resource": {
+        "type": "doc"
+      },
+      "condition": {
+        "==": [
+          {
+            "attr": "subject.tenant"
+          },
+          {
+            "attr": "resource.attrs.tenant"
+          }
+        ]
+      }
+    }
+  ]
+}

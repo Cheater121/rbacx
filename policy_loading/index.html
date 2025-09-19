@@ -1,0 +1,1856 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cheater121.github.io/rbacx/policy_loading/">
+      
+      
+        <link rel="prev" href="../time_operators/">
+      
+      
+        <link rel="next" href="../policy_stores/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.20">
+    
+    
+      
+        <title>Policy loading (hot reload) - RBACX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#policy-loading-hot-reload" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RBACX" class="md-header__button md-logo" aria-label="RBACX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RBACX
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Policy loading (hot reload)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cheater121/rbacx" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cheater121/rbacx
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RBACX" class="md-nav__button md-logo" aria-label="RBACX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    RBACX
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cheater121/rbacx" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cheater121/rbacx
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../highlights/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Highlights
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why_choose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Why choose RBACX
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Concepts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Security model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reasons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Explainability (reasons & obligations)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Role hierarchy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit_mode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audit mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Policy
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Policy
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_authoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authoring
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy catalog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../time_operators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Time operators
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Policy loading (hot reload)
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Policy loading (hot reload)
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to use
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-safe-startup-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      1) Safe startup (recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-legacy-behavior-no-initial-load" class="md-nav__link">
+    <span class="md-ellipsis">
+      2) Legacy behavior (no initial load)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-force-a-one-time-load-ignore-etag" class="md-nav__link">
+    <span class="md-ellipsis">
+      3) Force a one-time load (ignore ETag)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-force-initial-load-via-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      4) Force initial load via start()
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hotreloader-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      HotReloader API
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HotReloader API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constructor parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostics-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostics / properties
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typical-reload-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Typical reload cycle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-web-frameworks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integration with web frameworks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with web frameworks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asgi-middleware-on-request-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      ASGI middleware &amp; on-request checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-policysource-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported PolicySource types
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operational guidance
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sync-vs-async-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sync vs Async usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecated-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated API
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changelog-excerpt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changelog (excerpt)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_stores/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy stores
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_policy_source/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Custom PolicySource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http_mapping/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HTTP mapping
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Integration
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Integration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web_adapters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web adapters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adapters (API)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../try_examples/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Try examples
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Observability
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Observability
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel_metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenTelemetry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability_stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Observability stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Performance
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Performance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Performance guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Benchmarks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Operations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Operations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration_rbac_to_abac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migration (RBAC→ABAC)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Public API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to use
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-safe-startup-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      1) Safe startup (recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-legacy-behavior-no-initial-load" class="md-nav__link">
+    <span class="md-ellipsis">
+      2) Legacy behavior (no initial load)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-force-a-one-time-load-ignore-etag" class="md-nav__link">
+    <span class="md-ellipsis">
+      3) Force a one-time load (ignore ETag)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-force-initial-load-via-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      4) Force initial load via start()
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hotreloader-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      HotReloader API
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HotReloader API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constructor parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostics-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostics / properties
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typical-reload-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Typical reload cycle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-web-frameworks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integration with web frameworks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with web frameworks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asgi-middleware-on-request-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      ASGI middleware &amp; on-request checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-policysource-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported PolicySource types
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operational guidance
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sync-vs-async-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sync vs Async usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecated-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated API
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changelog-excerpt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changelog (excerpt)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="policy-loading-hot-reload">Policy loading (hot reload)<a class="headerlink" href="#policy-loading-hot-reload" title="Permanent link">&para;</a></h1>
+<p>RBACX supports hot-reloading policies from external sources via a production-grade reloader.</p>
+<ul>
+<li>A policy source implements the <code>PolicySource</code> protocol (sync <strong>or</strong> async):
+  <code>load() -&gt; Dict[str, Any] | Awaitable[Dict[str, Any]]</code> and <code>etag() -&gt; Optional[str] | Awaitable[Optional[str]]</code>.</li>
+<li>The <code>HotReloader</code> watches a source: when its ETag changes, it loads the new policy and applies it to a running <code>Guard</code>. (If <code>etag()</code> returns <code>None</code>, the reloader will attempt a load and let the source decide change detection.) ETag is a standard content version identifier in HTTP and storage systems.</li>
+</ul>
+<hr />
+<h2 id="when-to-use">When to use<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>
+<ul>
+<li>You want changes to JSON or dict policies to be picked up <strong>without restarting</strong> your application.</li>
+<li>You use file/HTTP/S3 (or any custom) policy storage and want <strong>automatic</strong> or <strong>manual</strong> checks for updates.</li>
+<li>You want resilient reloads with <strong>exponential backoff + jitter</strong> after errors to avoid thundering herds.</li>
+</ul>
+<hr />
+<h2 id="quick-examples">Quick examples<a class="headerlink" href="#quick-examples" title="Permanent link">&para;</a></h2>
+<h3 id="1-safe-startup-recommended">1) Safe startup (recommended)<a class="headerlink" href="#1-safe-startup-recommended" title="Permanent link">&para;</a></h3>
+<p>Ensures a valid policy is loaded at boot, then enables background polling.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rbacx</span><span class="w"> </span><span class="kn">import</span> <span class="n">Guard</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilePolicySource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx</span><span class="w"> </span><span class="kn">import</span> <span class="n">HotReloader</span>
+
+<span class="n">guard</span> <span class="o">=</span> <span class="n">Guard</span><span class="p">(</span><span class="n">policy</span><span class="o">=</span><span class="p">{})</span>
+<span class="n">source</span> <span class="o">=</span> <span class="n">FilePolicySource</span><span class="p">(</span><span class="s2">&quot;policy.json&quot;</span><span class="p">)</span>
+
+<span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">initial_load</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="c1"># Synchronously load whatever is in policy.json right now</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload</span><span class="p">()</span>        <span class="c1"># returns True on first load</span>
+
+<span class="c1"># Then keep watching for changes in the background</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="c1"># ...</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="2-legacy-behavior-no-initial-load">2) Legacy behavior (no initial load)<a class="headerlink" href="#2-legacy-behavior-no-initial-load" title="Permanent link">&para;</a></h3>
+<p>First check is a NO-OP unless the policy changes (backwards-compatible default).</p>
+<div class="highlight"><pre><span></span><code><span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">initial_load</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload</span><span class="p">()</span>        <span class="c1"># likely False until ETag changes</span>
+</code></pre></div>
+<h3 id="3-force-a-one-time-load-ignore-etag">3) Force a one-time load (ignore ETag)<a class="headerlink" href="#3-force-a-one-time-load-ignore-etag" title="Permanent link">&para;</a></h3>
+<p>Useful for bootstrap/migrations.</p>
+<div class="highlight"><pre><span></span><code><span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="4-force-initial-load-via-start">4) Force initial load via <code>start()</code><a class="headerlink" href="#4-force-initial-load-via-start" title="Permanent link">&para;</a></h3>
+<p>Performs a synchronous load before the thread starts.</p>
+<div class="highlight"><pre><span></span><code><span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">initial_load</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">initial_load</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">force_initial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>Steps:
+1) Start with an initial or empty policy
+2) Choose source (Local filesystem in examples)
+3) Create the reloader (optionally enable <code>initial_load</code>)
+4) Optional: force a one-time check at startup
+5) Optional: run background polling
+6) Your app runs between <code>start()</code> and <code>stop()</code></p>
+<hr />
+<h2 id="hotreloader-api">HotReloader API<a class="headerlink" href="#hotreloader-api" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rbacx</span><span class="w"> </span><span class="kn">import</span> <span class="n">HotReloader</span>
+</code></pre></div>
+<h3 id="constructor-parameters">Constructor parameters<a class="headerlink" href="#constructor-parameters" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>guard</code></td>
+<td>The <code>rbacx.core.engine.Guard</code> instance to update.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>Any <code>PolicySource</code> (File, HTTP, S3, custom, …).</td>
+</tr>
+<tr>
+<td><code>initial_load: bool = False</code></td>
+<td>If <code>True</code>, <strong>do not</strong> prime the ETag so the <strong>first</strong> <code>check_and_reload()</code> will load the current policy. If <code>False</code> (default), the first check is a NO-OP unless the ETag changed (legacy behavior).</td>
+</tr>
+<tr>
+<td><code>poll_interval: float = 5.0</code></td>
+<td>Default polling interval (seconds) used by <code>start()</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><code>check_and_reload(*, force: bool = False) -&gt; bool</code>
+  Synchronously checks the source’s ETag; if changed, loads and applies the policy.
+  If <code>force=True</code>, loads and applies <strong>regardless</strong> of ETag. Returns <code>True</code> if a reload occurred.</p>
+</li>
+<li>
+<p><code>start(interval: float | None = None, *, initial_load: bool | None = None, force_initial: bool = False) -&gt; None</code>
+  Starts background polling.</p>
+</li>
+<li><code>interval</code> overrides the constructor’s <code>poll_interval</code>.</li>
+<li><code>initial_load</code> overrides the constructor’s flag <strong>just for this start</strong>.</li>
+<li>
+<p>If <code>initial_load</code> is truthy and <code>force_initial=True</code>, performs a synchronous load before starting the thread (ETag ignored for that initial load).</p>
+</li>
+<li>
+<p><code>stop(timeout: float | None = None) -&gt; None</code>
+  Stops background polling; optionally waits up to <code>timeout</code> seconds for the current check.</p>
+</li>
+</ul>
+<h3 id="diagnostics-properties">Diagnostics / properties<a class="headerlink" href="#diagnostics-properties" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>last_etag</code> — most recently seen ETag from the source.</li>
+<li><code>last_reload_at</code> — timestamp of the last successful reload.</li>
+<li><code>last_error</code> — the last exception encountered (if any).</li>
+<li><code>suppressed_until</code> — time until which further attempts are delayed after errors (exponential backoff with jitter).</li>
+</ul>
+<hr />
+<h2 id="typical-reload-cycle">Typical reload cycle<a class="headerlink" href="#typical-reload-cycle" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Ask the <code>PolicySource</code> for its current ETag.</li>
+<li>If the ETag is new (or <code>etag()</code> is <code>None</code>), call <code>load()</code> to fetch the policy.</li>
+<li>Validate (if the source performs schema checks).</li>
+<li>Apply the policy to <code>guard</code> <strong>only after a successful load</strong>.</li>
+<li>On errors (parse, network, permissions), keep the <strong>previous working</strong> policy, log the error, and schedule the next attempt using exponential backoff with jitter.</li>
+</ol>
+<hr />
+<h2 id="integration-with-web-frameworks">Integration with web frameworks<a class="headerlink" href="#integration-with-web-frameworks" title="Permanent link">&para;</a></h2>
+<h3 id="asgi-middleware-on-request-checks">ASGI middleware &amp; on-request checks<a class="headerlink" href="#asgi-middleware-on-request-checks" title="Permanent link">&para;</a></h3>
+<p>Use <code>HotReloader</code> with your middleware to check for changes before handling requests, or rely solely on background polling.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.adapters.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">RbacxMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx</span><span class="w"> </span><span class="kn">import</span> <span class="n">Guard</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilePolicySource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx</span><span class="w"> </span><span class="kn">import</span> <span class="n">HotReloader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">litestar</span><span class="w"> </span><span class="kn">import</span> <span class="n">Litestar</span><span class="p">,</span> <span class="n">get</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">litestar.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefineMiddleware</span>
+
+<span class="n">guard</span> <span class="o">=</span> <span class="n">Guard</span><span class="p">(</span><span class="n">policy</span><span class="o">=</span><span class="p">{})</span>
+<span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">FilePolicySource</span><span class="p">(</span><span class="s2">&quot;policy.json&quot;</span><span class="p">),</span> <span class="n">initial_load</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload</span><span class="p">()</span>  <span class="c1"># ensure policy is present at startup</span>
+
+<span class="nd">@get</span><span class="p">(</span><span class="s2">&quot;/secure&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">secure</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="c1"># guard used automatically via middleware or dependency</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ok&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Litestar</span><span class="p">(</span>
+    <span class="n">route_handlers</span><span class="o">=</span><span class="p">[</span><span class="n">secure</span><span class="p">],</span>
+    <span class="n">middleware</span><span class="o">=</span><span class="p">[</span><span class="n">DefineMiddleware</span><span class="p">(</span><span class="n">RbacxMiddleware</span><span class="p">,</span> <span class="n">guard</span><span class="o">=</span><span class="n">guard</span><span class="p">,</span> <span class="n">policy_reloader</span><span class="o">=</span><span class="n">reloader</span><span class="p">)],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>If you need ultra-low detection latency, call <code>reloader.check_and_reload()</code> at the beginning of request handling (cheap ETag check), or keep background polling short.</p>
+<hr />
+<h2 id="supported-policysource-types">Supported <code>PolicySource</code> types<a class="headerlink" href="#supported-policysource-types" title="Permanent link">&para;</a></h2>
+<p>Out of the box, RBACX provides:</p>
+<ul>
+<li><strong>FilePolicySource</strong> — local JSON file or dict snapshot.</li>
+<li><strong>HTTPPolicySource</strong> — HTTP/HTTPS endpoint (ideal with ETag or Last-Modified validators).</li>
+<li><strong>S3PolicySource</strong> — Amazon S3 objects with ETag-based change detection.</li>
+</ul>
+<p>Any custom source that implements <code>load()</code> and <code>etag()</code> is supported.</p>
+<hr />
+<h2 id="operational-guidance">Operational guidance<a class="headerlink" href="#operational-guidance" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Atomic writes</strong> (file sources): write to a temp file and <code>rename</code> to avoid readers seeing partial content.</li>
+<li><strong>Backoff &amp; jitter</strong>: on repeated failures, use exponential backoff <strong>with jitter</strong>; this avoids synchronized retries and thundering herds. RBACX’s reloader applies jitter by default.</li>
+<li><strong>Observability</strong>: export metrics/counters for reload successes/failures and <code>last_reload_at</code>.</li>
+<li><strong>Fail-safe policy</strong>: keep the last known good policy if a new load fails.</li>
+<li><strong>Security defaults</strong>: default-deny policies are recommended until the first valid policy is loaded.</li>
+</ul>
+<hr />
+<h2 id="sync-vs-async-usage">Sync vs Async usage<a class="headerlink" href="#sync-vs-async-usage" title="Permanent link">&para;</a></h2>
+<p><code>HotReloader</code> exposes both a synchronous and an asynchronous API:</p>
+<ul>
+<li><code>check_and_reload(...)</code> — <strong>sync wrapper</strong> over the async core. Safe to call in synchronous apps (Flask/CLI) and even inside a running event loop; the reloader will delegate work to a helper thread.</li>
+<li><code>check_and_reload_async(...)</code> — <strong>async-native</strong> method for ASGI/async tasks.</li>
+</ul>
+<p>Examples:</p>
+<p><strong>Sync (Flask/CLI/Celery)</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+<span class="n">changed</span> <span class="o">=</span> <span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>Async (FastAPI background task / asyncio)</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">reloader</span> <span class="o">=</span> <span class="n">HotReloader</span><span class="p">(</span><span class="n">guard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+<span class="n">changed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reloader</span><span class="o">.</span><span class="n">check_and_reload_async</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="deprecated-api">Deprecated API<a class="headerlink" href="#deprecated-api" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ReloadingPolicyManager</code> is <strong>deprecated</strong> and kept only for compatibility. Constructing it emits a <code>DeprecationWarning</code> and a log warning; it delegates to <code>HotReloader</code> with legacy semantics (<code>initial_load=False</code>). Please migrate to <code>HotReloader</code>.</li>
+<li><code>PolicyManager</code> from <code>rbacx.store.manager</code> is <strong>deprecated</strong>; use <code>HotReloader</code> (plus a <code>PolicySource</code> such as <code>FilePolicySource</code>) instead.</li>
+</ul>
+<hr />
+<h2 id="changelog-excerpt">Changelog (excerpt)<a class="headerlink" href="#changelog-excerpt" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>HotReloader(..., initial_load: bool = False)</code> — new flag to control startup behavior.</li>
+<li><code>check_and_reload(force: bool = False)</code> — new <code>force</code> parameter to bypass ETag.</li>
+<li><code>start(..., initial_load: bool | None = None, force_initial: bool = False)</code> — optional synchronous load before the polling thread starts.</li>
+<li><code>ReloadingPolicyManager</code> and <code>rbacx.store.manager.PolicyManager</code> — <strong>deprecated</strong>; use <code>HotReloader</code>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      
+    
+  </body>
+</html>
