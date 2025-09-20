@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Tuple
 
 try:  # Optional dependency boundary
-    from fastapi import HTTPException, Request
+    from fastapi import HTTPException, Request  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     HTTPException = None  # type: ignore
 

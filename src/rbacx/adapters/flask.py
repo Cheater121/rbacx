@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Tuple
 
 try:  # Optional dependency boundary
-    from flask import jsonify
+    from flask import jsonify  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     jsonify = None  # type: ignore
 

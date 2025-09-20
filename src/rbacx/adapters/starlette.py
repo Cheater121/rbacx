@@ -8,7 +8,9 @@ from typing import Any, Callable, Optional, ParamSpec, TypeVar
 # ---------------------------------------------------------------------------
 
 try:  # Real ASGI JSONResponse used for router-wrapped endpoints.
-    from starlette.responses import JSONResponse as _ASGIJSONResponse
+    from starlette.responses import (  # type: ignore[import-not-found]
+        JSONResponse as _ASGIJSONResponse,  # type: ignore[import-not-found]
+    )
 except Exception:  # pragma: no cover - Starlette not installed in some envs
     _ASGIJSONResponse = None  # type: ignore
 
@@ -18,7 +20,9 @@ T = TypeVar("T")
 
 try:
     # When Starlette is available, use its implementation (keeps the exact signature).
-    from starlette.concurrency import run_in_threadpool as run_in_threadpool
+    from starlette.concurrency import (  # type: ignore[import-not-found]
+        run_in_threadpool as run_in_threadpool,  # type: ignore[import-not-found]
+    )
 except Exception:  # pragma: no cover - fallback when Starlette isn't available
 
     async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:

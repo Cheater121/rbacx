@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from rbacx.core.ports import MetricsSink
 
 try:
-    from opentelemetry.metrics import get_meter
+    from opentelemetry.metrics import get_meter  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     get_meter = None  # type: ignore
 

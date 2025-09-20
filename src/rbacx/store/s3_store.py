@@ -70,10 +70,10 @@ class S3PolicySource(PolicySource):
 
         This function is isolated to make unit-testing easier (tests monkeypatch it).
         """
-        import boto3  # type: ignore[import-untyped]
+        import boto3  # type: ignore[import-untyped, import-not-found]
 
         try:
-            from botocore.config import Config  # type: ignore[import-untyped]
+            from botocore.config import Config  # type: ignore[import-untyped, import-not-found]
         except Exception:  # pragma: no cover - very old botocore
             Config = None
 
