@@ -76,7 +76,9 @@ class OpenTelemetryMetrics(MetricsSink):
             # OpenTelemetry Counter expects amount (int/float) and attributes (labels)
             self._counter.add(1, {"decision": decision})
         except Exception:  # pragma: no cover
-            pass
+            __import__("logging").getLogger("rbacx.metrics.otel").debug(
+                "OpenTelemetryMetrics.inc: failed to add to counter", exc_info=True
+            )
 
     # ----------------------------- Optional extension --------------------------
     def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None:
@@ -101,4 +103,6 @@ class OpenTelemetryMetrics(MetricsSink):
             # Histogram.record(value, attributes=labels) is the conventional API.
             self._hist.record(float(value), attributes=dict(labels or {}))
         except Exception:  # pragma: no cover
-            pass
+            __import__("logging").getLogger("rbacx.metrics.otel").debug(
+                "OpenTelemetryMetrics.observe: failed to record histogram", exc_info=True
+            )

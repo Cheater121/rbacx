@@ -36,7 +36,9 @@ class DecisionLogger(DecisionLogSink):
                 env = apply_obligations(env, self.redactions)
             safe["env"] = env
         except Exception:
-            pass
+            dbg = getattr(self.logger, "debug", None)
+            if callable(dbg):
+                dbg("DecisionLogger: failed to apply redactions", exc_info=True)
 
         if self.as_json:
             msg = json.dumps(safe, ensure_ascii=False)

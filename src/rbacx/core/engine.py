@@ -83,7 +83,9 @@ class Guard:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                 except Exception:  # pragma: no cover
-                    pass
+                    logger.debug(
+                        "Guard.__init__: failed to create or set a new event loop", exc_info=True
+                    )
 
         self._recompute_etag()
 
