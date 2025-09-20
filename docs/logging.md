@@ -62,8 +62,11 @@ Use `rbacx.logging.context.TraceIdFilter` to inject `trace_id` into records.
 - `redactions: list[dict]` — obligations-style redactions applied to `env` before logging.
 - `as_json: bool` — when `True`, serialize the event to JSON; otherwise logs as `"decision {payload}"`.
 - `level: int` — Python logging level used for the event (defaults to `logging.INFO`).
+- `redact_in_place: bool = False` — controls how redactions are applied to env:
+  - `False` (default): redact on a copy (no mutation of the original environment).
+  - `True`: redact in place (fewer allocations; mutates the original env).
 
-**Example:**
+**Examples:**
 ```python
 import logging
 from rbacx.logging.decision_logger import DecisionLogger
@@ -72,5 +75,19 @@ audit = logging.getLogger("rbacx.audit")
 audit.setLevel(logging.INFO)
 audit.addHandler(logging.StreamHandler())
 
-logger_sink = DecisionLogger(sample_rate=1.0, as_json=True, level=logging.INFO)
+logger_sink = DecisionLogger(
+    sample_rate=0.1,  # about 10% of events will be logged
+    as_json=True,
+    level=logging.INFO,
+    redactions=[{"type": "mask_fields", "fields": ["subject.attrs.ssn"], "placeholder": "***"}],
+)
+
+# In-place redaction (mutates env), useful to minimize allocations on hot paths
+inplace_sink = DecisionLogger(
+    sample_rate=1.0,
+    as_json=True,
+    level=logging.INFO,
+    redactions=[{"type": "redact_fields", "fields": ["resource.attrs.secret"]}],
+    redact_in_place=True,  # mutate env instead of copying
+)
 ```
