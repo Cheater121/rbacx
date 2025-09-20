@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.2 — 2025-09-20
+
+### Changed
+
+* Removed unused `type: ignore` annotations across the codebase.
+* Replaced all broad `except Exception: pass` with `logger.debug(..., exc_info=True)` for proper diagnostics.
+
+### Tests
+
+* Added/extended adapter branch coverage (ASGI, Django, FastAPI, Flask, Litestar).
+
+### Compatibility
+
+* **No breaking changes.** Public API and behavior remain unchanged.
+
 ## 0.8.1 — 2025-09-18
 
 ### Fixed
@@ -73,7 +88,7 @@
   - `HotReloader.check_and_reload_async(...)` (single source of truth).
   - The sync method `check_and_reload(...)` bridges safely from sync code and from within a running event loop.
 - **New tests** covering async DI, thread offload, obligation auto-deny, reloader suppression/backoff, and sync-wrapper-in-event-loop scenarios.
-  
+
 ### Changed
 - **Single source of truth**: both sync and async paths delegate to one async core in `Guard` and `HotReloader`, removing duplication.
 - **Non-blocking behavior**:
