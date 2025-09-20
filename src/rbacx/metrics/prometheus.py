@@ -65,8 +65,9 @@ class PrometheusMetrics(MetricsSink):
             # prometheus_client's Counter.labels returns a Child; we keep type loose (Any)
             self._counter.labels(decision=decision).inc()
         except Exception:  # pragma: no cover
-            # never raise from metrics path
-            pass
+            __import__("logging").getLogger("rbacx.metrics.prometheus").debug(
+                "PrometheusMetrics.inc: failed to increment counter", exc_info=True
+            )
 
     # ----------------------------- Optional extension --------------------------
     def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None:
@@ -90,4 +91,6 @@ class PrometheusMetrics(MetricsSink):
         try:
             self._hist.observe(float(value))  # seconds
         except Exception:  # pragma: no cover
-            pass
+            __import__("logging").getLogger("rbacx.metrics.prometheus").debug(
+                "PrometheusMetrics.observe: failed to record histogram", exc_info=True
+            )

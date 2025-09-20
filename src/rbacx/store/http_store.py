@@ -67,7 +67,10 @@ class HTTPPolicySource(PolicySource):
                     return obj
             except Exception:
                 # fall through to text parsing below
-                pass
+                __import__("logging").getLogger("rbacx.store.http").debug(
+                    "HTTPPolicySource: failed to parse JSON from response; falling back to text parsing",
+                    exc_info=True,
+                )
 
         # Determine content-type for parser hints
         content_type = None
