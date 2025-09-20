@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.9.0 — 2025-09-21
+
+### Added
+
+* **Obligations Enforcer** (`rbacx.obligations.enforcer`):
+
+  * New `in_place: bool = False` flag in `apply_obligations(payload, obligations, *, in_place=False)`.
+  * By default, the function returns a **deep-copied** payload (no side effects on the original). With `in_place=True`, it mutates the input payload.
+
+* **Decision Logger** (`rbacx.logging.decision_logger`):
+
+  * New `redact_in_place: bool = False` option.
+  * Passed through to the enforcer to control whether the `env` is redacted on a copy (default) or **in place**.
+
+### Changed
+
+* **Safe-by-default redaction.**
+  The enforcer now uses **deep copy** by default, preventing accidental mutation of application data during masking/redaction.
+* The Decision Logger always emits a redacted `env`; behavior is unchanged functionally, but you can now opt into in-place redaction via `redact_in_place=True`.
+
+### Performance
+
+* For large environments or high-throughput pipelines, enable `in_place=True` / `redact_in_place=True` to avoid deep copies and reduce allocations.
+
+### Security
+
+* Copy-by-default reduces the risk of unintended data leakage or side effects when the same structures are reused elsewhere.
+* If you need to sanitize sensitive data **before further in-process use**, switch to the explicit **in-place** mode.
+
+### Migration
+
+* If your code **relied on implicit in-place mutation**, enable it explicitly:
+
+  ```python
+  from rbacx.obligations.enforcer import apply_obligations
+
+  # In-place redaction
+  payload = apply_obligations(payload, obligations, in_place=True)
+  ```
+
+  ```python
+  from rbacx.logging.decision_logger import DecisionLogger
+
+  # Logger that redacts env in place
+  logger = DecisionLogger(redactions=[...], redact_in_place=True)
+  ```
+
+### Compatibility
+
+* **Potentially breaking only** for consumers that depended on prior in-place mutation. Set the flags above to restore the previous semantics.
+
+
 ## 0.8.2 — 2025-09-20
 
 ### Changed
