@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from rbacx.core.ports import MetricsSink
 
 try:
-    from prometheus_client import Counter, Histogram
+    from prometheus_client import Counter, Histogram  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     Counter = Histogram = None  # type: ignore
 

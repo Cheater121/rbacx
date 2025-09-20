@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 
-from flask import abort, g
+from flask import abort, g  # type: ignore[import-not-found]
 
 from ..core.model import Action, Context, Resource, Subject
 

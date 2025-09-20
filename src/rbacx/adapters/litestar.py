@@ -34,7 +34,7 @@ class RBACXMiddleware(AbstractMiddleware):
         decision = await self.guard.evaluate_async(subject, action, resource, context)
         if not decision.allowed:
             # default: 403
-            from starlette.responses import JSONResponse
+            from starlette.responses import JSONResponse  # type: ignore[import-not-found]
 
             res = JSONResponse({"detail": "forbidden", "reason": decision.reason}, status_code=403)
             await res(scope, receive, send)
