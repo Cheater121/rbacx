@@ -168,6 +168,12 @@ print(guard.evaluate_sync(
 ).effect)  # -> "deny"
 ```
 
+## Quick links
+- 📌 [Deprecation Policy](DEPRECATION.md)
+- 🛡️ [API Stability Guarantees](API_STABILITY.md)
+- 🔐 [Security Policy](SECURITY.md)
+- 🤝 [Code of Conduct](CODE_OF_CONDUCT.md)
+
 ## Packaging
 - We ship `py.typed` so type checkers pick up annotations.
 - Standard PyPA flow: `python -m build`, then `twine upload` to (Test)PyPI.
