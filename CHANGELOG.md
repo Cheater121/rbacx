@@ -1,5 +1,40 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## 1.0.0 - 2025-09-21
+### Summary
+First **stable** release. **No public API changes** compared to `0.9.0`.
+Public root imports from `rbacx` are now covered by explicit stability guarantees.
+Test coverage has reached **100%**.
+
+### Added
+- `DEPRECATION.md` – deprecation policy: removal **after two minor releases or six months** (whichever is later).
+- `API_STABILITY.md` – guarantees for stable **root-level imports** starting from `1.x`.
+- This changelog entry.
+
+### Changed
+- `pyproject.toml`: version bumped to **1.0.0** and classified as **Production/Stable**.
+
+### Deprecated
+- None.
+
+### Removed
+- None.
+
+### Fixed
+- N/A.
+
+### Security
+- N/A.
+
+### Migration notes
+No action required when upgrading from `0.9.0`. The public API and import paths remain unchanged.
+
+
 ## 0.9.0 — 2025-09-21
 
 ### Added
