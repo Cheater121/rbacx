@@ -26,7 +26,7 @@ RBACX is inspired by:
 - **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.
 - **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
 - **CLI & linting**: `rbacx validate` to validate policies.
-- **Test coverage** around **82%** across core decision paths.
+- **Test coverage** around **100%** across core decision paths.
 
 ---
 

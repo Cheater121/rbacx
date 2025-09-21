@@ -38,11 +38,12 @@ jobs:
       - name: Pytest
         run: pytest -q
 
-      - name: Coverage (generate XML)
+      - name: Coverage (generate XML & enforce >=80%)
         if: matrix.python-version == '3.11'
         run: |
           coverage run -m pytest -q
           coverage xml -o coverage.xml
+          coverage report --fail-under=80
 
       - name: Upload coverage.xml
         if: matrix.python-version == '3.11'
