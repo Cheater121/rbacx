@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, ParamSpec, TypeVar
 
+from ..core.engine import Guard
+from ._common import EnvBuilder
+
 # ---------------------------------------------------------------------------
 # Optional Starlette bits
 # Keep this module importable even when Starlette isn't installed.
@@ -75,12 +78,12 @@ def _coerce_asgi_json_response(
     return _ASGIJSONResponse(data, status_code=status_code, headers=headers)
 
 
+# Kept for backward-compatibility (unused now but retained to avoid breaking imports/tests).
 def _eval_guard(guard: Any, env: tuple[Any, Any, Any, Any]) -> tuple[bool, Optional[str]]:
     """
-    Evaluate the given guard against (subject, action, resource, context).
+    Deprecated: synchronous evaluation helper.
 
-    We prefer a rich decision (`evaluate_sync`) if available; otherwise
-    fall back to boolean-only check (`is_allowed_sync`). Return `(allowed, reason)`.
+    Left in place for compatibility. New code uses evaluate_async directly.
     """
     sub, act, res, ctx = env
     if hasattr(guard, "evaluate_sync"):
@@ -90,26 +93,32 @@ def _eval_guard(guard: Any, env: tuple[Any, Any, Any, Any]) -> tuple[bool, Optio
         return allowed, reason
     if hasattr(guard, "is_allowed_sync"):
         return bool(guard.is_allowed_sync(sub, act, res, ctx)), None
-    # Extremely defensive final fallback.
     return bool(getattr(guard, "is_allowed", lambda *_: False)(sub, act, res, ctx)), None
 
 
-def _deny_headers(reason: Optional[str], add_headers: bool) -> dict[str, str]:
+def _deny_headers(decision: Any, add_headers: bool) -> dict[str, str]:
     """
-    Compose denial headers. We only set additional headers if requested.
-    Canonical header: 'X-RBACX-Reason' when `add_headers=True`.
+    Compose denial headers. Only set when explicitly requested.
+    Adds: X-RBACX-Reason, X-RBACX-Rule, X-RBACX-Policy (if present).
     """
     if not add_headers:
         return {}
     headers: dict[str, str] = {}
+    reason = getattr(decision, "reason", None)
+    rule_id = getattr(decision, "rule_id", None)
+    policy_id = getattr(decision, "policy_id", None)
     if reason:
         headers["X-RBACX-Reason"] = str(reason)
+    if rule_id:
+        headers["X-RBACX-Rule"] = str(rule_id)
+    if policy_id:
+        headers["X-RBACX-Policy"] = str(policy_id)
     return headers
 
 
 def require_access(
-    guard: Any,
-    build_env: Callable[[Any], tuple[Any, Any, Any, Any]],
+    guard: Guard,
+    build_env: EnvBuilder,
     add_headers: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
@@ -133,24 +142,24 @@ def require_access(
 
     async def _dependency(request: Any):
         """Internal check used by the wrapper; returns `None` if allowed or a denial response."""
-        env = build_env(request)
-        allowed, reason = _eval_guard(guard, env)
-        if allowed:
+        sub, act, res, ctx = build_env(request)
+
+        # Async frameworks must use the async API.
+        decision = await guard.evaluate_async(sub, act, res, ctx)
+        if decision.allowed:
             return None
 
-        # Dependency-mode return: honor the module-level JSONResponse so tests can stub it.
-        # This object may *not* be ASGI-callable, which is fine here because tests only
-        # introspect `.status_code` / `.headers` and don't attach it to a router.
-        payload = {"detail": reason or "Forbidden"}
-        hdrs = _deny_headers(reason, add_headers)
+        # Do not leak reasons in the body; optionally return diagnostic headers.
+        payload = {"detail": "Forbidden"}
+        hdrs = _deny_headers(decision, add_headers)
+
+        # In "dependency" mode honour the module-level JSONResponse for tests.
         if JSONResponse is None:
-            # If nothing is available (unlikely in tests), fall back to ASGI response.
             return _coerce_asgi_json_response(payload, 403, headers=hdrs)
         return JSONResponse(payload, status_code=403, headers=hdrs)
 
     def _decorator(handler: Any):
-        # Being explicit: if someone tries to "await the decorator" by calling it with
-        # a random object instead of a function, fail fast with a helpful message.
+        # Be explicit: must decorate a callable endpoint.
         if not callable(handler):
             raise RuntimeError(
                 "require_access(...) must be used as a decorator on a callable endpoint. "

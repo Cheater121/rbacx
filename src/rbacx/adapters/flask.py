@@ -1,51 +1,48 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple
+from functools import wraps
+from typing import Any, Callable, Dict
 
 try:  # Optional dependency boundary
-    from flask import jsonify  # type: ignore[import-not-found]
+    from flask import jsonify, request  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
     jsonify = None  # type: ignore
+    request = None  # type: ignore
 
 from ..core.engine import Guard
-from ..core.model import Action, Context, Resource, Subject
-
-EnvBuilder = Callable[[Any], Tuple[Subject, Action, Resource, Context]]
+from ._common import EnvBuilder
 
 
 def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = False):
     """Decorator for Flask view functions to enforce access."""
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(fn)
         def wrapped(*args: Any, **kwargs: Any):
-            # Expect request as first arg (Flask passes none; the builder decides)
-            request = kwargs.get("request") if "request" in kwargs else (args[0] if args else None)
-            sub, act, res, ctx = build_env(request)
-            allowed = False
-            if hasattr(guard, "is_allowed_sync"):
-                allowed = guard.is_allowed_sync(sub, act, res, ctx)
-            elif hasattr(guard, "is_allowed"):
-                allowed = guard.is_allowed(sub, act, res, ctx)
-            if allowed:
+            """Sync-only adapter: always uses Guard.evaluate_sync."""
+            if jsonify is None:  # pragma: no cover
+                raise RuntimeError("flask is required for adapters.flask")
+
+            # Use Flask's request proxy if available; builder may accept None.
+            req = request if request is not None else kwargs.get("request")
+            sub, act, res, ctx = build_env(req)
+
+            decision = guard.evaluate_sync(sub, act, res, ctx)
+            if decision.allowed:
                 return fn(*args, **kwargs)
 
+            # Do not leak reasons in the body. Optionally expose via headers.
             headers: Dict[str, str] = {}
-            reason = None
-            if add_headers and hasattr(guard, "explain_sync"):
-                expl = guard.explain_sync(sub, act, res, ctx)
-                reason = getattr(expl, "reason", None)
-                rule_id = getattr(expl, "rule_id", None)
-                policy_id = getattr(expl, "policy_id", None)
-                if reason:
-                    headers["X-RBACX-Reason"] = str(reason)
-                if rule_id:
-                    headers["X-RBACX-Rule"] = str(rule_id)
-                if policy_id:
-                    headers["X-RBACX-Policy"] = str(policy_id)
+            if add_headers:
+                if decision.reason:
+                    headers["X-RBACX-Reason"] = str(decision.reason)
+                if getattr(decision, "rule_id", None):
+                    headers["X-RBACX-Rule"] = str(decision.rule_id)
+                if getattr(decision, "policy_id", None):
+                    headers["X-RBACX-Policy"] = str(decision.policy_id)
 
-            if jsonify is None:
-                raise RuntimeError("flask is required for adapters.flask")  # pragma: no cover
-            return jsonify({"detail": "forbidden", "reason": reason}), 403, headers
+            # Flask supports returning (response, status, headers) tuples.
+            return jsonify({"detail": "Forbidden"}), 403, headers
 
         return wrapped
 

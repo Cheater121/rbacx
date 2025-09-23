@@ -29,7 +29,7 @@ def test_flask_guard_no_guard_allows(monkeypatch):
 
     reload(fg)
 
-    @fg.require("read", "doc")
+    @fg.require_access("read", "doc")
     def view():
         return "ok"
 
@@ -54,7 +54,7 @@ def test_flask_guard_with_guard_permit_and_deny(monkeypatch):
     fl.g.rbacx_guard = GuardPermit()
     fl.g.user = types.SimpleNamespace(id="u1")
 
-    @fg.require("read", "doc")
+    @fg.require_access("read", "doc")
     def view_ok():
         return "OK"
 
@@ -68,7 +68,7 @@ def test_flask_guard_with_guard_permit_and_deny(monkeypatch):
 
     fl.g.rbacx_guard = GuardDeny()
 
-    @fg.require("write", "doc", audit=False)
+    @fg.require_access("write", "doc", audit=False)
     def view_forbidden():
         return "NO"
 
@@ -78,7 +78,7 @@ def test_flask_guard_with_guard_permit_and_deny(monkeypatch):
 
     fl.g.rbacx_guard = GuardDeny()
 
-    @fg.require("write", "doc", audit=True)
+    @fg.require_access("write", "doc", audit=True)
     def view_audit():
         return "AUDIT"
 
@@ -101,7 +101,7 @@ def test_flask_guard_uses_anonymous_when_no_user(monkeypatch):
 
     fl.g.rbacx_guard = Guard()
 
-    @fg.require("read", "doc")
+    @fg.require_access("read", "doc")
     def view():
         return "OK"
 
