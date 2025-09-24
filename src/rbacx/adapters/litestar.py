@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import logging
 from typing import Dict
 
 # Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
 try:  # pragma: no cover
-    from litestar.middleware import ASGIMiddleware as _BaseMiddleware  # type: ignore[import-not-found]
+    from litestar.middleware import (
+        ASGIMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
+    )
+
     _MODE = "asgi"
 except Exception:  # pragma: no cover
     try:
-        from litestar.middleware import AbstractMiddleware as _BaseMiddleware  # type: ignore[import-not-found]
+        from litestar.middleware import (
+            AbstractMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
+        )
+
         _MODE = "abstract"
     except Exception:  # pragma: no cover
         _BaseMiddleware = object  # type: ignore[assignment]
@@ -17,12 +24,14 @@ except Exception:  # pragma: no cover
 try:  # pragma: no cover
     from litestar.types import Receive, Scope, Send  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover
-    from typing import Any as Scope  # type: ignore
     from typing import Any as Receive  # type: ignore
+    from typing import Any as Scope  # type: ignore
     from typing import Any as Send  # type: ignore
 
 from ..core.engine import Guard
 from ._common import EnvBuilder
+
+logger = logging.getLogger(__name__)
 
 
 class RBACXMiddleware(_BaseMiddleware):
@@ -58,7 +67,7 @@ class RBACXMiddleware(_BaseMiddleware):
         try:
             scope_type = scope.get("type")  # type: ignore[attr-defined]
         except Exception:
-            pass
+            logger.debug("scope.get('type') failed; treating as non-http", exc_info=True)
 
         if scope_type != "http":
             await self.app(scope, receive, send)  # type: ignore[arg-type]
@@ -83,6 +92,7 @@ class RBACXMiddleware(_BaseMiddleware):
                 headers["X-RBACX-Policy"] = str(policy_id)
 
         from starlette.responses import JSONResponse  # type: ignore[import-not-found]
+
         res = JSONResponse({"detail": "Forbidden"}, status_code=403, headers=headers)
         await res(scope, receive, send)
 
