@@ -3,9 +3,8 @@ import os
 import tempfile
 import time
 
-from rbacx.core.engine import Guard
-from rbacx.policy.loader import HotReloader
-from rbacx.storage import FilePolicySource
+from rbacx import Guard, HotReloader
+from rbacx.store import FilePolicySource
 
 
 def _write_json(path: str, data: dict) -> None:

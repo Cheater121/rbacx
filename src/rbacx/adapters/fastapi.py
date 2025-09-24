@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Tuple
+from typing import Dict
 
 try:  # Optional dependency boundary
     from fastapi import HTTPException, Request  # type: ignore[import-not-found]
@@ -8,50 +8,36 @@ except Exception:  # pragma: no cover
     HTTPException = None  # type: ignore
 
 from ..core.engine import Guard
-from ..core.model import Action, Context, Resource, Subject
-
-EnvBuilder = Callable[[Any], Tuple[Subject, Action, Resource, Context]]
+from ._common import EnvBuilder
 
 
 def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = False):
-    """Return a FastAPI dependency that enforces access with optional reason headers."""
+    """Return a FastAPI dependency that enforces access with optional deny headers."""
 
-    def dependency(request: Request) -> None:
+    async def dependency(request: Request) -> None:
+        """Async-only dependency for FastAPI: always uses Guard.evaluate_async."""
+        if HTTPException is None:  # pragma: no cover
+            raise RuntimeError("fastapi is required for adapters.fastapi")
+
         sub, act, res, ctx = build_env(request)
-        # Decide
-        allowed = False
-        if hasattr(guard, "is_allowed_sync"):
-            allowed = guard.is_allowed_sync(sub, act, res, ctx)
-        elif hasattr(guard, "is_allowed"):
-            allowed = guard.is_allowed(sub, act, res, ctx)
-        if allowed:
+
+        decision = await guard.evaluate_async(sub, act, res, ctx)
+        if decision.allowed:
             return
 
+        # By default do not leak reasons. If explicitly enabled, surface via headers only.
         headers: Dict[str, str] = {}
-        reason = None
         if add_headers:
-            expl = None
-            if hasattr(guard, "explain_sync"):
-                expl = guard.explain_sync(sub, act, res, ctx)
-            elif hasattr(guard, "explain"):
-                # best-effort sync call if available
-                try:
-                    expl = guard.explain(sub, act, res, ctx)
-                except Exception:  # pragma: no cover
-                    expl = None
-            if expl is not None:
-                reason = getattr(expl, "reason", None)
-                rule_id = getattr(expl, "rule_id", None)
-                policy_id = getattr(expl, "policy_id", None)
-                if reason:
-                    headers["X-RBACX-Reason"] = str(reason)
-                if rule_id:
-                    headers["X-RBACX-Rule"] = str(rule_id)
-                if policy_id:
-                    headers["X-RBACX-Policy"] = str(policy_id)
+            if decision.reason:
+                headers["X-RBACX-Reason"] = str(decision.reason)
+            rule_id = getattr(decision, "rule_id", None)
+            if rule_id:
+                headers["X-RBACX-Rule"] = str(rule_id)
+            policy_id = getattr(decision, "policy_id", None)
+            if policy_id:
+                headers["X-RBACX-Policy"] = str(policy_id)
 
-        if HTTPException is None:
-            raise RuntimeError("fastapi is required for adapters.fastapi")  # pragma: no cover
-        raise HTTPException(status_code=403, detail={"reason": reason}, headers=headers)
+        # Keep body generic to avoid information disclosure.
+        raise HTTPException(status_code=403, detail="Forbidden", headers=headers)
 
     return dependency

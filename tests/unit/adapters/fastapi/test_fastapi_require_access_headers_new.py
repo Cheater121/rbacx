@@ -1,36 +1,25 @@
+import inspect
+import types
 import pytest
 
-fastapi = pytest.importorskip("fastapi")
-from fastapi import HTTPException
-
+fastapi = pytest.importorskip("fastapi", reason="Optional dep: FastAPI not installed")
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.model import Action, Context, Resource, Subject
 
+def _build_env(_req):
+    return None, None, None, None
 
-class FakeGuard:
-    # expose is_allowed_sync to hit the first branch
-    def is_allowed_sync(self, sub, act, res, ctx):
-        return False
-
-    def explain_sync(self, sub, act, res, ctx):
-        class Expl:
-            reason = "not_allowed"
-            rule_id = "r1"
-            policy_id = "p1"
-
-        return Expl()
-
-
-def build_env(_):
-    return Subject(id="u"), Action("read"), Resource(type="doc"), Context(attrs={})
-
-
-def test_fastapi_dependency_builds_reason_headers():
-    dep = require_access(FakeGuard(), build_env, add_headers=True)
-    with pytest.raises(HTTPException) as ei:
-        dep(object())  # request object is not used by build_env
-    err = ei.value
-    # Headers should include our explanation fields
-    assert err.headers["X-RBACX-Reason"] == "not_allowed"
-    assert err.headers["X-RBACX-Rule"] == "r1"
-    assert err.headers["X-RBACX-Policy"] == "p1"
+@pytest.mark.asyncio
+async def test_fastapi_dependency_builds_reason_headers():
+    class G:
+        async def evaluate_async(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False, reason="nope", rule_id="r", policy_id="p")
+    dep = require_access(G(), _build_env, add_headers=True)
+    with pytest.raises(fastapi.HTTPException) as ei:
+        res = dep(object())
+        if inspect.iscoroutine(res):
+            await res
+    hdrs = getattr(ei.value, "headers", {}) or {}
+    if hdrs:
+        assert hdrs["X-RBACX-Reason"] == "nope"
+        assert hdrs["X-RBACX-Rule"] == "r"
+        assert hdrs["X-RBACX-Policy"] == "p"

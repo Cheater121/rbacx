@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Final
 
-from rbacx.core.engine import Guard
+from rbacx import Guard
 
 # Default relative policy locations (local override first, then shared demo)
 _LOCAL_POLICY: Final[Path] = Path(__file__).with_name("policy.json")

@@ -10,12 +10,11 @@ from litestar import Litestar, get
 from litestar.di import Provide
 from litestar.middleware import DefineMiddleware
 
+from rbacx import Action, Context, Guard, HotReloader, Resource, Subject
 from rbacx.adapters.asgi import RbacxMiddleware
 from rbacx.adapters.asgi_accesslog import AccessLogMiddleware
 from rbacx.adapters.asgi_logging import TraceIdMiddleware
-from rbacx.core.engine import Guard
-from rbacx.core.model import Action, Context, Resource, Subject
-from rbacx.storage import FilePolicySource, HotReloader
+from rbacx.store import FilePolicySource
 
 LOGGING = {
     "version": 1,
@@ -52,12 +51,14 @@ def current_context() -> Context:
 )
 async def get_doc(doc_id: int, rbacx_guard: Guard) -> dict:
     return {
-        "allowed": rbacx_guard.is_allowed_sync(
-            current_subject(),
-            Action("read"),
-            Resource(type="doc", id=str(doc_id)),
-            current_context(),
-        )
+        "allowed": (
+            await rbacx_guard.evaluate_async(
+                current_subject(),
+                Action("read"),
+                Resource(type="doc", id=str(doc_id)),
+                current_context(),
+            )
+        ).allowed
     }
 
 
@@ -66,7 +67,7 @@ app = Litestar(
     middleware=[
         TraceIdMiddleware,
         AccessLogMiddleware,
-        DefineMiddleware(RbacxMiddleware, guard=guard, policy_reloader=reloader),
+        DefineMiddleware(RbacxMiddleware, guard=guard),
     ],
 )
 

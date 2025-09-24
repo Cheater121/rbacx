@@ -1,5 +1,4 @@
-from rbacx.core.engine import Guard
-from rbacx.core.model import Action, Context, Resource, Subject
+from rbacx import Action, Context, Guard, Resource, Subject
 
 
 def main() -> None:

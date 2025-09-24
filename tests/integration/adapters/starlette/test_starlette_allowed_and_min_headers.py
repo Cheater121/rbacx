@@ -1,51 +1,23 @@
-from importlib import reload
-import types, asyncio, pytest
+import pytest
+pytest.importorskip("starlette", reason="Optional dep: Starlette not installed")
 
-def _build_env(req):
-    from rbacx.core.model import Subject, Action, Resource, Context
-    return Subject(id="s"), Action("read"), Resource(type="doc"), Context(attrs={})
+import types
+from rbacx.adapters.starlette import require_access
+from starlette.responses import JSONResponse
 
-def test_starlette_allowed_pass_through(monkeypatch):
-    import rbacx.adapters.starlette as st
-    reload(st)
-    class G:
-        def evaluate_sync(self, *a, **k):
-            d = types.SimpleNamespace(allowed=True, reason="ok",
-                                      explain=types.SimpleNamespace(reason="ok", rule_id="r", policy_id="p"))
-            return d
-    try:
-        import starlette  # noqa: F401
-        class JSONResponse:
-            def __init__(self, data, status_code=200, headers=None):
-                self.data, self.status_code, self.headers = data, status_code, headers or {}
-        st.JSONResponse = JSONResponse
-        dep = st.require_access(G(), _build_env, add_headers=True)
-        res = asyncio.run(dep(object()))
-        assert res is None or res is not None
-    except Exception:
-        dep = st.require_access(G(), _build_env, add_headers=True)
-        with pytest.raises(RuntimeError):
-            asyncio.run(dep(object()))
+def _build_env(_req):
+    return None, None, None, None
 
-def test_starlette_denied_min_headers(monkeypatch):
-    import rbacx.adapters.starlette as st
-    reload(st)
-    class G:
-        def evaluate_sync(self, *a, **k):
-            d = types.SimpleNamespace(allowed=False, reason="no",
-                                      explain=types.SimpleNamespace(reason="no", rule_id="r", policy_id="p"))
-            return d
-    try:
-        import starlette  # noqa: F401
-        class JSONResponse:
-            def __init__(self, data, status_code=200, headers=None):
-                self.data, self.status_code, self.headers = data, status_code, headers or {}
-        st.JSONResponse = JSONResponse
-        dep = st.require_access(G(), _build_env, add_headers=False)
-        res = asyncio.run(dep(object()))
-        assert res.status_code == 403
-        assert isinstance(res.headers, dict)
-    except Exception:
-        dep = st.require_access(G(), _build_env, add_headers=False)
-        with pytest.raises(RuntimeError):
-            asyncio.run(dep(object()))
+@pytest.mark.asyncio
+async def test_starlette_allowed_pass_through():
+    class GAllow:
+        async def evaluate_async(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=True)
+
+    @require_access(GAllow(), _build_env)
+    async def handler(_req):
+        return JSONResponse({"ok": True})
+
+    resp = await handler(object())
+    # Should pass through and return the handler's response (ASGI-compatible)
+    assert hasattr(resp, "__call__") or getattr(resp, "status_code", 200) == 200

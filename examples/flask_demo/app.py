@@ -3,9 +3,8 @@ import pathlib
 
 from flask import Flask, request
 
+from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.flask import require_access
-from rbacx.core.engine import Guard
-from rbacx.core.model import Action, Context, Resource, Subject
 
 policy = json.loads(pathlib.Path(__file__).with_name("policy.json").read_text(encoding="utf-8"))
 guard = Guard(policy)

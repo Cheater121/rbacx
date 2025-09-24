@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.1.0 – 2025-09-25
+
+### Summary
+
+Adapters were **unified and hardened** around a single decision surface (`Guard.evaluate_async` / `evaluate_sync`) and consistent “deny” behavior. Many adapters now **defer optional framework imports** so the whole package can be imported without those frameworks installed. Diagnostic headers are standardized (`X-RBACX-Reason`, `X-RBACX-Rule`, `X-RBACX-Policy`), while response bodies on deny are intentionally **generic** (“Forbidden”) to avoid leaking policy details.
+
+### Added
+
+* `adapters/_common.py`: new helper types (e.g. `EnvBuilder`) shared across adapter code.
+* **ASGI middleware (`adapters/asgi.py`)**: unified JSON responder (`_send_json`) that sets `content-type` and `content-length`, and supports extra headers (bytes, lower-cased) for diagnostics.
+* **ASGI logging (`adapters/asgi_logging.py`)**:
+
+  * First-match `traceparent` support: if present, use it as request id; otherwise generate one.
+  * Response header emission uses proper **tuple-of-bytes** per ASGI.
+* **Django trace middleware (`adapters/django/trace.py`)**:
+
+  * Honors `request.headers` (if available) and accepts W3C `traceparent`, falling back to `X-Request-ID`.
+  * Always sets `X-Request-ID` on the response.
+* **Litestar middleware (`adapters/litestar.py`)**:
+
+  * Supports both `ASGIMiddleware` (≥2.15) and legacy `AbstractMiddleware`.
+  * Adds `handle(...)` delegating to `_dispatch(...)`.
+  * Non-HTTP scopes pass through; errors reading `scope['type']` are handled gracefully (debug-logged).
+
+### Changed
+
+* **Optional dependency boundaries** across adapters: modules remain importable even if a given framework (FastAPI, Starlette, Django, DRF, Flask, Litestar) isn’t installed. Errors are raised only when a feature is actually used.
+* **FastAPI (`adapters/fastapi.py`)**:
+
+  * Now always uses `guard.evaluate_async(...)` to decide.
+  * On deny: body is a **generic** `"Forbidden"`, diagnostics via `X-RBACX-*` headers (when enabled).
+* **Starlette (`adapters/starlette.py`)**:
+
+  * Unified decorator logic; async and sync handlers are normalized to a single async path.
+  * If a custom deny object isn’t ASGI-callable, it’s coerced into a proper `JSONResponse` with a generic body.
+* **Flask (`adapters/flask.py`)**:
+
+  * Adapter is explicitly **sync** and calls `guard.evaluate_sync(...)`.
+  * On deny: returns `({"detail":"Forbidden"}, 403, headers)`; diagnostic headers follow the `X-RBACX-*` convention.
+* **Django decorators (`adapters/django/decorators.py`)**:
+
+  * Optional imports (module stays importable without Django).
+  * On deny: `HttpResponseForbidden("Forbidden")`; optional `X-RBACX-*` headers when enabled.
+* **Django middleware (`adapters/django/middleware.py`)**:
+
+  * Optional import of `settings`; attaches the resolved guard to `request.rbacx_guard` for downstream consumers.
+* **DRF (`adapters/drf.py`)**:
+
+  * `BasePermission` usage guarded by optional import.
+  * Permission class stashes headers onto `request` for the exception handler; the handler injects them into the DRF `Response`.
+* **Litestar guard (`adapters/litestar_guard.py`)**:
+
+  * Optional imports; guard raises `PermissionDeniedException(detail="Forbidden", headers=...)`.
+  * Headers only included when `add_headers=True` and the corresponding decision fields are present.
+
+### Removed
+
+* `adapters/flask_guard.py` – functionality consolidated into the main Flask adapter (`adapters/flask.py`).
+
+### Fixed
+
+* ASGI response header shape in logging middleware: uses **tuples of bytes** per ASGI spec.
+* A number of edge paths across adapters now return consistent status codes and headers, avoiding framework-specific leaks.
+
+### Security
+
+* Deny responses across web adapters now use **generic bodies** to avoid disclosing decision reasons in JSON payloads. If needed, diagnostics are available via headers that can be toggled on per deployment policy.
+
+### Migration notes (from 1.0.0 → 1.1.0)
+
+* **Flask users**
+
+  * Replace any imports/usages of `adapters/flask_guard.py` with the unified `adapters/flask.py` decorator. Behavior is equivalent but deny bodies are now generic (`{"detail":"Forbidden"}`) and diagnostic details, if desired, come via `X-RBACX-*` headers.
+* **FastAPI users**
+
+  * If you relied on deny payloads containing a `reason` object, note that the detail is now **“Forbidden”**. Migrate any logic that parsed the body to instead read diagnostic headers (`X-RBACX-Reason`, `X-RBACX-Rule`, `X-RBACX-Policy`) when `add_headers=True` is configured for the dependency.
+* **Starlette users**
+
+  * If you returned custom non-ASGI deny objects from guards, they will be auto-coerced into a `JSONResponse`. Ensure any client code expecting a specific payload updates accordingly (deny body is generic; use headers for diagnostics).
+* **Django / DRF users**
+
+  * Behavior on deny is unchanged in status but payloads are standardized and headers are the supported channel for diagnostics. For DRF exception handling, keep using the provided `rbacx_exception_handler` so headers stashed by the permission class are copied onto the `Response`.
+* **Litestar users**
+
+  * Middleware now supports both modern and legacy bases. If you previously subclassed the adapter or depended on `__call__` only, prefer calling `handle(...)` for ASGI mode; both entry points are present.
+  * The guard dependency raises `PermissionDeniedException(detail="Forbidden", headers=...)` with diagnostics only when enabled. Adjust any tests that asserted body-level reasons.
+* **General**
+
+  * If you previously parsed deny **bodies** for reasons or rule ids, migrate to **headers** (`X-RBACX-Reason`, `X-RBACX-Rule`, `X-RBACX-Policy`). This change is intentional to reduce information leakage by default.
+  * Some internal type imports moved to `adapters/_common.py`. If you referenced internal types directly, update imports accordingly.
+
+
 ## 1.0.0 - 2025-09-21
 ### Summary
 First **stable** release. **No public API changes** compared to `0.9.0`.
