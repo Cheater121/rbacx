@@ -1,32 +1,37 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, ParamSpec, TypeVar
+import importlib
+from typing import TYPE_CHECKING, Any, Callable, Optional, ParamSpec, TypeVar
 
 from ._common import EnvBuilder
-
-# Optional Starlette JSONResponse
-try:
-    from starlette.responses import (
-        JSONResponse as _ASGIJSONResponse,  # type: ignore[import-not-found]
-    )
-except Exception:  # pragma: no cover
-    _ASGIJSONResponse = None  # type: ignore
 
 P = ParamSpec("P")
 T = TypeVar("T")
 
-try:
-    from starlette.concurrency import (
-        run_in_threadpool as run_in_threadpool,  # type: ignore[import-not-found]
-    )
-except Exception:  # pragma: no cover
+# ---- Optional Starlette imports (type-checker safe) ----
+if TYPE_CHECKING:
+    # Do NOT import starlette.* here – mypy would error if it's not installed.
+    # Provide minimal typing-only aliases to keep annotations happy.
+    _ASGIJSONResponse: Any = None
+    run_in_threadpool: Callable[..., Any]
+else:
+    # Runtime: try to import Starlette pieces; fall back gracefully.
+    try:
+        _ASGIJSONResponse = importlib.import_module("starlette.responses").JSONResponse  # type: ignore[attr-defined]
+    except Exception:
+        _ASGIJSONResponse = None  # type: ignore[assignment]
 
-    async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
-        return func(*args, **kwargs)
+    try:
+        run_in_threadpool = importlib.import_module("starlette.concurrency").run_in_threadpool  # type: ignore[attr-defined]
+    except Exception:
+
+        async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:  # type: ignore[no-redef]
+            # Fallback: execute synchronously (only used in tests / no-starlette envs)
+            return func(*args, **kwargs)
 
 
 # Module-level JSONResponse that tests may monkeypatch
-JSONResponse = _ASGIJSONResponse  # may be replaced in tests
+JSONResponse: Optional[Callable[..., Any]] = _ASGIJSONResponse  # may be replaced in tests
 
 
 def _coerce_asgi_json_response(
@@ -34,9 +39,10 @@ def _coerce_asgi_json_response(
     status_code: int,
     headers: Optional[dict[str, str]] = None,
 ):
-    if _ASGIJSONResponse is None:  # Starlette missing; use whatever JSONResponse is patched to
+    # If Starlette is absent, use whatever JSONResponse was patched to (tests can inject a stub)
+    if _ASGIJSONResponse is None:
         if JSONResponse is None:
-            raise RuntimeError("JSONResponse is not available")  # pragma: no cover
+            raise RuntimeError("JSONResponse is not available")
         return JSONResponse(data, status_code=status_code, headers=headers)
     return _ASGIJSONResponse(data, status_code=status_code, headers=headers)
 
