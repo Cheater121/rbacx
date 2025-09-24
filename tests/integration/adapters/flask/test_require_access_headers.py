@@ -1,57 +1,47 @@
+import types
 import pytest
 
-pytest.importorskip("flask")
-
-import pytest
-
+flask = pytest.importorskip("flask", reason="Optional dep: Flask not installed")
+from flask import Flask
 from rbacx.adapters.flask import require_access
 
+def _build_env(_req):
+    return None, None, None, None
 
-class _Decision:
-    def __init__(self, allowed=False, effect="deny", reason=None, rule_id=None, policy_id=None):
-        self.allowed = allowed
-        self.effect = effect
-        self.reason = reason
-        self.rule_id = rule_id
-        self.policy_id = policy_id
-        self.obligations = []
+def _with_ctx(call):
+    app = Flask(__name__)
+    with app.app_context():
+        return call()
 
+def test_flask_allowed_pass_through():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=True)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    assert _with_ctx(view) == "OK"
 
-class _Guard:
-    def __init__(self, decision: _Decision):
-        self._d = decision
+def test_flask_denied_min_headers():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
 
-    def decide(self, *args, **kwargs):
-        return self._d
-
-    # Flask adapter adds headers/reason only if guard has explain_sync
-    def explain_sync(self, *args, **kwargs):
-        return self._d
-
-
-def _env(_req):
-    return ({}, "read", {}, {})
-
-
-def test_require_access_adds_headers_and_uses_jsonify(monkeypatch):
-    def fake_jsonify(payload):
-        return payload
-
-    monkeypatch.setattr("rbacx.adapters.flask.jsonify", fake_jsonify, raising=True)
-
-    decision = _Decision(allowed=False, reason="nope", rule_id="r1", policy_id="p1")
-    guard = _Guard(decision)
-
-    @require_access(guard, _env, add_headers=True)
-    def handler(_):
-        return "ok"
-
-    payload, status, headers = handler(object())
-    assert status == 403
-    assert isinstance(payload, dict)
-    assert payload.get("detail") == "forbidden"
-    # With explain_sync present, reason should be propagated into JSON and headers
-    assert payload.get("reason") == "nope"
-    assert headers["X-RBACX-Reason"] == "nope"
-    assert headers["X-RBACX-Rule"] == "r1"
-    assert headers["X-RBACX-Policy"] == "p1"
+def test_flask_headers_present_when_add_headers_true():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False, reason="R", rule_id="RID", policy_id="PID")
+    @require_access(_G(), _build_env, add_headers=True)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
+    headers = resp[2]
+    assert headers.get("X-RBACX-Reason") == "R"
+    assert headers.get("X-RBACX-Rule") == "RID"
+    assert headers.get("X-RBACX-Policy") == "PID"

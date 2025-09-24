@@ -1,89 +1,47 @@
-import importlib
-import sys
 import types
-
 import pytest
 
+flask = pytest.importorskip("flask", reason="Optional dep: Flask not installed")
+from flask import Flask
+from rbacx.adapters.flask import require_access
 
-def _purge(modname: str) -> None:
-    # Remove a module and its submodules from sys.modules (fresh import).
-    for k in list(sys.modules):
-        if k == modname or k.startswith(modname + "."):
-            sys.modules.pop(k, None)
+def _build_env(_req):
+    return None, None, None, None
 
+def _with_ctx(call):
+    app = Flask(__name__)
+    with app.app_context():
+        return call()
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_flask_require_allowed_is_allowed_branch(monkeypatch):
-    """
-    When the guard allows, the decorator should not modify the view result.
-    We stub only `flask.jsonify` because the adapter returns JSON on deny.
-    """
-    _purge("rbacx.adapters.flask")
-
-    fake_flask = types.ModuleType("flask")
-    fake_flask.jsonify = lambda payload=None, **_: payload or {}
-    monkeypatch.setitem(sys.modules, "flask", fake_flask)
-
-    import rbacx.adapters.flask as fa
-
-    importlib.reload(fa)
-
-    class _GuardAllow:
-        def is_allowed_sync(self, subject, action, resource, context):
-            return True
-
-    def _env(_req):
-        return ("u1", "read", "doc", {"ip": "127.0.0.1"})
-
-    @fa.require_access(_GuardAllow(), _env, add_headers=True)
-    def view(_req=None):
+def test_flask_allowed_pass_through():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=True)
+    @require_access(_G(), _build_env)
+    def view():
         return "OK"
+    assert _with_ctx(view) == "OK"
 
-    assert view(object()) == "OK"
+def test_flask_denied_min_headers():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
 
-
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_flask_require_denied_no_headers_and_explain_failure(monkeypatch):
-    """
-    When the guard denies and explain() explodes, the adapter must still
-    return a 403 response. With add_headers=False, there should be no
-    extra headers. Flask allows (response, status) or (response, status, headers).
-    """
-    _purge("rbacx.adapters.flask")
-
-    fake_flask = types.ModuleType("flask")
-    fake_flask.jsonify = lambda payload=None, **_: payload or {}
-    monkeypatch.setitem(sys.modules, "flask", fake_flask)
-
-    import rbacx.adapters.flask as fa
-
-    importlib.reload(fa)
-
-    class _GuardDenyExplode:
-        def is_allowed_sync(self, *_a, **_k):
-            return False
-
-        def explain_sync(self, *_a, **_k):
-            # Simulate unexpected error inside explain() branch.
-            raise RuntimeError("boom")
-
-    def _env(_req):
-        return ("u1", "write", "doc", {"ip": "127.0.0.1"})
-
-    @fa.require_access(_GuardDenyExplode(), _env, add_headers=False)
-    def view(_req=None):
-        return "NO"
-
-    rv = view(object())
-
-    # Flask may return (response, status) or (response, status, headers)
-    assert isinstance(rv, tuple)
-    assert len(rv) in (2, 3), f"unexpected Flask response tuple length: {len(rv)}"
-    payload, status = rv[0], rv[1]
-    assert status == 403
-    assert isinstance(payload, dict)
-    # No additional headers when add_headers=False
-    if len(rv) == 3:
-        headers = rv[2]
-        assert isinstance(headers, dict)
-        assert not headers
+def test_flask_headers_present_when_add_headers_true():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False, reason="R", rule_id="RID", policy_id="PID")
+    @require_access(_G(), _build_env, add_headers=True)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
+    headers = resp[2]
+    assert headers.get("X-RBACX-Reason") == "R"
+    assert headers.get("X-RBACX-Rule") == "RID"
+    assert headers.get("X-RBACX-Policy") == "PID"

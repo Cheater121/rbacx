@@ -1,42 +1,47 @@
+import types
+import pytest
 
-from importlib import reload
-import types, pytest
+flask = pytest.importorskip("flask", reason="Optional dep: Flask not installed")
+from flask import Flask
+from rbacx.adapters.flask import require_access
 
-def _build_env(req):
-    from rbacx.core.model import Subject, Action, Resource, Context
-    return Subject(id="s"), Action("read"), Resource(type="doc"), Context(attrs={})
+def _build_env(_req):
+    return None, None, None, None
 
-def test_flask_allowed_pass_through(monkeypatch):
-    import rbacx.adapters.flask as fl
-    reload(fl)
-    class G:
-        def is_allowed_sync(self, *a, **k): return True
-        def explain_sync(self, *a, **k):
-            return types.SimpleNamespace(reason="ok", rule_id="r", policy_id="p")
-    try:
-        import flask  # noqa: F401
-        def jsonify(o): return o
-        fl.jsonify = jsonify
-        fn = fl.require_access(G(), _build_env, add_headers=True)(lambda: "OK")
-        assert fn() == "OK"
-    except Exception:
-        fn = fl.require_access(G(), _build_env)(lambda: "OK")
-        assert fn() == "OK"
+def _with_ctx(call):
+    app = Flask(__name__)
+    with app.app_context():
+        return call()
 
-def test_flask_denied_min_headers(monkeypatch):
-    import rbacx.adapters.flask as fl
-    reload(fl)
-    class G:
-        def is_allowed_sync(self, *a, **k): return False
-        def explain_sync(self, *a, **k):
-            return types.SimpleNamespace(reason="why", rule_id="r", policy_id="p")
-    try:
-        import flask  # noqa: F401
-        def jsonify(o): return o
-        fl.jsonify = jsonify
-        body, status, headers = fl.require_access(G(), _build_env, add_headers=False)(lambda: None)()
-        assert status == 403
-        assert isinstance(headers, dict)
-    except Exception:
-        with pytest.raises(RuntimeError):
-            fl.require_access(G(), _build_env)(lambda: None)()
+def test_flask_allowed_pass_through():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=True)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    assert _with_ctx(view) == "OK"
+
+def test_flask_denied_min_headers():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
+
+def test_flask_headers_present_when_add_headers_true():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False, reason="R", rule_id="RID", policy_id="PID")
+    @require_access(_G(), _build_env, add_headers=True)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
+    headers = resp[2]
+    assert headers.get("X-RBACX-Reason") == "R"
+    assert headers.get("X-RBACX-Rule") == "RID"
+    assert headers.get("X-RBACX-Policy") == "PID"

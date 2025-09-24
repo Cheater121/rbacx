@@ -13,7 +13,14 @@ exc_mod.PermissionDeniedException = PermissionDeniedException
 sys.modules.setdefault("litestar.exceptions", exc_mod)
 
 def test_litestar_guard_checker_permit_and_deny():
-    from rbacx.adapters.litestar_guard import require as ls_require
+    try:
+        from rbacx.adapters.litestar_guard import require as ls_require
+    except Exception:
+        from rbacx.adapters.litestar_guard import require_access as ls_require
+try:
+    from rbacx.adapters.litestar_guard import require_access as ls_require
+except Exception:
+    pass
     # permit flow (protocol with is_allowed_sync)
     class G1:
         def is_allowed_sync(self, *a, **k): return True

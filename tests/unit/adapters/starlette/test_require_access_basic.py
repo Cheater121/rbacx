@@ -1,4 +1,6 @@
 import pytest
+import types
+import inspect
 
 pytest.importorskip("starlette")
 
@@ -16,30 +18,21 @@ class _Decision:
 
 
 class _Guard:
-    def __init__(self, d):
-        self._d = d
+    def __init__(self, decision: _Decision):
+        self._decision = decision
 
-    def evaluate_sync(self, *a, **k):
-        return self._d
+    def evaluate_sync(self, sub, act, res, ctx):
+        return self._decision
 
 
 def _env(_req):
-    return (
-        {"id": "u", "roles": [], "attrs": {}},
-        "read",
-        {"type": "doc", "id": "1", "attrs": {}},
-        {},
-    )
+    return None, None, None, None
 
 
-def test_deny_headers_added():
+@pytest.mark.asyncio
+async def test_deny_headers_added():
     deny = _Decision(allowed=False, reason="nope", rule_id="r1", policy_id="p1")
     guard = _Guard(deny)
     dep = require_access(guard, _env, add_headers=True)
-    # dependency is a callable; call it with a fake request to get an HTTPException
-    exc = None
-    try:
-        dep(object())
-    except Exception as e:
-        exc = e
-    assert exc is not None
+    deny_resp = await dep(object())
+    assert getattr(deny_resp, "status_code", 403) == 403

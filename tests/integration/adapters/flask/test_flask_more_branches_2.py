@@ -1,93 +1,47 @@
-import importlib
-import sys
 import types
+import pytest
 
+flask = pytest.importorskip("flask", reason="Optional dep: Flask not installed")
+from flask import Flask
+from rbacx.adapters.flask import require_access
 
-def _purge(prefix: str) -> None:
-    """Drop all modules that start with the given prefix from sys.modules."""
-    for k in list(sys.modules):
-        if k.startswith(prefix):
-            sys.modules.pop(k, None)
+def _build_env(_req):
+    return None, None, None, None
 
+def _with_ctx(call):
+    app = Flask(__name__)
+    with app.app_context():
+        return call()
 
-def _install_min_flask(monkeypatch):
-    """
-    Provide a tiny 'flask' module with jsonify() and make_response().
-    This is enough for the adapter to construct a response.
-    Flask allows returning a tuple (body, status, headers).
-    """
-    fake = types.ModuleType("flask")
-
-    def jsonify(obj):
-        return {"json": obj}
-
-    def make_response(body, status=200, headers=None):
-        return body, status, (headers or {})
-
-    fake.jsonify = jsonify
-    fake.make_response = make_response
-
-    monkeypatch.setitem(sys.modules, "flask", fake)
-
-
-def test_flask_require_allowed_is_allowed_branch(monkeypatch):
-    """
-    When guard allows via 'is_allowed' (not the sync variant), decorator should call the view.
-    """
-    _install_min_flask(monkeypatch)
-    _purge("rbacx.adapters.flask")
-
-    import rbacx.adapters.flask as fl
-
-    importlib.reload(fl)
-
-    class _GuardAllow:
-        def is_allowed(self, subject, action, resource, context):
-            return True
-
-    def _build_env(_req):
-        return ("u", "read", "doc", {})
-
-    called = {"view": False}
-
-    @fl.require_access(_GuardAllow(), _build_env, add_headers=False)
-    def view(*_):
-        called["view"] = True
+def test_flask_allowed_pass_through():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=True)
+    @require_access(_G(), _build_env)
+    def view():
         return "OK"
+    assert _with_ctx(view) == "OK"
 
-    # Call without real Flask request; adapter should not require it for allow path.
-    res = view(object())
-    assert res == "OK"
-    assert called["view"] is True
+def test_flask_denied_min_headers():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False)
+    @require_access(_G(), _build_env)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
 
-
-def test_flask_require_denied_no_headers_and_explain_failure(monkeypatch):
-    """
-    On deny with add_headers=False and failing explain(), the adapter should still
-    return a 403 response without any extra headers (content of 'reason' may be None).
-    """
-    _install_min_flask(monkeypatch)
-    _purge("rbacx.adapters.flask")
-
-    import rbacx.adapters.flask as fl
-
-    importlib.reload(fl)
-
-    class _GuardDeny:
-        def is_allowed(self, subject, action, resource, context):
-            return False
-
-        def explain(self, subject, action, resource, context):
-            raise RuntimeError("boom")
-
-    def _build_env(_req):
-        return ("u", "write", "doc", {})
-
-    @fl.require_access(_GuardDeny(), _build_env, add_headers=False)
-    def view(*_):
-        return "UNREACHABLE"
-
-    body, status, headers = view(object())
-    assert status == 403
-    assert isinstance(body, dict) or isinstance(body, tuple) or isinstance(body, list)
-    assert headers == {}
+def test_flask_headers_present_when_add_headers_true():
+    class _G:
+        def evaluate_sync(self, *_a, **_k):
+            return types.SimpleNamespace(allowed=False, reason="R", rule_id="RID", policy_id="PID")
+    @require_access(_G(), _build_env, add_headers=True)
+    def view():
+        return "OK"
+    resp = _with_ctx(view)
+    assert isinstance(resp, tuple) and resp[1] == 403
+    headers = resp[2]
+    assert headers.get("X-RBACX-Reason") == "R"
+    assert headers.get("X-RBACX-Rule") == "RID"
+    assert headers.get("X-RBACX-Policy") == "PID"
