@@ -1,25 +1,33 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 # Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
-try:  # pragma: no cover
-    from litestar.middleware import (
-        ASGIMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
-    )
+if TYPE_CHECKING:
+    # During type checking we don't want mypy to see multiple incompatible bases
+    # rebound into the same _BaseMiddleware name.
+    class _BaseMiddleware(object):  # minimal base for typing only
+        ...
 
-    _MODE = "asgi"
-except Exception:  # pragma: no cover
-    try:
+    _MODE: str = "asgi"
+else:
+    try:  # pragma: no cover
         from litestar.middleware import (
-            AbstractMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
+            ASGIMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
         )
 
-        _MODE = "abstract"
+        _MODE = "asgi"
     except Exception:  # pragma: no cover
-        _BaseMiddleware = object  # type: ignore[assignment]
-        _MODE = "none"
+        try:
+            from litestar.middleware import (
+                AbstractMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
+            )
+
+            _MODE = "abstract"
+        except Exception:  # pragma: no cover
+            _BaseMiddleware = object  # type: ignore[assignment]
+            _MODE = "none"
 
 try:  # pragma: no cover
     from litestar.types import Receive, Scope, Send  # type: ignore[import-not-found]
@@ -52,8 +60,8 @@ class RBACXMiddleware(_BaseMiddleware):
     ) -> None:
         # AbstractMiddleware defines __init__(app) while ASGIMiddleware may not.
         try:
-            # type: ignore[misc]
-            super().__init__(app=app)  # works for AbstractMiddleware
+            # works for AbstractMiddleware
+            super().__init__(app=app)  # type: ignore[call-arg]
         except Exception:
             self.app = app  # ASGIMiddleware or no-base fallback
 

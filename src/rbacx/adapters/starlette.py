@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, ParamSpec, TypeVar
 
+from ._common import EnvBuilder
+
 # Optional Starlette JSONResponse
 try:
-    from starlette.responses import JSONResponse as _ASGIJSONResponse  # type: ignore[import-not-found]
+    from starlette.responses import (
+        JSONResponse as _ASGIJSONResponse,  # type: ignore[import-not-found]
+    )
 except Exception:  # pragma: no cover
     _ASGIJSONResponse = None  # type: ignore
 
@@ -12,15 +16,18 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 try:
-    from starlette.concurrency import run_in_threadpool as run_in_threadpool  # type: ignore[import-not-found]
+    from starlette.concurrency import (
+        run_in_threadpool as run_in_threadpool,  # type: ignore[import-not-found]
+    )
 except Exception:  # pragma: no cover
+
     async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         return func(*args, **kwargs)
+
 
 # Module-level JSONResponse that tests may monkeypatch
 JSONResponse = _ASGIJSONResponse  # may be replaced in tests
 
-from ._common import EnvBuilder
 
 def _coerce_asgi_json_response(
     data: Any,
@@ -33,15 +40,29 @@ def _coerce_asgi_json_response(
         return JSONResponse(data, status_code=status_code, headers=headers)
     return _ASGIJSONResponse(data, status_code=status_code, headers=headers)
 
-def _eval_guard(guard: Any, env: tuple[Any, Any, Any, Any]) -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
+
+def _eval_guard(
+    guard: Any, env: tuple[Any, Any, Any, Any]
+) -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     sub, act, res, ctx = env
     # Prefer evaluate_sync (richer), then is_allowed_sync, then is_allowed
     if hasattr(guard, "evaluate_sync"):
         d = guard.evaluate_sync(sub, act, res, ctx)
-        return bool(getattr(d, "allowed", False)), getattr(d, "reason", None), getattr(d, "rule_id", None), getattr(d, "policy_id", None)
+        return (
+            bool(getattr(d, "allowed", False)),
+            getattr(d, "reason", None),
+            getattr(d, "rule_id", None),
+            getattr(d, "policy_id", None),
+        )
     if hasattr(guard, "is_allowed_sync"):
         return bool(guard.is_allowed_sync(sub, act, res, ctx)), None, None, None
-    return bool(getattr(guard, "is_allowed", lambda *_: False)(sub, act, res, ctx)), None, None, None
+    return (
+        bool(getattr(guard, "is_allowed", lambda *_: False)(sub, act, res, ctx)),
+        None,
+        None,
+        None,
+    )
+
 
 def _deny_headers(reason: Optional[str], add_headers: bool) -> dict[str, str]:
     if not add_headers:
@@ -50,6 +71,7 @@ def _deny_headers(reason: Optional[str], add_headers: bool) -> dict[str, str]:
     if reason:
         headers["X-RBACX-Reason"] = str(reason)
     return headers
+
 
 def require_access(
     guard: Any,
@@ -80,6 +102,7 @@ def require_access(
             is_async = bool(getattr(handler, "__code__", None) and handler.__code__.co_flags & 0x80)
 
             if is_async:
+
                 async def _endpoint_async(request: Any):
                     deny = await _dependency(request)
                     if deny is not None:
@@ -92,6 +115,7 @@ def require_access(
                             )
                         return deny
                     return await handler(request)
+
                 return _endpoint_async
 
             async def _endpoint_sync(request: Any):
@@ -105,6 +129,7 @@ def require_access(
                         )
                     return deny
                 return await run_in_threadpool(handler, request)
+
             return _endpoint_sync
 
         # Otherwise, act as dependency: expect `request` and return a denial response or None.
