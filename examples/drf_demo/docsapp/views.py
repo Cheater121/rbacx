@@ -4,9 +4,8 @@ import pathlib
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.drf import make_permission
-from rbacx.core.engine import Guard
-from rbacx.core.model import Action, Context, Resource, Subject
 
 _policy_path = pathlib.Path(__file__).with_name("policy.json")
 _guard = Guard(json.loads(_policy_path.read_text(encoding="utf-8")))

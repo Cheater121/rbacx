@@ -19,9 +19,9 @@ See runnable apps in `examples/`.
 
 ```python
 from fastapi import FastAPI, Depends, Request
+from rbacx.core.engine import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Resource, Action, Context
+
 
 policy = {"algorithm": "deny-overrides", "rules": [
     {"id": "doc_read", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
@@ -45,9 +45,9 @@ async def doc():
 
 ```python
 from flask import Flask, request
+from rbacx.core.engine import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.flask import require_access
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Resource, Action, Context
+
 
 guard = Guard(policy)
 
@@ -73,9 +73,9 @@ def doc():
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from rbacx.core.engine import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.starlette import require_access
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Resource, Action, Context
+
 
 guard = Guard(policy)
 
@@ -98,9 +98,9 @@ async def doc(request: Request):
 ```python
 from litestar import Litestar, get
 from litestar.middleware import DefineMiddleware
+from rbacx.core.engine import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.litestar import RBACXMiddleware
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Resource, Action, Context
+
 
 guard = Guard(policy)
 
@@ -136,8 +136,8 @@ MIDDLEWARE = [
 Use the decorator:
 
 ```python
+from rbacx import Subject, Resource, Action, Context
 from rbacx.adapters.django.decorators import require_access
-from rbacx.core.model import Subject, Resource, Action, Context
 
 def build_env(request):
     uid = getattr(getattr(request, "user", None), "id", None) or "anonymous"
@@ -155,9 +155,9 @@ def doc(request):
 ```python
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rbacx.core.engine import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.drf import make_permission
-from rbacx.core.engine import Guard
-from rbacx.core.model import Subject, Resource, Action, Context
+
 
 guard = Guard(policy)
 

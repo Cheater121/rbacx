@@ -3,8 +3,8 @@ from __future__ import annotations
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 
+from rbacx import Action, Context, Resource, Subject
 from rbacx.adapters.django.decorators import require_access
-from rbacx.core.model import Action, Context, Resource, Subject
 
 
 def build_env(request):
