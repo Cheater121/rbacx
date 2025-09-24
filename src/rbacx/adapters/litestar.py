@@ -2,17 +2,35 @@ from __future__ import annotations
 
 from typing import Dict
 
-from litestar.middleware import AbstractMiddleware
-from litestar.types import Receive, Scope, Send
+# Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
+try:  # pragma: no cover
+    from litestar.middleware import ASGIMiddleware as _BaseMiddleware  # type: ignore[import-not-found]
+    _MODE = "asgi"
+except Exception:  # pragma: no cover
+    try:
+        from litestar.middleware import AbstractMiddleware as _BaseMiddleware  # type: ignore[import-not-found]
+        _MODE = "abstract"
+    except Exception:  # pragma: no cover
+        _BaseMiddleware = object  # type: ignore[assignment]
+        _MODE = "none"
+
+try:  # pragma: no cover
+    from litestar.types import Receive, Scope, Send  # type: ignore[import-not-found]
+except Exception:  # pragma: no cover
+    from typing import Any as Scope  # type: ignore
+    from typing import Any as Receive  # type: ignore
+    from typing import Any as Send  # type: ignore
 
 from ..core.engine import Guard
 from ._common import EnvBuilder
 
 
-class RBACXMiddleware(AbstractMiddleware):
+class RBACXMiddleware(_BaseMiddleware):
     """Litestar middleware that checks access using RBACX Guard.
 
-    Configure with a function `build_env(scope) -> (Subject, Action, Resource, Context)`.
+    - Prefers :class:`litestar.middleware.ASGIMiddleware` (Litestar >= 2.15).
+    - Falls back to :class:`litestar.middleware.AbstractMiddleware` when needed.
+    - Uses :py:meth:`Guard.evaluate_async`.
     """
 
     def __init__(
@@ -23,24 +41,36 @@ class RBACXMiddleware(AbstractMiddleware):
         build_env: EnvBuilder,
         add_headers: bool = False,
     ) -> None:
-        super().__init__(app=app)
+        # AbstractMiddleware defines __init__(app) while ASGIMiddleware may not.
+        try:
+            # type: ignore[misc]
+            super().__init__(app=app)  # works for AbstractMiddleware
+        except Exception:
+            self.app = app  # ASGIMiddleware or no-base fallback
+
         self.guard = guard
         self.build_env = build_env
         self.add_headers = add_headers
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        # Only handle HTTP scopes; pass through others (e.g., websockets)
-        if scope.get("type") != "http":
-            await self.app(scope, receive, send)
+    async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # Only handle HTTP scopes; pass through others
+        scope_type = None
+        try:
+            scope_type = scope.get("type")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+        if scope_type != "http":
+            await self.app(scope, receive, send)  # type: ignore[arg-type]
             return
 
         subject, action, resource, context = self.build_env(scope)
         decision = await self.guard.evaluate_async(subject, action, resource, context)
         if decision.allowed:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, send)  # type: ignore[arg-type]
             return
 
-        # Do not leak reasons in the body; optionally add diagnostic headers.
+        # Deny: keep body generic; optionally expose diagnostics via headers
         headers: Dict[str, str] = {}
         if self.add_headers:
             if decision.reason:
@@ -52,8 +82,14 @@ class RBACXMiddleware(AbstractMiddleware):
             if policy_id:
                 headers["X-RBACX-Policy"] = str(policy_id)
 
-        # Starlette responses are valid ASGI apps and work fine in Litestar middleware.
         from starlette.responses import JSONResponse  # type: ignore[import-not-found]
-
         res = JSONResponse({"detail": "Forbidden"}, status_code=403, headers=headers)
-        await res(scope, receive, send)  # type: ignore[arg-type]
+        await res(scope, receive, send)
+
+    # New-style base (ASGIMiddleware) calls `handle()`
+    async def handle(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+        return await self._dispatch(scope, receive, send)
+
+    # Old-style base (AbstractMiddleware) expects `__call__`
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+        return await self._dispatch(scope, receive, send)
