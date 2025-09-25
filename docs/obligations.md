@@ -1,50 +1,138 @@
-# Obligations & Challenges (RBACX 1.1+)
 
-This page describes the built-in obligation types enforced by the **BasicObligationChecker**
-and how to extend them with custom checks.
+# Obligations & Challenges
 
-## Compatibility note
+This page documents the built-in obligation types enforced by `BasicObligationChecker` and shows how to extend the checker with custom policies (e.g., geo-fencing). It also clarifies how to target obligations to a specific decision effect (`permit` vs `deny`) and how `challenge` hints are surfaced to the PEP layer.
 
-The checker remains compatible with the legacy raw-decision shape using string key
-`decision` ("permit"|"deny"). For any non-"permit" value it **fails closed** and returns
-`(False, None)`. When `decision == "permit"`, obligation checks run for the current effect.
-If the legacy key is absent, the checker falls back to `effect/allowed`.
+## Compatibility
+
+The checker accepts both legacy and modern raw decision shapes:
+
+* **Legacy:** `{"decision": "permit" | "deny", "obligations": [...]}`
+* **Modern:** `{"effect": "permit" | "deny", "allowed": bool, "obligations": [...]}`
+
+Rules of thumb:
+
+* Any **non-`permit`** decision fails closed: `(ok=False, challenge=None)`.
+* When effect is **`permit`**, obligations targeted at `permit` are evaluated; if any fails, `(ok=False, challenge=...)`.
+* Obligations can explicitly target an effect via `on: "permit" | "deny"`; those not matching the current effect are ignored.
 
 ## Obligations targeting `deny`
 
-Obligations may target the `deny` branch via `on: "deny"`. This is useful to surface
-a machine-readable `challenge` (e.g., `http_basic`) even when the effect is already `deny`.
-PEP can then translate it to `WWW-Authenticate` headers or other UX.
+Obligations may target the **`deny`** branch via `on: "deny"`. This is useful to surface a machine-readable `challenge` (e.g., `http_basic`) even when the PDP already decided to deny. The PEP can then translate it into `WWW-Authenticate` headers or other UX.
 
 ## Built-in obligation types
 
-- `require_mfa` (on: permit) → `mfa`
-- `require_level` (on: permit, `attrs.min`) → `step_up`
-- `http_challenge` (on: permit|deny, `attrs.scheme`) → `http_basic` / `http_bearer` / `http_digest` / `http_auth`
-- `require_consent` (on: permit, optional `attrs.key`) → `consent`
-- `require_terms_accept` (on: permit) → `tos`
-- `require_captcha` (on: permit) → `captcha`
-- `require_reauth` (on: permit, `attrs.max_age`) → `reauth`
-- `require_age_verified` (on: permit) → `age_verification`
+> Unless noted, these apply when `on: "permit"`.
 
-### Policy snippets
+* `require_mfa` → `challenge="mfa"` when `context.attrs["mfa"]` is falsy.
+* `require_level` (`attrs.min`) → `challenge="step_up"` when `context.attrs["auth_level"] < min`.
+* `http_challenge` (`on: permit|deny`, `attrs.scheme` = `Basic|Bearer|Digest`) →
+  `challenge="http_basic" | "http_bearer" | "http_digest"`; unknown/omitted scheme → `http_auth`.
+* `require_consent` (optional `attrs.key`) → `challenge="consent"` when consent is missing.
+
+  * With a key: expect `context.attrs["consent"][key] is True`.
+  * Without a key: expect any truthy `context.attrs["consent"]`.
+* `require_terms_accept` → `challenge="tos"` when `context.attrs["tos_accepted"]` is falsy.
+* `require_captcha` → `challenge="captcha"` when `context.attrs["captcha_passed"]` is falsy.
+* `require_reauth` (`attrs.max_age`) → `challenge="reauth"` when `context.attrs["reauth_age_seconds"] > max_age`.
+* `require_age_verified` → `challenge="age_verification"` when `context.attrs["age_verified"]` is falsy.
+
+## Policy examples
+
+### YAML — MFA on `permit`
 
 ```yaml
-# MFA on permit
+# A permit rule that requires MFA before access is actually granted.
 obligations:
   - on: permit
     type: require_mfa
 ```
 
-```yaml
-# HTTP challenge on deny (PEP sets WWW-Authenticate)
-obligations:
-  - on: deny
-    type: http_challenge
-    attrs:
-      scheme: Basic
+### JSON — HTTP challenge on `deny`
+
+```json
+{
+  "obligations": [
+    {
+      "on": "deny",
+      "type": "http_challenge",
+      "attrs": { "scheme": "Basic" }
+    }
+  ]
+}
 ```
 
-## Extending the checker
+### YAML — Geo-fencing (custom extension example)
 
-Subclass and add your own `type` handlers; call `super().check()` first and short-circuit if it fails.
+```yaml
+# Example obligation we will implement via a custom checker:
+# Allow only if user's geo is in the allowed set.
+obligations:
+  - on: permit
+    type: require_geo
+    attrs:
+      allow: ["EU", "US"]
+```
+
+> Expected context for geo: `context.attrs["geo"]` should contain a short region code (e.g., `"EU"`, `"US"`, `"APAC"`).
+
+## Extending the checker (custom obligations)
+
+To add your own obligation types (e.g., `require_geo`), subclass `BasicObligationChecker` and handle your `type`. Always call `super().check(...)` first to preserve built-ins and fail-closed semantics.
+
+```python
+# src/myapp/obligations.py
+from rbacx.core.obligations import BasicObligationChecker
+
+class CustomObligationChecker(BasicObligationChecker):
+    def check(self, decision, context):
+        # Let the base checker evaluate built-ins first.
+        ok, ch = super().check(decision, context)
+        if not ok:
+            return ok, ch
+
+        # Determine current effect in the same manner as the base checker does:
+        effect = decision.get("effect")
+        if effect is None:
+            effect = "permit" if decision.get("decision") == "permit" else "deny"
+        if effect not in ("permit", "deny"):
+            effect = "deny"  # fail-closed
+
+        ctx = getattr(context, "attrs", context) or {}
+        obligations = decision.get("obligations") or []
+
+        for ob in obligations:
+            if (ob or {}).get("on", "permit") != effect:
+                continue
+            if (ob or {}).get("type") == "require_geo":
+                allow_list = set(((ob.get("attrs") or {}).get("allow") or []))
+                if not allow_list:
+                    # No allow-list means fail-closed
+                    return False, "geo"
+                if ctx.get("geo") not in allow_list:
+                    return False, "geo"
+
+        return True, None
+```
+
+Then wire your checker into the Guard (where you construct your PDP/PEP integration). The Guard should consume `(ok, challenge)` and, on failure, flip `permit → deny`, adding the `challenge` to the final `Decision`.
+
+## Context contract (quick reference)
+
+The checker reads the following `context.attrs[...]` keys when relevant:
+
+* `mfa: bool`
+* `auth_level: int`
+* `consent: bool | {str: bool}`
+* `tos_accepted: bool`
+* `captcha_passed: bool`
+* `reauth_age_seconds: int`
+* `age_verified: bool`
+* `geo: str` (custom example)
+
+## Notes & best practices
+
+* Keep obligation handlers **pure** (no I/O) and quick; they run in the request path.
+* Use `on: "deny"` to add *diagnostics/UX* to denials (e.g., prompt client re-auth).
+* When parsing numeric attrs (e.g., `min`, `max_age`), default invalid values to **0** and fail closed.
+* Unknown `type` values should be treated as **advice** and ignored by the checker unless you explicitly implement them.
