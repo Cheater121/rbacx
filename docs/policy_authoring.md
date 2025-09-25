@@ -21,15 +21,13 @@ This guide outlines how to write clear and maintainable RBAC/ABAC policies.
 ### Permit with MFA requirement
 ```json
 {
-  "algorithm": "permit-overrides",
   "rules": [
     {
       "id": "doc_read",
       "effect": "permit",
       "actions": ["read"],
       "resource": { "type": "doc" },
-      "condition": { "==": [ {"attr":"context.mfa"}, true ] },
-      "obligations": [{"type":"require_mfa"}]
+      "obligations": [ { "type": "require_mfa" } ]
     }
   ]
 }
@@ -41,7 +39,7 @@ Stops on the first matched permit/deny, useful for ordered policies.
 #### YAML example
 
 ```yaml
-algorithm: permit-overrides
+algorithm: first-applicable
 rules:
   - id: p1
     effect: permit
