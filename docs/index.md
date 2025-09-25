@@ -76,22 +76,18 @@ print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 **FastAPI**
 ```python
 from fastapi import FastAPI
+from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.fastapi import require_access
-from rbacx import Guard
 
 app = FastAPI()
 
 policy = {...}  # reuse the policy from above or define one here
 guard = Guard(policy)
 
-def build_env(request):
-    # map request -> (subject, action, resource, context)
-    return {
-        "subject": {"id": request.headers.get("X-User"), "roles": ["reader"]},
-        "action": request.method.lower(),
-        "resource": {"type": "document", "path": request.url.path},
-        "context": {"mfa": True},
-    }
+def build_env(request: Request):
+    user = request.headers.get("x-user", "anonymous")
+    return Subject(id=user, roles=["user"]), Action("read"), Resource(type="doc"), Context()
+
 
 @app.get("/docs")
 @require_access(guard, build_env)
