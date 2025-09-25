@@ -122,6 +122,7 @@ mgr.start(10)  # background polling thread
 ```
 
 If you want to test, try this:
+> ⚠️ Important: this example creates a file on disk. You also can rewrite it with TempFile (tempfile.NamedTemporaryFile)
 ```python
 import json
 import time
