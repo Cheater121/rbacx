@@ -31,7 +31,7 @@ pip install rbacx
 ```python
 from rbacx import Action, Context, Guard, Subject, Resource
 
-policy = {
+policy = policy = {
     "algorithm": "deny-overrides",
     "rules": [
         {
@@ -40,9 +40,10 @@ policy = {
             "actions": ["read"],
             "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
             "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
-            "obligations": [{"mfa": True}]
+            "obligations": [ {"type": "require_mfa"} ]
         },
-        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"], "resource": {"type": "doc", "attrs": {"archived": True}}},
+        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"],
+         "resource": {"type": "doc", "attrs": {"archived": True}}}
     ],
 }
 
