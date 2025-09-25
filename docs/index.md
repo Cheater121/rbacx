@@ -118,6 +118,7 @@ def docs():
 - [Time operators](time_operators.md)
 - [Policy loading (hot reload)](policy_loading.md)
 - [Policy stores](policy_stores.md)
+- [Custom Policy Source](custom_policy_source.md)
 - [HTTP mapping](http_mapping.md)
 
 **Integration**
