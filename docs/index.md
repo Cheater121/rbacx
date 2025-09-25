@@ -44,10 +44,11 @@ pip install rbacx
   "rules": [
     {
       "id": "allow_read_public",
-      "target": { "resource": { "type": "document" }, "action": "read" },
-      "condition": { "==": [ { "attr": "resource.visibility" }, "public" ] },
       "effect": "permit",
-      "obligations": [{ "type": "require_mfa", "when": true }]
+      "actions": ["read"],
+      "resource": { "type": "doc" },
+      "condition": { "==": [ { "attr": "resource.visibility" }, "public" ] },
+      "obligations": [ { "type": "require_mfa", "on": "permit" } ]
     }
   ]
 }
