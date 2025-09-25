@@ -110,6 +110,7 @@ def docs():
 - [Explainability (reasons & obligations)](reasons.md)
 - [Role hierarchy](roles.md)
 - [Audit mode](audit_mode.md)
+- [Obligations](obligations.md)
 
 **Policy**
 - [Policy authoring](policy_authoring.md)
