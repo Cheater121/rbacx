@@ -59,7 +59,7 @@ nav:
       - HTTP mapping: http_mapping.md
   - Integration:
       - Web adapters: web_adapters.md
-      - Adapters (API): adapters.md
+      - Custom Adapters: adapters.md
       - Try examples: try_examples.md
   - Observability:
       - Metrics: metrics.md
