@@ -185,6 +185,8 @@ class Guard:
 
         raw = None
         cache = getattr(self, "cache", None)
+        key: Optional[str] = None
+
         if cache is not None:
             try:
                 key = self._cache_key(env)
@@ -352,7 +354,7 @@ class Guard:
     def _recompute_etag(self) -> None:
         try:
             raw = json.dumps(self.policy, sort_keys=True).encode("utf-8")
-            self.policy_etag = hashlib.sha256(raw).hexdigest()
+            self.policy_etag = hashlib.sha3_256(raw).hexdigest()
         except Exception:
             self.policy_etag = None
         # compile if compiler available
