@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.2.0 - 2025-09-25
+
+### Summary
+
+Expanded **obligations** support across the core engine: `BasicObligationChecker` now enforces common industry flows (MFA, step-up, consent, ToS, CAPTCHA, re-auth freshness, age verification, and explicit HTTP challenges) with **fail-closed** semantics and machine-readable `challenge` hints.
+
+### Added
+
+* `BasicObligationChecker`: support for new obligation `type`s:
+
+  * `require_mfa` → `challenge="mfa"`
+  * `require_level` (`attrs.min`) → `challenge="step_up"`
+  * `http_challenge` (`attrs.scheme` = `Basic|Bearer|Digest`) → `challenge="http_basic|http_bearer|http_digest"`; unknown → `http_auth`
+  * `require_consent` (optional `attrs.key`) → `challenge="consent"`
+  * `require_terms_accept` → `challenge="tos"`
+  * `require_captcha` → `challenge="captcha"`
+  * `require_reauth` (`attrs.max_age` vs `context.reauth_age_seconds`) → `challenge="reauth"`
+  * `require_age_verified` → `challenge="age_verification"`
+* Obligations can target specific effects via `on: "permit" | "deny"`; `deny` obligations can surface a `challenge` even when the effect is already `deny`.
+* Documentation page: `docs/obligations.md` (coverage of built-ins, effect targeting, extension guide).
+* Unit tests for all new branches, including parsing edge-cases and `on` filtering.
+
+### Changed
+
+* `BasicObligationChecker` now **prefers** legacy string `decision` (`"permit"|"deny"`) when present; otherwise falls back to `effect/allowed`.
+* Numeric parsing for `require_level.min` and `require_reauth.max_age` is hardened (invalid values default to `0`).
+
+### Deprecated
+
+* None.
+
+### Removed
+
+* None.
+
+### Fixed
+
+* Challenges on `deny` paths are now emitted correctly when obligations specify `on: "deny"` (e.g., `http_challenge`).
+
+### Security
+
+* Stricter fail-closed behavior for non-permit decisions without obligations (no silent passes).
+
+### Migration notes
+
+* No breaking changes. Existing policies continue to work.
+* To enable new flows, add corresponding obligations to rules/policies (see `docs/obligations.md`).
+* If you rely on `WWW-Authenticate` challenges, use `http_challenge` with an appropriate `scheme`.
+
+
 ## 1.1.0 – 2025-09-25
 
 ### Summary

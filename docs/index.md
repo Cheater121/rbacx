@@ -44,10 +44,11 @@ pip install rbacx
   "rules": [
     {
       "id": "allow_read_public",
-      "target": { "resource": { "type": "document" }, "action": "read" },
-      "condition": { "==": [ { "attr": "resource.visibility" }, "public" ] },
       "effect": "permit",
-      "obligations": [{ "type": "require_mfa", "when": true }]
+      "actions": ["read"],
+      "resource": { "type": "doc" },
+      "condition": { "==": [ { "attr": "resource.visibility" }, "public" ] },
+      "obligations": [ { "type": "require_mfa", "on": "permit" } ]
     }
   ]
 }
@@ -76,22 +77,18 @@ print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 **FastAPI**
 ```python
 from fastapi import FastAPI
+from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.fastapi import require_access
-from rbacx import Guard
 
 app = FastAPI()
 
 policy = {...}  # reuse the policy from above or define one here
 guard = Guard(policy)
 
-def build_env(request):
-    # map request -> (subject, action, resource, context)
-    return {
-        "subject": {"id": request.headers.get("X-User"), "roles": ["reader"]},
-        "action": request.method.lower(),
-        "resource": {"type": "document", "path": request.url.path},
-        "context": {"mfa": True},
-    }
+def build_env(request: Request):
+    user = request.headers.get("x-user", "anonymous")
+    return Subject(id=user, roles=["user"]), Action("read"), Resource(type="doc"), Context()
+
 
 @app.get("/docs")
 @require_access(guard, build_env)
@@ -114,6 +111,7 @@ def docs():
 - [Explainability (reasons & obligations)](reasons.md)
 - [Role hierarchy](roles.md)
 - [Audit mode](audit_mode.md)
+- [Obligations](obligations.md)
 
 **Policy**
 - [Policy authoring](policy_authoring.md)
@@ -121,11 +119,12 @@ def docs():
 - [Time operators](time_operators.md)
 - [Policy loading (hot reload)](policy_loading.md)
 - [Policy stores](policy_stores.md)
+- [Custom Policy Source](custom_policy_source.md)
 - [HTTP mapping](http_mapping.md)
 
 **Integration**
 - [Web adapters](web_adapters.md)
-- [Adapters (API)](adapters.md)
+- [Custom adapters](adapters.md)
 - [Try examples](try_examples.md)
 
 **Observability**

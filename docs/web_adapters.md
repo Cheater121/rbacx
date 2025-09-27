@@ -19,7 +19,7 @@ See runnable apps in `examples/`.
 
 ```python
 from fastapi import FastAPI, Depends, Request
-from rbacx.core.engine import Guard, Subject, Resource, Action, Context
+from rbacx import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.fastapi import require_access
 
 
@@ -45,7 +45,7 @@ async def doc():
 
 ```python
 from flask import Flask, request
-from rbacx.core.engine import Guard, Subject, Resource, Action, Context
+from rbacx import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.flask import require_access
 
 
@@ -73,7 +73,7 @@ def doc():
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from rbacx.core.engine import Guard, Subject, Resource, Action, Context
+from rbacx import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.starlette import require_access
 
 
@@ -98,7 +98,7 @@ async def doc(request: Request):
 ```python
 from litestar import Litestar, get
 from litestar.middleware import DefineMiddleware
-from rbacx.core.engine import Guard, Subject, Resource, Action, Context
+from rbacx import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.litestar import RBACXMiddleware
 
 
@@ -155,7 +155,7 @@ def doc(request):
 ```python
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rbacx.core.engine import Guard, Subject, Resource, Action, Context
+from rbacx import Guard, Subject, Resource, Action, Context
 from rbacx.adapters.drf import make_permission
 
 

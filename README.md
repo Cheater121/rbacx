@@ -29,10 +29,9 @@ pip install rbacx
 
 ## Quickstart
 ```python
-from rbacx import Guard
-from rbacx import Subject, Action, Resource, Context
+from rbacx import Action, Context, Guard, Subject, Resource
 
-policy = {
+policy = policy = {
     "algorithm": "deny-overrides",
     "rules": [
         {
@@ -41,9 +40,10 @@ policy = {
             "actions": ["read"],
             "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
             "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
-            "obligations": [{"mfa": True}]
+            "obligations": [ {"type": "require_mfa"} ]
         },
-        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"], "resource": {"type": "doc", "attrs": {"archived": True}}},
+        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"],
+         "resource": {"type": "doc", "attrs": {"archived": True}}}
     ],
 }
 
@@ -112,9 +112,8 @@ print(res.get("effect", res))  # -> "permit"
 ## Hot reloading
 Default algorithm is:
 ```python
-from rbacx import Guard
+from rbacx import Guard, HotReloader
 from rbacx.store import FilePolicySource
-from rbacx import HotReloader
 
 guard = Guard(policy={})
 mgr = HotReloader(guard, FilePolicySource("policy.json"), initial_load=...)
@@ -123,13 +122,12 @@ mgr.start(10)  # background polling thread
 ```
 
 If you want to test, try this:
+> ⚠️ Important: this example creates a file on disk. You also can rewrite it with TempFile (tempfile.NamedTemporaryFile)
 ```python
 import json
 import time
-from rbacx import Guard
-from rbacx import Subject, Action, Resource, Context
+from rbacx import Action, Context, Guard, HotReloader, Resource, Subject
 from rbacx.store import FilePolicySource
-from rbacx import HotReloader
 
 # create a tiny policy file next to the script
 policy_path = "policy.json"

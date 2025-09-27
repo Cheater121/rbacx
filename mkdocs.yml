@@ -48,6 +48,7 @@ nav:
       - Explainability (reasons & obligations): reasons.md
       - Role hierarchy: roles.md
       - Audit mode: audit_mode.md
+      - Obligations: obligations.md
   - Policy:
       - Authoring: policy_authoring.md
       - Policy catalog: policy_catalog.md
@@ -58,7 +59,7 @@ nav:
       - HTTP mapping: http_mapping.md
   - Integration:
       - Web adapters: web_adapters.md
-      - Adapters (API): adapters.md
+      - Custom Adapters: adapters.md
       - Try examples: try_examples.md
   - Observability:
       - Metrics: metrics.md
