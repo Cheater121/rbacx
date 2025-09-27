@@ -9,6 +9,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
+from .cache import AbstractCache
 from .decision import Decision
 from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
@@ -63,12 +64,17 @@ class Guard:
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
+        cache: AbstractCache | None = None,
+        cache_ttl: Optional[int] = 300,
     ) -> None:
         self.policy: Dict[str, Any] = policy
         self.logger_sink = logger_sink
         self.metrics = metrics
         self.obligations: ObligationChecker = obligation_checker or BasicObligationChecker()
         self.role_resolver = role_resolver
+        # Optional decision cache (per-Guard instance by default)
+        self.cache: AbstractCache | None = cache
+        self.cache_ttl: Optional[int] = cache_ttl
         self.policy_etag: Optional[str] = None
         self._compiled: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
 
@@ -95,10 +101,41 @@ class Guard:
         """Replace policy/policyset."""
         self.policy = policy
         self._recompute_etag()
+        # Invalidate cache entirely; etag changes will naturally change keys,
+        # but clearing avoids memory growth and stale entries.
+        self.clear_cache()
 
     def update_policy(self, policy: Dict[str, Any]) -> None:
         """Alias kept for backward-compatibility."""
         self.set_policy(policy)
+
+    # ------------------------------ caching helpers
+
+    @staticmethod
+    def _normalize_env_for_cache(env: Dict[str, Any]) -> str:
+        """Return a deterministic JSON string for cache key construction.
+
+        - sort_keys=True ensures a stable order
+        - separators reduce size
+        - default=str avoids TypeErrors for non-JSON types by stringifying them.
+        - ensure_ascii=False preserves unicode while keeping key stable
+        Security: Do NOT put secrets into keys for shared caches. The default
+        in-memory cache is per-process and per-Guard; for external caches,
+        ensure transport-level protections.
+        """
+        try:
+            return json.dumps(
+                env, sort_keys=True, separators=(",", ":"), default=str, ensure_ascii=False
+            )
+        except Exception:
+            # As a last resort, fall back to repr which is deterministic for basic containers.
+            return repr(env)
+
+    def _cache_key(self, env: Dict[str, Any]) -> Optional[str]:
+        etag = getattr(self, "policy_etag", None)
+        if not etag:
+            return None
+        return f"{etag}:{self._normalize_env_for_cache(env)}"
 
     # ---------------------------------------------------------------- decision core (async only)
 
@@ -146,7 +183,25 @@ class Guard:
             "context": dict(getattr(context, "attrs", {}) or {}),
         }
 
-        raw = await self._decide_async(env)
+        raw = None
+        cache = getattr(self, "cache", None)
+        if cache is not None:
+            try:
+                key = self._cache_key(env)
+                if key:
+                    cached = cache.get(key)
+                    if cached is not None:
+                        raw = cached
+            except Exception:  # pragma: no cover
+                logger.exception("RBACX: cache.get failed")
+        if raw is None:
+            raw = await self._decide_async(env)
+            if cache is not None:
+                try:
+                    if key:
+                        cache.set(key, raw, ttl=self.cache_ttl)
+                except Exception:  # pragma: no cover
+                    logger.exception("RBACX: cache.set failed")
 
         # determine effect/allowed with obligations
         decision_str = str(raw.get("decision"))
@@ -225,6 +280,19 @@ class Guard:
         return d
 
     # ---------------------------------------------------------------- public APIs
+
+    def clear_cache(self) -> None:
+        """Clear the decision cache if configured.
+
+        This is safe to call at any time. Errors are swallowed to avoid
+        interfering with decision flow.
+        """
+        cache = getattr(self, "cache", None)
+        if cache is not None:
+            try:
+                cache.clear()
+            except Exception:  # pragma: no cover
+                logger.exception("RBACX: cache.clear() failed")
 
     def evaluate_sync(
         self,
