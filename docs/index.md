@@ -25,7 +25,8 @@ RBACX is inspired by:
 - **Hot reload** from file/HTTP/S3 using ETag checks.
 - **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.
 - **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
-- **CLI & linting**: `rbacx validate` to validate policies.
+- **Optional decision caching**: pluggable cache (`AbstractCache`) per `Guard`, with in-memory LRU+TTL default. Enable via `cache` / `cache_ttl`; clear with `guard.clear_cache()`.
+- **CLI & linting**: `rbacx lint` to lint policies.
 - **Test coverage** around **100%** across core decision paths.
 
 ---
@@ -76,7 +77,7 @@ print(decision.effect, decision.reason, decision.rule_id, decision.obligations)
 
 **FastAPI**
 ```python
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.fastapi import require_access
 
@@ -112,6 +113,7 @@ def docs():
 - [Role hierarchy](roles.md)
 - [Audit mode](audit_mode.md)
 - [Obligations](obligations.md)
+- [Decision caching](caching.md)
 
 **Policy**
 - [Policy authoring](policy_authoring.md)
@@ -130,6 +132,7 @@ def docs():
 **Observability**
 - [Metrics](metrics.md)
 - [OpenTelemetry](otel_metrics.md)
+- [Prometheus](prometheus.md)
 - [Logging](logging.md)
 - [Diagnostics](diagnostics.md)
 - [Observability stack](observability_stack.md)

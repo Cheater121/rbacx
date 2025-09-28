@@ -38,7 +38,7 @@ pip install 'rbacx[adapters-fastapi,metrics,otel]'
 
 > **Why a separate YAML extra?**
 > YAML is optional. If you want to author policies in YAML, install `rbacx[yaml]`.
-> YAML’s official media type is `application/yaml` (see RFC 9512). For security, we parse YAML with `yaml.safe_load`. 
+> YAML’s official media type is `application/yaml` (see RFC 9512). For security, we parse YAML with `yaml.safe_load`.
 
 ## Define a policy (JSON or YAML)
 
@@ -81,14 +81,14 @@ from rbacx.store.file_store import FilePolicySource
 from rbacx.store.http_store import HTTPPolicySource
 from rbacx.store.s3_store import S3PolicySource
 
-guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.json"))
-# guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.yaml"))  # requires rbacx[yaml]
+guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.json").load())
+# guard = Guard(policy=FilePolicySource("examples/policies/ok_policy.yaml").load())  # requires rbacx[yaml]
 
 # HTTP: YAML detected by Content-Type (application/yaml) or URL suffix .yaml/.yml
-# guard = Guard(policy=HTTPPolicySource("https://example.com/policy.yaml"))
+# guard = Guard(policy=HTTPPolicySource("https://example.com/policy.yaml").load())
 
 # S3: YAML detected by key suffix .yaml/.yml
-# guard = Guard(policy=S3PolicySource("s3://my-bucket/policy.yaml"))
+# guard = Guard(policy=S3PolicySource("s3://my-bucket/policy.yaml").load())
 ```
 
 ## CLI

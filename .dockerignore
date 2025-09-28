@@ -1,6 +1,7 @@
 
 .git
 __pycache__
+.hypothesis
 *.pyc
 *.pyo
 .eggs
