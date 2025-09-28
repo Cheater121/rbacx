@@ -31,7 +31,7 @@ pip install rbacx
 ```python
 from rbacx import Action, Context, Guard, Subject, Resource
 
-policy = policy = {
+policy = {
     "algorithm": "deny-overrides",
     "rules": [
         {
