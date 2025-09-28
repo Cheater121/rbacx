@@ -1,9 +1,8 @@
 from fastapi import Depends, FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from rbacx import Action, Context, Guard, Resource, Subject
 from rbacx.adapters.fastapi import require_access
-from rbacx.core.engine import Guard
-from rbacx.core.model import Action, Context, Resource, Subject
 from rbacx.metrics.prometheus import PrometheusMetrics
 
 policy = {
@@ -11,7 +10,7 @@ policy = {
         {"id": "doc_read", "effect": "permit", "actions": ["read"], "resource": {"type": "doc"}}
     ]
 }
-metrics = PrometheusMetrics(namespace="rbacx")
+metrics = PrometheusMetrics()
 guard = Guard(policy, metrics=metrics)
 
 
