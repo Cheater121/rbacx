@@ -106,7 +106,7 @@ req = {
 }
 
 res = decide_policyset(policyset, req)
-print(res.get("effect", res))  # -> "permit"
+print(res.get("decision", res))  # -> "permit"
 ```
 
 ## Hot reloading
