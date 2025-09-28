@@ -21,10 +21,25 @@ Decision caching speeds up repeated authorization checks by storing final `Guard
 ### Enable caching
 
 ```python
-from rbacx.core.engine import Guard
+from rbacx.core.engine import Action, Context, Guard, Subject, Resource
 from rbacx.core.cache import DefaultInMemoryCache
 
-policy = {...}
+policy = {
+    "algorithm": "deny-overrides",
+    "rules": [
+        {
+            "id": "doc_read",
+            "effect": "permit",
+            "actions": ["read"],
+            "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
+            "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
+            "obligations": [ {"type": "require_mfa"} ]
+        },
+        {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"],
+         "resource": {"type": "doc", "attrs": {"archived": True}}}
+    ],
+}
+
 default_cache = DefaultInMemoryCache(maxsize=2048)
 guard = Guard(
     policy=policy,
@@ -32,11 +47,11 @@ guard = Guard(
     cache_ttl=300,                 # decision TTL in seconds
 )
 
-decision = guard.evaluate(
-    subject={"id": "u1", "roles": ["user"]},
-    action="profile:read",
-    resource={"owner_id": "u1"},
-    context={"ip": "10.0.0.1"},
+decision = guard.evaluate_sync(
+    subject=Subject(id="u1", roles=["reader"]),
+    action=Action("read"),
+    resource=Resource(type="doc", id="42", attrs={"visibility": "public"}),
+    context=Context(attrs={"mfa": True}),
 )
 
 # Manual cache purge if needed:
