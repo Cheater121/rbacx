@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.3.0 - 2025-09-28
+
+### Added
+
+* **Optional decision caching** in the core engine. Can be enabled per `Guard` instance.
+* **Pluggable cache interface** via `AbstractCache` to support custom backends.
+* **In-memory LRU+TTL cache** as a simple single-process default (`DefaultInMemoryCache`).
+* **Configurable TTL** for cached decisions via the `cache_ttl` parameter on `Guard`.
+* **Manual cache purge** through `Guard.clear_cache()`.
+* **Automatic invalidation** of cached decisions on policy updates.
+* **Documentation**: new page “Decision Caching”.
+
+### Changed
+
+* `Guard` constructor accepts new optional parameters: `cache` and `cache_ttl`.
+  **No behavior change by default** — caching remains disabled unless explicitly configured.
+
+### Deprecated
+
+* None.
+
+### Removed
+
+* None.
+
+### Fixed
+
+* N/A.
+
+### Security
+
+* Guidance added in docs to avoid placing sensitive data in cache keys/metadata and to prefer short TTLs for authorization workloads.
+
+**Upgrade notes:** No action required. Existing integrations continue to work as-is. To use the new feature:
+
+```python
+from rbacx import Guard
+from rbacx.core.cache import DefaultInMemoryCache
+
+guard = Guard(policy, cache=DefaultInMemoryCache(), cache_ttl=300)
+# … later:
+guard.clear_cache()
+```
+
+
 ## 1.2.0 - 2025-09-25
 
 ### Summary
