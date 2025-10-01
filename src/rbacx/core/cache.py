@@ -1,13 +1,3 @@
-"""
-Lightweight caching abstractions for RBACX.
-
-This module provides a protocol-based cache interface and a default in-memory
-LRU+TTL implementation suitable for single-process use. The default cache is
-intentionally simple and dependency-free to align with KISS and Clean Architecture:
-production deployments can provide their own cache implementation that satisfies
-the protocol (e.g., Redis-backed) and inject it into the Guard.
-"""
-
 from __future__ import annotations
 
 import threading
