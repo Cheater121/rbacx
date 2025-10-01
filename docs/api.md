@@ -19,8 +19,6 @@ ___
 ___
 ::: rbacx.core.roles
 ___
-::: rbacx.store
-___
 ::: rbacx.policy
 ___
 ::: rbacx.store.file_store
