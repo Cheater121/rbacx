@@ -2,23 +2,45 @@
 # API Reference
 
 ::: rbacx.core.engine
+___
 ::: rbacx.core.model
+___
 ::: rbacx.core.policy
+___
 ::: rbacx.core.policyset
+___
 ::: rbacx.core.ports
+___
+::: rbacx.logging.decision_logger
+___
 ::: rbacx.core.obligations
+___
+::: rbacx.core.cache
+___
+::: rbacx.core.roles
+___
 ::: rbacx.store
+___
 ::: rbacx.policy
+___
 ::: rbacx.store.file_store
+___
 ::: rbacx.store.s3_store
+___
 ::: rbacx.store.http_store
+___
 ::: rbacx.adapters.asgi
+___
 ::: rbacx.adapters.asgi_logging
+___
 ::: rbacx.adapters.flask
+___
 ::: rbacx.adapters.django.middleware
+___
 ::: rbacx.adapters.django.trace
+___
 ::: rbacx.adapters.litestar
-
+___
 
 ## Decision object
 
@@ -31,7 +53,7 @@ Fields returned by `Guard.evaluate*`:
 - `rule_id: Optional[str]`
 - `policy_id: Optional[str]`
 - `reason: Optional[str]`
-
+___
 
 ### YAML policies
 

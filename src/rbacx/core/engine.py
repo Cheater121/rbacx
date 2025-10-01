@@ -271,6 +271,7 @@ class Guard:
                         "rule_id": d.rule_id,
                         "policy_id": d.policy_id,
                         "reason": d.reason,
+                        "obligations": d.obligations,
                     }
                     if inspect.iscoroutinefunction(log):
                         await log(payload)

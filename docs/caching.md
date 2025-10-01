@@ -21,7 +21,7 @@ Decision caching speeds up repeated authorization checks by storing final `Guard
 ### Enable caching
 
 ```python
-from rbacx.core.engine import Action, Context, Guard, Subject, Resource
+from rbacx import Action, Context, Guard, Subject, Resource
 from rbacx.core.cache import DefaultInMemoryCache
 
 policy = {

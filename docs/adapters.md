@@ -28,6 +28,8 @@ guard = Guard(
     metrics=...,                 # optional: object with .inc(name, labels) and/or .observe(name, value, labels)
     obligation_checker=...,      # optional: validates obligations (defaults to BasicObligationChecker)
     role_resolver=...,           # optional: expands roles (may be sync or async)
+    cache=...,                   # optional: decision cache implementation (AbstractCache)
+    cache_ttl=...,               # optional: time-to-live for cached entries (seconds)
 )
 ```
 

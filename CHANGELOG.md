@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.4.0 - 2025-10-02
+
+### Added
+
+* **Decision logger: opt-in safe redactions.**
+  When `use_default_redactions=True` **and** `redactions` is not provided, the logger applies a conservative set of redactions (PII/secrets masked via the `enforcer`). Backwards compatibility is preserved — by default nothing is redacted.
+
+* **Decision logger: smart sampling (opt-in).**
+  Category-aware sampling can be enabled with `smart_sampling=True`. Per-category probabilities are configurable via `category_sampling_rates` (e.g., `{"deny": 1.0, "permit_with_obligations": 1.0, "permit": 0.05}`). By default smart sampling is disabled and behavior mirrors prior releases.
+
+* **Decision logger: env size limit (opt-in).**
+  `max_env_bytes` bounds the serialized size of the (already redacted) `env`. If exceeded, the logger emits a compact placeholder `{"_truncated": true, "size_bytes": N}` instead of the full payload. Disabled by default.
+
+* **Unit tests** for the above behavior:
+
+  * Redactions opt-in precedence rules
+  * Smart sampling categories and overrides
+  * Truncation logic and serialization-error fallback
+
+### Changed
+
+* **None.** Default behavior is unchanged:
+
+  * No redactions unless explicitly configured.
+  * No smart sampling unless explicitly enabled.
+  * No size limit unless explicitly set.
+
+### Deprecated
+
+* **None.**
+
+### Removed
+
+* **None.**
+
+### Fixed
+
+* **Debug message parity.**
+  The logger keeps the legacy debug message on redaction errors:
+  `"DecisionLogger: failed to apply redactions"` — ensuring existing tests and log parsers remain compatible.
+
+### Security
+
+* The opt-in default redactions align with common security guidance by minimizing sensitive data in logs (PII/secrets masked), without altering behavior for existing deployments.
+
+### Upgrade notes
+
+No action required for existing users.
+
+To enable the new functionality:
+
+```python
+from rbacx.logging.decision_logger import DecisionLogger
+
+# 1) Enable safe-by-default redactions (only when redactions are not provided)
+audit = DecisionLogger(use_default_redactions=True, as_json=True)
+
+# 2) Enable smart sampling with category-specific rates
+audit = DecisionLogger(
+    smart_sampling=True,
+    sample_rate=0.05,  # fallback for categories not listed below
+    category_sampling_rates={
+        "deny": 1.0,
+        "permit_with_obligations": 1.0,
+        "permit": 0.05,
+    },
+    as_json=True,
+)
+
+# 3) Bound the size of logged env AFTER redactions
+audit = DecisionLogger(
+    use_default_redactions=True,
+    max_env_bytes=64 * 1024,  # 64 KiB
+    as_json=True,
+)
+```
+
+All features are **opt-in** and maintain full backward compatibility with previous releases.
+
+
 ## 1.3.0 - 2025-09-28
 
 ### Added
