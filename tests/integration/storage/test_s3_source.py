@@ -1,8 +1,13 @@
 # tests/integration/storage/test_s3_source.py
 import sys
 import types
+import importlib.util
+import pytest
 
 from rbacx.storage.s3 import S3PolicySource
+
+# Optional dependency guard for tests that trigger schema validation
+_HAS_JSONSCHEMA = importlib.util.find_spec("jsonschema") is not None
 
 
 # Fakes for the S3 client and responses
@@ -45,6 +50,7 @@ class FakeClient:
         return {"ChecksumSHA256": self._checksum_sha256}
 
 
+@pytest.mark.skipif(not _HAS_JSONSCHEMA, reason="jsonschema not installed; skipping schema-validation dependent test")
 def test_s3_etag_strategy(monkeypatch):
     # Patch client builder to avoid importing boto3
     monkeypatch.setattr(
@@ -52,6 +58,7 @@ def test_s3_etag_strategy(monkeypatch):
     )
     src = S3PolicySource("s3://b/k", change_detector="etag")
     assert src.etag() == "etag:abc"
+    # This calls .load(), which validates via jsonschema in production path
     assert src.load()["rules"] == []
 
 
@@ -112,7 +119,7 @@ def test_s3_load_closes_body_and_validates_when_enabled(monkeypatch):
     # Fake client that tracks body.close()
     fc = FakeClient()
 
-    # Inject fake validator module
+    # Inject fake validator module to avoid importing jsonschema
     mod = types.ModuleType("rbacx.dsl.validate")
     flag = {"called": False}
 
@@ -153,3 +160,4 @@ def test_s3_build_client_defaults_without_real_boto3(monkeypatch):
     # If it doesn't raise, we covered the default path; returned object type is opaque
     client = S3PolicySource._build_client(session=None, cfg=None, extra={})
     assert client is not None
+
