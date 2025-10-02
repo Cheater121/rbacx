@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.6.0 — 2025-10-02
+
+**Highlights**
+Optional schema validation for HTTP policy source without breaking existing behavior.
+
+**Added**
+
+* `HTTPPolicySource(..., validate_schema: bool = False)` — when enabled, the store validates the parsed policy during `load()`. Validation runs on both the JSON fast-path and the text-based parsing path. Default remains `False` to avoid pulling validation dependencies unless explicitly requested.
+
+**Changed**
+
+* No breaking API changes. Existing HTTP ETag/`If-None-Match` handling and `304 Not Modified` behavior are unchanged.
+
+**Fixed**
+
+* N/A
+
+
 ## 1.5.0 — 2025-10-02
 ### Highlights
 
