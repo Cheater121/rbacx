@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import argparse
@@ -6,11 +5,10 @@ import json
 import sys
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from . import __version__
 from .dsl.lint import analyze_policy, analyze_policyset
 from .dsl.validate import validate_policy
 from .store.policy_loader import parse_policy_text
-from . import __version__
-
 
 # ------------------------------- utils ---------------------------------
 
@@ -103,10 +101,10 @@ def _print(obj: Any, fmt: str) -> None:
 
 # Exit codes
 EXIT_OK = 0
-EXIT_USAGE = 2            # argparse uses 2 for usage errors
-EXIT_LINT_ERRORS = 3      # used only when --strict
+EXIT_USAGE = 2  # argparse uses 2 for usage errors
+EXIT_LINT_ERRORS = 3  # used only when --strict
 EXIT_IO = 4
-EXIT_ENV = 5              # missing optional deps, etc.
+EXIT_ENV = 5  # missing optional deps, etc.
 EXIT_SCHEMA_ERRORS = 6
 
 
@@ -384,4 +382,3 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
-
