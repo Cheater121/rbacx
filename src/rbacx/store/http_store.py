@@ -12,8 +12,10 @@ class HTTPPolicySource(PolicySource):
     Extra: rbacx[http]
     """
 
-    def __init__(self, url: str, *, headers: Dict[str, str] | None = None) -> None:
+    def __init__(self, url: str, *, headers: Dict[str, str] | None = None, validate_schema: bool = False) -> None:
         self.url = url
+        # Optional schema validation flag (disabled by default)
+        self.validate_schema = validate_schema
         self.headers = dict(headers or {})
         self._etag: Optional[str] = None
         self._policy_cache: Optional[Dict[str, Any]] = None
@@ -63,6 +65,10 @@ class HTTPPolicySource(PolicySource):
             try:
                 obj = r.json()
                 if isinstance(obj, dict):
+                    # Optionally validate the policy before returning
+                    if self.validate_schema:
+                        from rbacx.dsl.validate import validate_policy
+                        validate_policy(obj)
                     self._policy_cache = obj
                     return obj
             except Exception:
@@ -95,7 +101,28 @@ class HTTPPolicySource(PolicySource):
             else:
                 body_text = ""
 
+        
+        # If Content-Type indicates JSON but body text is empty, try JSON API as a last resort
+        if (body_text or "") == "" and content_type and "json" in content_type.lower() and hasattr(r, "json"):
+            obj = None
+            try:
+                obj = r.json()
+            except Exception:
+                # If .json() fails, fall through to text parsing
+                obj = None
+            if isinstance(obj, dict):
+                # Optionally validate; let validation errors propagate
+                if self.validate_schema:
+                    from rbacx.dsl.validate import validate_policy
+                    validate_policy(obj)
+                self._policy_cache = obj
+                return obj
+
         policy = parse_policy_text(body_text or "", filename=self.url, content_type=content_type)
+        # Run schema validation only when explicitly enabled (text branch)
+        if self.validate_schema:
+            from rbacx.dsl.validate import validate_policy
+            validate_policy(policy)
         # Cache the last successfully parsed policy for 304 reuse
         self._policy_cache = policy
         return policy
