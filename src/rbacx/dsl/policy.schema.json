@@ -5,385 +5,215 @@
   "properties": {
     "algorithm": {
       "type": "string",
-      "enum": [
-        "deny-overrides",
-        "permit-overrides",
-        "first-applicable"
-      ]
+      "enum": ["deny-overrides", "permit-overrides", "first-applicable"]
     },
     "rules": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "effect": {
-            "type": "string",
-            "enum": [
-              "permit",
-              "deny"
-            ]
-          },
-          "actions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "resource": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "oneOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                ]
-              },
-              "attrs": {
-                "type": "object"
-              }
-            },
-            "required": [
-              "type"
-            ]
-          },
-          "condition": {
-            "$ref": "#/$defs/Condition"
-          },
-          "obligations": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "effect",
-          "actions",
-          "resource"
-        ]
-      }
+      "items": { "$ref": "#/$defs/Rule" }
     },
     "policies": {
       "type": "array",
-      "items": {
-        "type": "object"
-      }
+      "items": { "$ref": "#/$defs/SinglePolicy" }
     }
   },
   "oneOf": [
-    {
-      "required": [
-        "rules"
-      ]
-    },
-    {
-      "required": [
-        "policies"
-      ]
-    }
+    { "required": ["rules"] },
+    { "required": ["policies"] }
   ],
   "$defs": {
+    "Rule": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "effect": { "type": "string", "enum": ["permit", "deny"] },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "resource": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+              ]
+            },
+            "attrs": { "type": "object" }
+          },
+          "required": ["type"],
+          "additionalProperties": true
+        },
+        "condition": { "$ref": "#/$defs/Condition" },
+        "obligations": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["id", "effect", "actions", "resource"],
+      "additionalProperties": false
+    },
+
+    "SinglePolicy": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["deny-overrides", "permit-overrides", "first-applicable"]
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Rule" }
+        }
+      },
+      "required": ["rules"],
+      "additionalProperties": false
+    },
+
     "Condition": {
       "oneOf": [
-        {
-          "type": "boolean"
-        },
+        { "type": "boolean" },
         {
           "type": "object",
           "minProperties": 1,
           "maxProperties": 1,
+          "additionalProperties": false,
           "properties": {
             "and": {
               "type": "array",
-              "items": {
-                "$ref": "#/$defs/Condition"
-              }
+              "items": { "$ref": "#/$defs/Condition" }
             },
             "or": {
               "type": "array",
-              "items": {
-                "$ref": "#/$defs/Condition"
-              }
+              "items": { "$ref": "#/$defs/Condition" }
             },
-            "not": {
-              "$ref": "#/$defs/Condition"
-            },
-            "==": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2
-            },
-            "!=": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2
-            },
+            "not": { "$ref": "#/$defs/Condition" },
+
+            "==": { "type": "array", "minItems": 2, "maxItems": 2 },
+            "!=": { "type": "array", "minItems": 2, "maxItems": 2 },
+
             ">": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/NumExpr"
-                },
-                {
-                  "$ref": "#/$defs/NumExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/NumExpr" }, { "$ref": "#/$defs/NumExpr" } ],
+              "items": false
             },
             "<": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/NumExpr"
-                },
-                {
-                  "$ref": "#/$defs/NumExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/NumExpr" }, { "$ref": "#/$defs/NumExpr" } ],
+              "items": false
             },
             ">=": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/NumExpr"
-                },
-                {
-                  "$ref": "#/$defs/NumExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/NumExpr" }, { "$ref": "#/$defs/NumExpr" } ],
+              "items": false
             },
             "<=": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/NumExpr"
-                },
-                {
-                  "$ref": "#/$defs/NumExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/NumExpr" }, { "$ref": "#/$defs/NumExpr" } ],
+              "items": false
             },
+
             "in": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "oneOf": [
-                    {
-                      "$ref": "#/$defs/StrExpr"
-                    },
-                    {
-                      "$ref": "#/$defs/NumExpr"
-                    }
-                  ]
-                },
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [
+                { "oneOf": [ { "$ref": "#/$defs/StrExpr" }, { "$ref": "#/$defs/NumExpr" } ] },
+                { "$ref": "#/$defs/ContainerExpr" }
+              ],
+              "items": false
             },
+
             "contains": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                },
-                {
-                  "oneOf": [
-                    {
-                      "$ref": "#/$defs/StrExpr"
-                    },
-                    {
-                      "$ref": "#/$defs/NumExpr"
-                    }
-                  ]
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [
+                { "$ref": "#/$defs/ContainerExpr" },
+                { "oneOf": [ { "$ref": "#/$defs/StrExpr" }, { "$ref": "#/$defs/NumExpr" } ] }
+              ],
+              "items": false
             },
+
             "startsWith": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/StrExpr"
-                },
-                {
-                  "$ref": "#/$defs/StrExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/StrExpr" }, { "$ref": "#/$defs/StrExpr" } ],
+              "items": false
             },
             "endsWith": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/StrExpr"
-                },
-                {
-                  "$ref": "#/$defs/StrExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/StrExpr" }, { "$ref": "#/$defs/StrExpr" } ],
+              "items": false
             },
+
             "before": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/DateTimeExpr"
-                },
-                {
-                  "$ref": "#/$defs/DateTimeExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/DateTimeExpr" }, { "$ref": "#/$defs/DateTimeExpr" } ],
+              "items": false
             },
             "after": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/DateTimeExpr"
-                },
-                {
-                  "$ref": "#/$defs/DateTimeExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/DateTimeExpr" }, { "$ref": "#/$defs/DateTimeExpr" } ],
+              "items": false
             },
+
             "between": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [
+                { "$ref": "#/$defs/DateTimeExpr" },
                 {
-                  "$ref": "#/$defs/DateTimeExpr"
-                },
-                {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "items": [
-                    {
-                      "$ref": "#/$defs/DateTimeExpr"
-                    },
-                    {
-                      "$ref": "#/$defs/DateTimeExpr"
-                    }
-                  ]
+                  "type": "array", "minItems": 2, "maxItems": 2,
+                  "prefixItems": [ { "$ref": "#/$defs/DateTimeExpr" }, { "$ref": "#/$defs/DateTimeExpr" } ],
+                  "items": false
                 }
-              ]
+              ],
+              "items": false
             },
+
             "hasAll": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                },
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/ContainerExpr" }, { "$ref": "#/$defs/ContainerExpr" } ],
+              "items": false
             },
             "hasAny": {
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "items": [
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                },
-                {
-                  "$ref": "#/$defs/ContainerExpr"
-                }
-              ]
+              "type": "array", "minItems": 2, "maxItems": 2,
+              "prefixItems": [ { "$ref": "#/$defs/ContainerExpr" }, { "$ref": "#/$defs/ContainerExpr" } ],
+              "items": false
             }
           }
         }
       ]
     },
+
     "AttrRef": {
       "type": "object",
-      "properties": {
-        "attr": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "attr"
-      ],
+      "properties": { "attr": { "type": "string" } },
+      "required": ["attr"],
       "additionalProperties": false
     },
+
     "StrExpr": {
-      "oneOf": [
-        {
-          "type": "string"
-        },
-        {
-          "$ref": "#/$defs/AttrRef"
-        }
-      ]
+      "oneOf": [ { "type": "string" }, { "$ref": "#/$defs/AttrRef" } ]
     },
+
     "NumExpr": {
-      "oneOf": [
-        {
-          "type": "number"
-        },
-        {
-          "$ref": "#/$defs/AttrRef"
-        }
-      ]
+      "oneOf": [ { "type": "number" }, { "$ref": "#/$defs/AttrRef" } ]
     },
+
     "ContainerExpr": {
       "oneOf": [
+        { "type": "array" },
+        { "type": "string" },
         {
-          "type": "array"
+          "allOf": [
+            { "type": "object" },
+            { "not": { "$ref": "#/$defs/AttrRef" } }
+          ]
         },
-        {
-          "type": "string"
-        },
-        {
-          "type": "object"
-        },
-        {
-          "$ref": "#/$defs/AttrRef"
-        }
+        { "$ref": "#/$defs/AttrRef" }
       ]
     },
+
     "DateTimeExpr": {
       "oneOf": [
-        {
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "$ref": "#/$defs/AttrRef"
-        }
+        { "type": "string", "format": "date-time" },
+        { "$ref": "#/$defs/AttrRef" }
       ]
     }
   }
 }
+
