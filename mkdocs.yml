@@ -67,7 +67,7 @@ nav:
       - OpenTelemetry: otel_metrics.md
       - Prometheus: prometheus.md
       - Logging: logging.md
-      - Diagnostics: diagnostics.md
+      - Policy diagnostics: diagnostics.md
       - Observability stack: observability_stack.md
   - Performance:
       - Performance guide: performance.md
