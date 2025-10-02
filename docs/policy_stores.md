@@ -30,14 +30,14 @@ tag = source.etag()                       # string or None
 
 ### Behavior
 
-- Loads JSON from a local file.
-- `etag()` reflects the file content (suitable for change detection).
-- If validation is enabled, it performs a schema check via `rbacx.dsl.validate`.
+* Loads JSON from a local file.
+* `etag()` reflects the file content (suitable for change detection).
+* If validation is enabled, it performs a schema check via `rbacx.dsl.validate`.
 
 ### Constructor options (core)
 
-- `validate_schema: bool = False` — enable schema validation on `load()`.
-- `include_mtime_in_etag: bool` - if needed "touch" changes detected (default `False`).
+* `validate_schema: bool = False` — enable schema validation on `load()`.
+* `include_mtime_in_etag: bool` - if needed "touch" changes detected (default `False`).
 
 ## Safe write utility
 
@@ -66,12 +66,14 @@ tag = source.etag()   # last ETag (if provided by the server)
 
 ### Behavior
 
-- Issues a GET request and, if a previous ETag is known, sends `If-None-Match`.
-- On `304 Not Modified`, returns empty dict `{}` — a signal that applying can be skipped.
+* Issues a GET request and, if a previous ETag is known, sends `If-None-Match`.
+* On `304 Not Modified`, returns empty dict `{}` — a signal that applying can be skipped.
+* If schema validation is enabled, the loaded policy is validated against the built-in schema before being returned.
 
 ### Constructor options (core)
 
-- `headers: dict[str, str] | None = None` — additional HTTP headers.
+* `headers: dict[str, str] | None = None` — additional HTTP headers.
+* `validate_schema: bool = False` — when `True`, the store validates the parsed policy during `load()`. The default is `False` to preserve backward-compatible behavior and avoid adding a validation dependency unless explicitly requested.
 
 ---
 
@@ -94,21 +96,21 @@ tag = source.etag()   # string or None (depending on the strategy)
 
 The `change_detector` parameter selects the source of the "change tag":
 
-- `"etag"` (default) — uses ETag from `HeadObject`.
-- `"version_id"` — uses `VersionId` (bucket versioning must be enabled).
-- `"checksum"` — uses `GetObjectAttributes(..., ObjectAttributes=['Checksum'])` if object checksums are enabled.
+* `"etag"` (default) — uses ETag from `HeadObject`.
+* `"version_id"` — uses `VersionId` (bucket versioning must be enabled).
+* `"checksum"` — uses `GetObjectAttributes(..., ObjectAttributes=['Checksum'])` if object checksums are enabled.
 
 If a strategy is unavailable for a particular bucket/object, use `"etag"` (the most compatible option).
 
 ### Options (core)
 
-- `validate_schema: bool = False` — validate the policy against the schema on `load()`.
+* `validate_schema: bool = False` — validate the policy against the schema on `load()`.
 
 **Network/client parameters:**
 
-- You can pass a prepared `boto3.Session`.
-- Timeouts/retries can be tuned via `botocore.config.Config`.
-- Additional client parameters are accepted (e.g., `endpoint_url`, `region_name`).
+* You can pass a prepared `boto3.Session`.
+* Timeouts/retries can be tuned via `botocore.config.Config`.
+* Additional client parameters are accepted (e.g., `endpoint_url`, `region_name`).
 
 *(Argument names match the `S3PolicySource` constructor; use the simple form from the example if you don't need advanced tuning.)*
 
