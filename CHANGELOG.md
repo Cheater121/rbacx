@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.5.0 — 2025-10-02
+### Highlights
+
+* **DSL JSON Schema tightened.** Clarified `Condition` operators’ tuple/array arity and numeric/string/container expression refs to remove metaschema ambiguity and improve editor/CI validation.
+* **CLI expanded.** Alongside `lint`, you now have `validate` (schema check) and `check` (validate → lint). Consistent exit codes, JSON/text output, and a strict mode for CI.
+
+### Added
+
+* **`rbacx validate`** — validates a policy or each entry of a policy set against the official JSON Schema.
+* **`rbacx check`** — runs schema validation first, then lints the same parsed document (single read from file/STDIN).
+* **`--format {json,text}`** for `lint`, `validate`, `check` (default: `json`).
+* **`--strict`** for `lint` and `check`: non-zero exit (`3`) when lint issues are found.
+* **Policy set support** across commands via `--policyset`.
+* **Better STDIN/file handling**: `check` parses input once and reuses it for both phases.
+
+### Changed
+
+* **Exit codes standardized** (used by `main()` and subcommands):
+
+  * `0` OK, `2` usage error, `3` lint issues (only with `--strict`),
+    `4` I/O, `5` environment/optional dependency missing, `6` schema errors.
+* **Human-readable text output** includes `policy_index` for policy sets and concise messages.
+
+### Fixed
+
+* Schema ambiguities that previously produced confusing metaschema errors are resolved; `validate` now reports precise operator/arity problems.
+
+### Notes
+
+* **Optional dependencies:**
+
+  * `validate` requires `jsonschema`; if missing, exits with code `5` and a clear message.
+  * YAML policies are supported when `PyYAML` is installed; related tests/usage are skipped gracefully if not present.
+* **Backwards compatibility:** existing `rbacx lint` behavior is preserved unless `--strict` is used. No breaking API changes.
+
+
 ## 1.4.0 - 2025-10-02
 
 ### Added

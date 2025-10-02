@@ -29,7 +29,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install -e '.[yaml,adapters-fastapi,adapters-flask,adapters-drf,adapters-litestar,metrics,dates,http,s3,otel,tests]'
+          pip install -e '.[yaml,adapters-fastapi,adapters-flask,adapters-drf,adapters-litestar,metrics,dates,http,s3,otel,validate,tests]'
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests with coverage (XML + terminal)
