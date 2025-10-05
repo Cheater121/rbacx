@@ -114,6 +114,7 @@ def docs():
 - [Audit mode](audit_mode.md)
 - [Obligations](obligations.md)
 - [Decision caching](caching.md)
+- [Types](types.md)
 
 **Policy**
 - [Policy authoring](policy_authoring.md)

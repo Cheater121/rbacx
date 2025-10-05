@@ -30,6 +30,7 @@ guard = Guard(
     role_resolver=...,           # optional: expands roles (may be sync or async)
     cache=...,                   # optional: decision cache implementation (AbstractCache)
     cache_ttl=...,               # optional: time-to-live for cached entries (seconds)
+    strict_types=...,            # optional: strict typing (default False); exact matches + aware datetimes when True
 )
 ```
 
