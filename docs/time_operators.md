@@ -1,6 +1,8 @@
 
 # Time operators
 
+> See also: [Types](types.md) for lax vs. strict type semantics of time operators.
+
 Operators: `before`, `after`, `between` using ISO-8601 strings (e.g., `2025-09-07T10:00:00Z`).
 
 - Parser prefers `datetime.fromisoformat`, normalizing `Z` to `+00:00`.

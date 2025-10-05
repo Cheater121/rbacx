@@ -66,6 +66,7 @@ class Guard:
         role_resolver: RoleResolver | None = None,
         cache: AbstractCache | None = None,
         cache_ttl: Optional[int] = 300,
+        strict_types: bool = False,
     ) -> None:
         self.policy: Dict[str, Any] = policy
         self.logger_sink = logger_sink
@@ -77,6 +78,7 @@ class Guard:
         self.cache_ttl: Optional[int] = cache_ttl
         self.policy_etag: Optional[str] = None
         self._compiled: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+        self.strict_types: bool = bool(strict_types)
 
         # Provide a "current" loop if missing (helps tests on Py3.12+).
         try:
@@ -182,6 +184,9 @@ class Guard:
             },
             "context": dict(getattr(context, "attrs", {}) or {}),
         }
+
+        if self.strict_types:
+            env["__strict_types__"] = True
 
         raw = None
         cache = getattr(self, "cache", None)

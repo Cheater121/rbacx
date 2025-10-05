@@ -90,6 +90,7 @@ A custom cache must conform to the `AbstractCache` protocol. Below is a descript
 - **Scaling.** For distributed backends, use stable serialization and predictable TTL semantics.
 - **Stampede mitigation.** For “hot” keys, consider small TTL jitter or a “serve stale then revalidate” approach to avoid synchronized expirations.
 - **Optional observability.** If feasible, expose simple hit/miss and size indicators to tune TTL and capacity.
+- **Strict mode.** With `strict_types=True`, the engine injects `__strict_types__` into the env, so cache keys differ from lax mode. See [Types](types.md).
 
 ---
 

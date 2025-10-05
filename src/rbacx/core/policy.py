@@ -21,6 +21,14 @@ def match_actions(rule: Dict[str, Any], action: str) -> bool:
     return action in acts or "*" in acts
 
 
+def _is_strict(env: Dict[str, Any]) -> bool:
+    """Check if strict types mode is enabled via env flag."""
+    try:
+        return bool(env.get("__strict_types__"))
+    except Exception:
+        return False
+
+
 def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
     if not isinstance(rdef, dict):
         return False
@@ -29,29 +37,49 @@ def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
 
     r_type = rdef.get("type")
     r_id = rdef.get("id")
-    r_attrs = rdef.get("attrs") or rdef.get("attributes") or {}  # canonical key: \"attrs\" (\"attributes\" supported for backward compatibility)
+    r_attrs = (
+        rdef.get("attrs") or rdef.get("attributes") or {}
+    )  # canonical key: "attrs" ("attributes" supported for backward compatibility)
 
     res_type = resource.get("type")
     res_id = resource.get("id")
     res_attrs = resource.get("attrs") or resource.get("attributes") or {}
 
+    strict = _is_strict(
+        resource if "__strict_types__" in resource else {}
+    )  # will be overridden below if env provided
+
+    # If resource dict came from env["resource"], we may also have the flag in the outer env.
+    # Callers that pass only the resource won't include the flag; that's fine.
+
     # type check
     if r_type is not None:
-        allowed: Sequence[str]
+        allowed: Sequence[Any]
         if isinstance(r_type, str):
             allowed = [r_type]
         elif isinstance(r_type, list):
-            allowed = [str(x) for x in r_type]
+            allowed = list(r_type)
         else:
-            allowed = [str(r_type)]
-        if "*" not in allowed:
-            if res_type is None or str(res_type) not in set(allowed):
-                return False
+            allowed = [r_type]
+        if "*" not in {str(x) for x in allowed}:
+            if strict:
+                # STRICT: no string coercion; require exact string match on type
+                if not isinstance(res_type, str) or not all(isinstance(x, str) for x in allowed):
+                    return False
+                if res_type not in set(allowed):
+                    return False
+            else:
+                if res_type is None or str(res_type) not in {str(x) for x in allowed}:
+                    return False
 
     # id check
     if r_id is not None:
-        if res_id is None or str(res_id) != str(r_id):
-            return False
+        if strict:
+            if res_id is None or res_id != r_id:
+                return False
+        else:
+            if res_id is None or str(res_id) != str(r_id):
+                return False
 
     # attributes shallow equality / containment
     if isinstance(r_attrs, dict):
@@ -63,11 +91,19 @@ def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
             rv = res_attrs.get(k)
             if isinstance(v, list):
                 # treat as "one-of"
-                if str(rv) not in {str(x) for x in v}:
-                    return False
+                if strict:  # STRICT: no coercion; membership by exact equality
+                    if not any(rv == x for x in v):
+                        return False
+                else:
+                    if str(rv) not in {str(x) for x in v}:
+                        return False
             else:
-                if str(rv) != str(v):
-                    return False
+                if strict:  # STRICT: exact equality without str()
+                    if rv != v:
+                        return False
+                else:
+                    if str(rv) != str(v):
+                        return False
     return True
 
 
@@ -101,8 +137,17 @@ def _ensure_str(a: Any, b: Any) -> tuple[str, str]:
     return a, b
 
 
-def _parse_dt(x: Any) -> datetime:
-    """Parse to timezone-aware datetime (UTC). Accepts datetime/epoch/ISO-8601 string."""
+def _parse_dt(x: Any, strict: Optional[bool] = None) -> datetime:
+    """Parse to timezone-aware datetime (UTC).
+    In strict mode (strict=True): accept only datetime with tzinfo (no implicit coercions).
+    In lax mode (strict is False/None): accept datetime/epoch/ISO-8601 string.
+    """
+    if strict:
+        if isinstance(x, datetime) and x.tzinfo is not None:
+            return x
+        raise ConditionTypeError("condition_type_mismatch")
+
+    # --- legacy lax behavior (backward compatible) ---
     if isinstance(x, datetime):
         return x if x.tzinfo is not None else x.replace(tzinfo=timezone.utc)
     if isinstance(x, (int, float)):
@@ -129,6 +174,8 @@ def eval_condition(cond: Any, env: Dict[str, Any]) -> bool:
     """Evaluate condition dict safely. On type mismatches, raise ConditionTypeError."""
     if not isinstance(cond, dict):
         return bool(cond)
+
+    strict = _is_strict(env)  # STRICT: read once per condition tree
 
     if "==" in cond:
         a, b = cond["=="]
@@ -167,7 +214,9 @@ def eval_condition(cond: Any, env: Dict[str, Any]) -> bool:
         a, b = cond["in"]
         x1, x2 = resolve(a, env), resolve(b, env)
         # collections vs collections → overlap; otherwise standard membership
-        if isinstance(x1, (list, tuple, set, frozenset)) and isinstance(x2, (list, tuple, set, frozenset)):
+        if isinstance(x1, (list, tuple, set, frozenset)) and isinstance(
+            x2, (list, tuple, set, frozenset)
+        ):
             return any(val in x1 for val in x2)
         if isinstance(x2, (list, tuple, set, frozenset)):
             return x1 in x2
@@ -201,23 +250,23 @@ def eval_condition(cond: Any, env: Dict[str, Any]) -> bool:
 
     if "before" in cond:
         a, b = cond["before"]
-        d1 = _parse_dt(resolve(a, env))
-        d2 = _parse_dt(resolve(b, env))
+        d1 = _parse_dt(resolve(a, env), strict=strict)  # STRICT: pass mode
+        d2 = _parse_dt(resolve(b, env), strict=strict)
         return d1 < d2
 
     if "after" in cond:
         a, b = cond["after"]
-        d1 = _parse_dt(resolve(a, env))
-        d2 = _parse_dt(resolve(b, env))
+        d1 = _parse_dt(resolve(a, env), strict=strict)
+        d2 = _parse_dt(resolve(b, env), strict=strict)
         return d1 > d2
 
     if "between" in cond:
         a, rng = cond["between"]
-        the_dt = _parse_dt(resolve(a, env))
+        the_dt = _parse_dt(resolve(a, env), strict=strict)
         rng_val = resolve(rng, env)
         if isinstance(rng_val, (list, tuple)) and len(rng_val) == 2:
-            start = _parse_dt(resolve(rng_val[0], env))
-            end = _parse_dt(resolve(rng_val[1], env))
+            start = _parse_dt(resolve(rng_val[0], env), strict=strict)
+            end = _parse_dt(resolve(rng_val[1], env), strict=strict)
             return start <= the_dt <= end
         raise ConditionTypeError("condition_type_mismatch")
 

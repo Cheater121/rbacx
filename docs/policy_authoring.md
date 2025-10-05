@@ -15,6 +15,7 @@ This guide outlines how to write clear and maintainable RBAC/ABAC policies.
 - Name every rule with unique **id** and tag high-risk rules with `obligations` (e.g., `mfa`).
 - Validate policies with JSON Schema before loading.
 - Document ownership and review cadence for policy files.
+- If strict mode is enabled, avoid relying on implicit coercions in `resource.id`, `resource.type`, `resource.attrs`, and pass aware `datetime` to time conditions. See [Types](types.md).
 
 ## Examples
 
