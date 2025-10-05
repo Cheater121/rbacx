@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.7.0 — 2025-10-05
+
+**Highlights**
+Optional **strict types mode** for the engine and policy evaluation. Disables implicit coercions when enabled; default behavior remains lax.
+
+**Added**
+
+* `Guard(..., strict_types: bool = False)` — opt-in strict typing for evaluations.
+  When `True`, the engine injects `__strict_types__=true` into the env and applies strict semantics (see below).
+* Policy strict semantics:
+
+  * `resource.type`, `resource.id`, `resource.attrs` — exact value **and** type (no `str(...)` coercions).
+  * Time operators (`before`, `after`, `between`) require timezone-aware `datetime`.
+* Documentation:
+
+  * New **Concepts → Types** page describing lax vs. strict semantics.
+  * One-line pointers in `time_operators.md`, `caching.md`, `policy_authoring.md`.
+  * Constructor snippet in `adapters.md`.
+* Tests:
+
+  * `tests/unit/core/test_engine_strict_mode.py`
+  * `tests/unit/core/test_policy_strict_points.py`
+
+**Changed**
+
+* Lax mode (default) is unchanged and remains the out-of-the-box behavior.
+* Caching:
+
+  * Lax mode — cache keys unchanged.
+  * Strict mode — separate keys (env includes `__strict_types__`) to isolate results by mode.
+
+**Fixed**
+
+* Prevented cache misses in lax mode by **not** injecting `__strict_types__` unless strict mode is enabled.
+
+
 ## 1.6.0 — 2025-10-02
 
 **Highlights**
