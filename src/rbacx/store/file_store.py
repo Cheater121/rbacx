@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import hashlib
 import logging
 import os
 import tempfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from ..core.ports import PolicySource
 from .policy_loader import parse_policy_text
@@ -52,12 +50,12 @@ class FilePolicySource(PolicySource):
         self.include_mtime_in_etag = include_mtime_in_etag
         self._chunk_size = int(chunk_size)
 
-        self._cached_stat_sig: Optional[Tuple[int, int]] = None  # (size, mtime_ns)
-        self._cached_sha: Optional[str] = None
+        self._cached_stat_sig: tuple[int, int] | None = None  # (size, mtime_ns)
+        self._cached_sha: str | None = None
 
     # helpers ----------------------------------------------------------------
 
-    def _stat_sig(self) -> Tuple[int, int]:
+    def _stat_sig(self) -> tuple[int, int]:
         st = os.stat(self.path)
         mtime_ns = getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000))
         return (st.st_size, mtime_ns)
@@ -69,7 +67,7 @@ class FilePolicySource(PolicySource):
                 h.update(chunk)
         return h.hexdigest()
 
-    def _ensure_content_sha(self) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
+    def _ensure_content_sha(self) -> tuple[str | None, tuple[int, int] | None]:
         try:
             sig = self._stat_sig()
         except FileNotFoundError:
@@ -87,7 +85,7 @@ class FilePolicySource(PolicySource):
 
     # PolicySource ------------------------------------------------------------
 
-    def etag(self) -> Optional[str]:
+    def etag(self) -> str | None:
         sha, sig = self._ensure_content_sha()
         if sha is None:
             return None
@@ -95,7 +93,7 @@ class FilePolicySource(PolicySource):
             return f"{sha}:{sig[1]}"
         return sha
 
-    def load(self) -> Dict[str, Any]:
+    def load(self) -> dict[str, Any]:
         with open(self.path, "r", encoding="utf-8") as f:
             text = f.read()
         policy = parse_policy_text(text, filename=self.path)

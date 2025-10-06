@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from ..policy.loader import HotReloader
 
 # Backwards-compatibility shim: re-export from new locations.

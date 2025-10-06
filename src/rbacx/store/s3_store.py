@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Literal
 
 from ..core.ports import PolicySource
 from .policy_loader import parse_policy_bytes
@@ -47,25 +45,24 @@ class S3PolicySource(PolicySource):
         client: Any | None = None,
         session: Any | None = None,
         config: Any | None = None,
-        client_extra: Dict[str, Any] | None = None,
+        client_extra: dict[str, Any] | None = None,
         validate_schema: bool = True,
         change_detector: Literal["etag", "version_id", "checksum"] = "etag",
         # preferred checksum when `change_detector="checksum"`
-        prefer_checksum: Optional[
-            Literal["sha256", "crc32c", "sha1", "crc32", "crc64nvme"]
-        ] = "sha256",
+        prefer_checksum: Literal["sha256", "crc32c", "sha1", "crc32", "crc64nvme"]
+        | None = "sha256",
     ) -> None:
         self.loc = _parse_s3_url(url)
         self._client = client or self._build_client(session, config, client_extra or {})
         self.validate_schema = validate_schema
         self.change_detector = change_detector
         self.prefer_checksum = prefer_checksum
-        self._etag: Optional[str] = None  # cached last seen ETag (if obtained via load())
+        self._etag: str | None = None  # cached last seen ETag (if obtained via load())
 
     # ---------- AWS client helpers ----------
 
     @staticmethod
-    def _build_client(session: Any | None, cfg: Any | None, extra: Dict[str, Any]) -> Any:
+    def _build_client(session: Any | None, cfg: Any | None, extra: dict[str, Any]) -> Any:
         """Construct a boto3 S3 client with sensible defaults.
 
         This function is isolated to make unit-testing easier (tests monkeypatch it).
@@ -101,7 +98,7 @@ class S3PolicySource(PolicySource):
 
     # ---------- Change detectors ----------
 
-    def etag(self) -> Optional[str]:
+    def etag(self) -> str | None:
         """Return the current change marker according to `change_detector`."""
         if self.change_detector == "etag":
             et = self._head_etag()
@@ -128,7 +125,7 @@ class S3PolicySource(PolicySource):
         et = self._head_etag()
         return f"etag:{et}" if et else None
 
-    def _head(self) -> Dict[str, Any]:
+    def _head(self) -> dict[str, Any]:
         """HEAD the object safely, returning a (possibly empty) dict."""
         try:
             return self._client.head_object(Bucket=self.loc.bucket, Key=self.loc.key)
@@ -138,19 +135,19 @@ class S3PolicySource(PolicySource):
             logger.debug("RBACX: S3 head_object failed", exc_info=True)
             return {}
 
-    def _head_etag(self) -> Optional[str]:
+    def _head_etag(self) -> str | None:
         data = self._head()
         etag = data.get("ETag")
         if isinstance(etag, str) and len(etag) >= 2 and etag.startswith('"') and etag.endswith('"'):
             return etag[1:-1]
         return etag if isinstance(etag, str) else None
 
-    def _head_version_id(self) -> Optional[str]:
+    def _head_version_id(self) -> str | None:
         data = self._head()
         ver = data.get("VersionId")
         return ver if isinstance(ver, str) else None
 
-    def _get_checksum(self) -> Optional[Tuple[str, str]]:
+    def _get_checksum(self) -> tuple[str, str] | None:
         """Fetch an object checksum using GetObjectAttributes.
 
         Returns a pair (algorithm, value) or None if unavailable.
@@ -169,7 +166,7 @@ class S3PolicySource(PolicySource):
             # API not available or permissions denied
             return None
 
-        candidates: Dict[str, Optional[str]] = {
+        candidates: dict[str, str | None] = {
             "sha256": resp.get("ChecksumSHA256"),
             "crc32c": resp.get("ChecksumCRC32C"),
             "sha1": resp.get("ChecksumSHA1"),
@@ -206,7 +203,7 @@ class S3PolicySource(PolicySource):
         resp["Body"].close()
         return body
 
-    def load(self) -> Dict[str, Any]:
+    def load(self) -> dict[str, Any]:
         """Download and parse the policy document from S3.
 
         The format (JSON vs YAML) is auto-detected using the object key (filename) and/or content.

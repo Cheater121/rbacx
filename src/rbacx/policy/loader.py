@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import inspect
 import json
@@ -8,7 +6,7 @@ import random
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Optional
+from typing import Any
 
 from ..core.engine import Guard
 from ..core.ports import PolicySource
@@ -72,12 +70,13 @@ class HotReloader:
         # Initial state: either "prime" ETag (legacy) or make the first check load.
         try:
             if self._initial_load:
-                self._last_etag: Optional[str] = None
+                self._last_etag: str | None = None
             else:
                 # IMPORTANT: do not call async etag() here (would create an un-awaited coroutine).
                 etag_attr = getattr(self.source, "etag", None)
                 if etag_attr is not None and not inspect.iscoroutinefunction(etag_attr):
-                    self._last_etag = self.source.etag()  # type: ignore[assignment]
+                    et = self.source.etag()  # may be Any
+                    self._last_etag = et if isinstance(et, str) else None
                 else:
                     self._last_etag = None
         except Exception:
@@ -142,7 +141,8 @@ class HotReloader:
                 # Full load regardless of current ETag.
                 policy = await _maybe_await(self.source.load())
                 try:
-                    new_etag = await _maybe_await(self.source.etag())
+                    new_etag_any = await _maybe_await(self.source.etag())
+                    new_etag: str | None = new_etag_any if isinstance(new_etag_any, str) else None
                 except Exception:
                     new_etag = None
 
@@ -156,7 +156,7 @@ class HotReloader:
                 return True
 
             etag_obj = await _maybe_await(self.source.etag())
-            etag = etag_obj
+            etag: str | None = etag_obj if isinstance(etag_obj, str) else None
 
             if etag is not None and etag == last_etag:
                 return False
@@ -193,7 +193,7 @@ class HotReloader:
         self,
         interval: float | None = None,
         *,
-        initial_load: Optional[bool] = None,
+        initial_load: bool | None = None,
         force_initial: bool = False,
     ) -> None:
         """
@@ -239,7 +239,7 @@ class HotReloader:
     # Diagnostics ------------------------------------------------------------
 
     @property
-    def last_etag(self) -> Optional[str]:
+    def last_etag(self) -> str | None:
         with self._lock:
             return self._last_etag
 
@@ -308,7 +308,7 @@ class HotReloader:
                 self._stop_event.wait(timeout=min(0.5, remaining))
 
 
-def load_policy(path: str) -> dict:
+def load_policy(path: str) -> dict[str, Any]:
     """Convenience loader to satisfy tests that import a loader function."""
     return FilePolicySource(path).load()
 

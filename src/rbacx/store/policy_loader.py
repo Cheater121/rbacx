@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 import json
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 _YAML_MIME_MARKERS = ("yaml", "x-yaml")
 _JSON_MIME_MARKERS = ("json",)
@@ -10,7 +8,7 @@ PolicyFormat = Literal["json", "yaml"]
 
 
 def _detect_format(
-    *, filename: Optional[str] = None, content_type: Optional[str] = None, fmt: Optional[str] = None
+    *, filename: str | None = None, content_type: str | None = None, fmt: str | None = None
 ) -> PolicyFormat:
     """Detect desired policy format.
 
@@ -44,7 +42,7 @@ def _detect_format(
     return "json"
 
 
-def _parse_yaml(text: str) -> Dict[str, Any]:
+def _parse_yaml(text: str) -> dict[str, Any]:
     try:
         import yaml  # type: ignore
     except Exception as e:  # pragma: no cover
@@ -63,10 +61,10 @@ def _parse_yaml(text: str) -> Dict[str, Any]:
 def parse_policy_text(
     text: str,
     *,
-    filename: Optional[str] = None,
-    content_type: Optional[str] = None,
-    fmt: Optional[str] = None,
-) -> Dict[str, Any]:
+    filename: str | None = None,
+    content_type: str | None = None,
+    fmt: str | None = None,
+) -> dict[str, Any]:
     """Parse a policy document from a *text* string.
 
     Chooses JSON or YAML based on *fmt* / *content_type* / *filename*.
@@ -82,11 +80,11 @@ def parse_policy_text(
 def parse_policy_bytes(
     data: bytes,
     *,
-    filename: Optional[str] = None,
-    content_type: Optional[str] = None,
-    fmt: Optional[str] = None,
+    filename: str | None = None,
+    content_type: str | None = None,
+    fmt: str | None = None,
     encoding: str = "utf-8",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Parse a policy document from raw *bytes* (e.g., S3 object body).
 
     Decodes using *encoding* (default UTF-8) then delegates to :func:`parse_policy_text`.
