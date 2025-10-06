@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 try:
     from importlib.metadata import PackageNotFoundError, version  # py3.8+
 except Exception:  # pragma: no cover
@@ -35,6 +33,7 @@ def _detect_version() -> str:
             raise PackageNotFoundError
         return version("rbacx")
     except Exception:
+        # Fallback when distribution metadata is unavailable
         return "0.1.0"
 
 
