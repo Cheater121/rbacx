@@ -1,19 +1,18 @@
-from __future__ import annotations
+from collections.abc import Iterable
+from typing import Any
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-
-Issue = Dict[str, Any]
+Issue = dict[str, Any]
 
 
-def _actions(rule: Dict[str, Any]) -> Tuple[str, ...]:
+def _actions(rule: dict[str, Any]) -> tuple[str, ...]:
     """Return normalized action list (only strings)."""
     acts_raw = rule.get("actions")
     if not isinstance(acts_raw, Iterable):
         return tuple()
-    acts: List[str] = [a for a in acts_raw if isinstance(a, str)]
+    acts: list[str] = [a for a in acts_raw if isinstance(a, str)]
     # keep order but drop duplicates while preserving first occurrence
     seen: set[str] = set()
-    out: List[str] = []
+    out: list[str] = []
     for a in acts:
         if a not in seen:
             out.append(a)
@@ -21,7 +20,7 @@ def _actions(rule: Dict[str, Any]) -> Tuple[str, ...]:
     return tuple(out)
 
 
-def _rtype(rule: Dict[str, Any]) -> Optional[str]:
+def _rtype(rule: dict[str, Any]) -> str | None:
     """Normalize resource.type into a single comparable string or None."""
     r = rule.get("resource") or {}
     t = r.get("type")
@@ -33,25 +32,27 @@ def _rtype(rule: Dict[str, Any]) -> Optional[str]:
     return str(t)
 
 
-def _rid(rule: Dict[str, Any]) -> Optional[str]:
+def _rid(rule: dict[str, Any]) -> str | None:
     r = rule.get("resource") or {}
     rid = r.get("id")
     return None if rid is None else str(rid)
 
 
-def _rattrs(rule: Dict[str, Any]) -> Dict[str, Any]:
+def _rattrs(rule: dict[str, Any]) -> dict[str, Any]:
     r = rule.get("resource") or {}
-    attrs = r.get("attrs") or r.get("attributes") or {}  # canonical key: \"attrs\" (\"attributes\" supported for backward compatibility)
+    attrs = (
+        r.get("attrs") or r.get("attributes") or {}
+    )  # canonical key: "attrs" ("attributes" supported for backward compatibility)
     return attrs if isinstance(attrs, dict) else {}
 
 
-def _is_broad_resource(rule: Dict[str, Any]) -> bool:
+def _is_broad_resource(rule: dict[str, Any]) -> bool:
     """Broad if type is missing or '*'."""
     t = _rtype(rule)
     return t is None or t == "*" or (isinstance(t, str) and t.strip() == "")
 
 
-def _resource_covers(earlier: Dict[str, Any], later: Dict[str, Any]) -> bool:
+def _resource_covers(earlier: dict[str, Any], later: dict[str, Any]) -> bool:
     er = earlier.get("resource") or {}
     lr = later.get("resource") or {}
 
@@ -77,7 +78,7 @@ def _resource_covers(earlier: Dict[str, Any], later: Dict[str, Any]) -> bool:
     return True
 
 
-def _first_applicable_unreachable(earlier: Dict[str, Any], later: Dict[str, Any]) -> bool:
+def _first_applicable_unreachable(earlier: dict[str, Any], later: dict[str, Any]) -> bool:
     if (earlier.get("effect") or "permit") != (later.get("effect") or "permit"):
         return False
     a_earlier = set(_actions(earlier))
@@ -87,9 +88,11 @@ def _first_applicable_unreachable(earlier: Dict[str, Any], later: Dict[str, Any]
     return _resource_covers(earlier, later)
 
 
-def analyze_policy(policy: Dict[str, Any], *, require_attrs: Dict[str, List[str]] | None = None) -> List[Issue]:
+def analyze_policy(
+    policy: dict[str, Any], *, require_attrs: dict[str, list[str]] | None = None
+) -> list[Issue]:
     """Analyze single policy and return list of issues (dicts with 'code' and fields)."""
-    issues: List[Issue] = []
+    issues: list[Issue] = []
 
     # config for required attributes per resource type
     req = require_attrs
@@ -99,8 +102,8 @@ def analyze_policy(policy: Dict[str, Any], *, require_attrs: Dict[str, List[str]
     if req is None:
         req = {}
 
-    id_counts: Dict[str, int] = {}
-    rid_counts: Dict[Tuple[Optional[str], Optional[str]], int] = {}
+    id_counts: dict[str, int] = {}
+    rid_counts: dict[tuple[str | None, str | None], int] = {}
 
     algorithm = str(policy.get("algorithm") or "deny-overrides").lower()
     rules = policy.get("rules") or []
@@ -129,7 +132,9 @@ def analyze_policy(policy: Dict[str, Any], *, require_attrs: Dict[str, List[str]
             attrs = _rattrs(rule)
             missing = [a for a in req[rtype] if a not in attrs]
             if missing:
-                issues.append({"code": "REQUIRED_ATTRS", "id": rid, "index": idx, "missing": missing})
+                issues.append(
+                    {"code": "REQUIRED_ATTRS", "id": rid, "index": idx, "missing": missing}
+                )
 
         # Duplicate resource id per (type, id)
         r_id = _rid(rule)
@@ -143,7 +148,9 @@ def analyze_policy(policy: Dict[str, Any], *, require_attrs: Dict[str, List[str]
     for key, c in rid_counts.items():
         rtype, resid = key
         if resid is not None and c > 1:
-            issues.append({"code": "DUPLICATE_RESOURCE_ID", "resource_type": rtype, "resource_id": resid})
+            issues.append(
+                {"code": "DUPLICATE_RESOURCE_ID", "resource_type": rtype, "resource_id": resid}
+            )
 
     # Second pass: cross-rule relationships
     if algorithm == "first-applicable":
@@ -186,9 +193,11 @@ def analyze_policy(policy: Dict[str, Any], *, require_attrs: Dict[str, List[str]
     return issues
 
 
-def analyze_policyset(policyset: Dict[str, Any], *, require_attrs: Dict[str, List[str]] | None = None) -> List[Issue]:
+def analyze_policyset(
+    policyset: dict[str, Any], *, require_attrs: dict[str, list[str]] | None = None
+) -> list[Issue]:
     """Analyze a policy set; returns flat list with 'policy_index' for each issue."""
-    issues: List[Issue] = []
+    issues: list[Issue] = []
     for pidx, pol in enumerate(policyset.get("policies") or []):
         sub = analyze_policy(pol, require_attrs=require_attrs)
         for it in sub:
