@@ -1,13 +1,12 @@
-from __future__ import annotations
-
 import asyncio
 import hashlib
 import inspect
 import json
 import logging
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from .cache import AbstractCache
 from .decision import Decision
@@ -58,26 +57,26 @@ class Guard:
 
     def __init__(
         self,
-        policy: Dict[str, Any],
+        policy: dict[str, Any],
         *,
         logger_sink: DecisionLogSink | None = None,
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
         cache: AbstractCache | None = None,
-        cache_ttl: Optional[int] = 300,
+        cache_ttl: int | None = 300,
         strict_types: bool = False,
     ) -> None:
-        self.policy: Dict[str, Any] = policy
+        self.policy: dict[str, Any] = policy
         self.logger_sink = logger_sink
         self.metrics = metrics
         self.obligations: ObligationChecker = obligation_checker or BasicObligationChecker()
         self.role_resolver = role_resolver
         # Optional decision cache (per-Guard instance by default)
         self.cache: AbstractCache | None = cache
-        self.cache_ttl: Optional[int] = cache_ttl
-        self.policy_etag: Optional[str] = None
-        self._compiled: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+        self.cache_ttl: int | None = cache_ttl
+        self.policy_etag: str | None = None
+        self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
 
         # Provide a "current" loop if missing (helps tests on Py3.12+).
@@ -99,7 +98,7 @@ class Guard:
 
     # ---------------------------------------------------------------- set/update
 
-    def set_policy(self, policy: Dict[str, Any]) -> None:
+    def set_policy(self, policy: dict[str, Any]) -> None:
         """Replace policy/policyset."""
         self.policy = policy
         self._recompute_etag()
@@ -107,14 +106,14 @@ class Guard:
         # but clearing avoids memory growth and stale entries.
         self.clear_cache()
 
-    def update_policy(self, policy: Dict[str, Any]) -> None:
+    def update_policy(self, policy: dict[str, Any]) -> None:
         """Alias kept for backward-compatibility."""
         self.set_policy(policy)
 
     # ------------------------------ caching helpers
 
     @staticmethod
-    def _normalize_env_for_cache(env: Dict[str, Any]) -> str:
+    def _normalize_env_for_cache(env: dict[str, Any]) -> str:
         """Return a deterministic JSON string for cache key construction.
 
         - sort_keys=True ensures a stable order
@@ -133,7 +132,7 @@ class Guard:
             # As a last resort, fall back to repr which is deterministic for basic containers.
             return repr(env)
 
-    def _cache_key(self, env: Dict[str, Any]) -> Optional[str]:
+    def _cache_key(self, env: dict[str, Any]) -> str | None:
         etag = getattr(self, "policy_etag", None)
         if not etag:
             return None
@@ -141,7 +140,7 @@ class Guard:
 
     # ---------------------------------------------------------------- decision core (async only)
 
-    async def _decide_async(self, env: Dict[str, Any]) -> Dict[str, Any]:
+    async def _decide_async(self, env: dict[str, Any]) -> dict[str, Any]:
         """
         Async decision that keeps the event loop responsive:
         compiled/policy/policyset functions are sync -> offload via to_thread.
@@ -168,13 +167,13 @@ class Guard:
         start = _now()
 
         # Build env (resolver may be sync or async)
-        roles: List[str] = list(subject.roles or [])
+        roles: list[str] = list(subject.roles or [])
         if self.role_resolver is not None:
             try:
                 roles = await _maybe_await(self.role_resolver.expand(roles))
             except Exception:
                 logger.exception("RBACX: role resolver failed", exc_info=True)
-        env: Dict[str, Any] = {
+        env: dict[str, Any] = {
             "subject": {"id": subject.id, "roles": roles, "attrs": dict(subject.attrs or {})},
             "action": action.name,
             "resource": {
@@ -190,7 +189,7 @@ class Guard:
 
         raw = None
         cache = getattr(self, "cache", None)
-        key: Optional[str] = None
+        key: str | None = None
 
         if cache is not None:
             try:
