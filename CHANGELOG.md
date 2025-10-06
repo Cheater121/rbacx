@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.7.1 — 2025-10-06
+
+**Highlights**
+Project codebase migrated to **Python 3.10+ syntax** (PEP 585/604) with **no behavior changes**. Strict mypy settings now pass across adapters and core.
+
+**Added**
+
+* CLI: consistent exit codes and JSON/text output retained while migrating to modern typing (`dict[str, Any]`, `X | None`).
+
+**Changed**
+
+* Codebase style: replaced `typing.Dict/List/Tuple/Optional/Union` with built-ins and `|`.
+* Dataclasses: `slots=True` where applicable to reduce memory overhead (`Subject`, `Resource`, `Action`, `Context`).
+* Engine: safer event-loop bootstrap on Python 3.12+ during `Guard.__init__` (helps legacy tests).
+* Decision logging: clarified redaction/smart-sampling behavior; size-limit applied **after** redactions.
+* DSL / loaders:
+
+  * YAML/JSON parser uses modern annotations; error messages unchanged.
+  * File/HTTP/S3 policy sources: minor refactors, no API changes; ETag/version/checksum logic unchanged.
+* Metrics adapters (Prometheus / OpenTelemetry): unified metric names kept; typed and hardened against missing SDKs.
+* CI: test matrix updated for **Python 3.13** availability.
+
+**Fixed**
+
+* Codestyle.
+
+**Deprecated**
+
+* None.
+
+**Removed**
+
+* None.
+
+**Migration notes**
+
+* Requires **Python 3.10+** to run (source now uses PEP 585/604).
+* No public API changes.
+
+
 ## 1.7.0 — 2025-10-05
 
 **Highlights**
