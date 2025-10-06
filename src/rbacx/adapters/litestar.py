@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, MutableMapping, cast
 
 if TYPE_CHECKING:
 
@@ -37,6 +37,12 @@ from ._common import EnvBuilder
 logger = logging.getLogger(__name__)
 
 
+# Precise ASGI callables for mypy when invoking Starlette Response
+_ASGIScope = MutableMapping[str, Any]
+_ASGIReceive = Callable[[], Awaitable[MutableMapping[str, Any]]]
+_ASGISend = Callable[[MutableMapping[str, Any]], Awaitable[None]]
+
+
 class RBACXMiddleware(_BaseMiddleware):
     """Litestar middleware that checks access using RBACX Guard.
 
@@ -67,7 +73,6 @@ class RBACXMiddleware(_BaseMiddleware):
         # Only handle HTTP scopes; pass through others
         scope_type: Any = None
         try:
-            # type: ignore because scope might not be Mapping in some contexts
             scope_type = scope.get("type")  # type: ignore[attr-defined]
         except Exception:
             logger.debug("scope.get('type') failed; treating as non-http", exc_info=True)
@@ -96,12 +101,19 @@ class RBACXMiddleware(_BaseMiddleware):
         from starlette.responses import JSONResponse  # type: ignore[import-not-found]
 
         res = JSONResponse({"detail": "Forbidden"}, status_code=403, headers=headers)
-        await res(scope, receive, send)
+
+        # Starlette Response is an ASGI app: __call__(scope, receive, send)
+        # Cast to the precise ASGI callable types expected by mypy.
+        asgi_scope = cast(_ASGIScope, scope)
+        asgi_receive = cast(_ASGIReceive, receive)
+        asgi_send = cast(_ASGISend, send)
+        await res(asgi_scope, asgi_receive, asgi_send)
 
     # New-style base (ASGIMiddleware) calls `handle()`
-    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
-        return await self._dispatch(scope, receive, send)
+    async def handle(self, scope: Scope, receive: Receive, send: Send, next_app: Any) -> None:
+        # We ignore next_app because we dispatch against self.app for both bases.
+        await self._dispatch(scope, receive, send)
 
     # Old-style base (AbstractMiddleware) expects `__call__`
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
-        return await self._dispatch(scope, receive, send)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self._dispatch(scope, receive, send)
