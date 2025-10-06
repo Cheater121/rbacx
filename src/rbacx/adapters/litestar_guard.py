@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import Dict
-
 try:  # Optional dependency boundary
     from litestar.connection import ASGIConnection  # type: ignore[import-not-found]
     from litestar.exceptions import PermissionDeniedException  # type: ignore[import-not-found]
@@ -37,7 +33,7 @@ def require_access(
             return
 
         # Do not leak reasons in the body; optionally surface via headers.
-        headers: Dict[str, str] = {}
+        headers: dict[str, str] = {}
         if add_headers:
             if decision.reason:
                 headers["X-RBACX-Reason"] = str(decision.reason)

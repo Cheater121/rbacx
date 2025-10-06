@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import json
 import logging
-from typing import Any, Iterable, Optional, Tuple
+from typing import Any, Iterable
 
 from ..core.engine import Guard
 from ._common import EnvBuilder
@@ -46,7 +44,7 @@ class RbacxMiddleware:
             subject, action, resource, context = self.build_env(scope)
             decision = await self.guard.evaluate_async(subject, action, resource, context)
             if not decision.allowed:
-                headers: list[Tuple[bytes, bytes]] = []
+                headers: list[tuple[bytes, bytes]] = []
                 if self.add_headers:
                     if decision.reason:
                         headers.append((b"x-rbacx-reason", str(decision.reason).encode("utf-8")))
@@ -67,11 +65,11 @@ class RbacxMiddleware:
         status: int,
         payload: dict,
         *,
-        extra_headers: Optional[Iterable[Tuple[bytes, bytes]]] = None,
+        extra_headers: Iterable[tuple[bytes, bytes]] | None = None,
     ) -> None:
         """Send a minimal JSON response via raw ASGI messages."""
         body = json.dumps(payload).encode("utf-8")
-        headers: list[Tuple[bytes, bytes]] = [
+        headers: list[tuple[bytes, bytes]] = [
             (b"content-type", b"application/json; charset=utf-8"),
             (b"content-length", str(len(body)).encode("ascii")),
         ]

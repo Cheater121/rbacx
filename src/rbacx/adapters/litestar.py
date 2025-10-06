@@ -1,18 +1,13 @@
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any
 
-# Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
 if TYPE_CHECKING:
-    # During type checking we don't want mypy to see multiple incompatible bases
-    # rebound into the same _BaseMiddleware name.
-    class _BaseMiddleware(object):  # minimal base for typing only
-        ...
+
+    class _BaseMiddleware: ...
 
     _MODE: str = "asgi"
 else:
-    try:  # pragma: no cover
+    try:
         from litestar.middleware import (
             ASGIMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
         )
@@ -52,7 +47,7 @@ class RBACXMiddleware(_BaseMiddleware):
 
     def __init__(
         self,
-        app,
+        app: Any,
         *,
         guard: Guard,
         build_env: EnvBuilder,
@@ -60,10 +55,9 @@ class RBACXMiddleware(_BaseMiddleware):
     ) -> None:
         # AbstractMiddleware defines __init__(app) while ASGIMiddleware may not.
         try:
-            # works for AbstractMiddleware
             super().__init__(app=app)  # type: ignore[call-arg]
         except Exception:
-            self.app = app  # ASGIMiddleware or no-base fallback
+            self.app = app
 
         self.guard = guard
         self.build_env = build_env
@@ -71,8 +65,9 @@ class RBACXMiddleware(_BaseMiddleware):
 
     async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         # Only handle HTTP scopes; pass through others
-        scope_type = None
+        scope_type: Any = None
         try:
+            # type: ignore because scope might not be Mapping in some contexts
             scope_type = scope.get("type")  # type: ignore[attr-defined]
         except Exception:
             logger.debug("scope.get('type') failed; treating as non-http", exc_info=True)
@@ -87,16 +82,15 @@ class RBACXMiddleware(_BaseMiddleware):
             await self.app(scope, receive, send)  # type: ignore[arg-type]
             return
 
-        # Deny: keep body generic; optionally expose diagnostics via headers
-        headers: Dict[str, str] = {}
+        headers: dict[str, str] = {}
         if self.add_headers:
-            if decision.reason:
+            if decision.reason is not None:
                 headers["X-RBACX-Reason"] = str(decision.reason)
             rule_id = getattr(decision, "rule_id", None)
-            if rule_id:
+            if rule_id is not None:
                 headers["X-RBACX-Rule"] = str(rule_id)
             policy_id = getattr(decision, "policy_id", None)
-            if policy_id:
+            if policy_id is not None:
                 headers["X-RBACX-Policy"] = str(policy_id)
 
         from starlette.responses import JSONResponse  # type: ignore[import-not-found]
@@ -105,9 +99,9 @@ class RBACXMiddleware(_BaseMiddleware):
         await res(scope, receive, send)
 
     # New-style base (ASGIMiddleware) calls `handle()`
-    async def handle(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         return await self._dispatch(scope, receive, send)
 
     # Old-style base (AbstractMiddleware) expects `__call__`
-    async def __call__(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # type: ignore[override]
         return await self._dispatch(scope, receive, send)
