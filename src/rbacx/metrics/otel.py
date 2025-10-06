@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Dict, Optional
+from typing import Any
 
 from rbacx.core.ports import MetricsSink
 
@@ -25,8 +23,8 @@ class OpenTelemetryMetrics(MetricsSink):
     """
 
     # Explicit attribute annotations for mypy
-    _counter: Optional[Any]
-    _hist: Optional[Any]
+    _counter: Any | None
+    _hist: Any | None
 
     def __init__(self) -> None:
         # Ensure attributes always exist
@@ -63,7 +61,7 @@ class OpenTelemetryMetrics(MetricsSink):
 
     # -- MetricsSink ------------------------------------------------------------
 
-    def inc(self, name: str, labels: Dict[str, str] | None = None) -> None:
+    def inc(self, name: str, labels: dict[str, str] | None = None) -> None:
         """Increment the unified counter.
 
         The *name* parameter is accepted for backward compatibility but ignored;
@@ -81,7 +79,7 @@ class OpenTelemetryMetrics(MetricsSink):
             )
 
     # ----------------------------- Optional extension --------------------------
-    def observe(self, name: str, value: float, labels: Dict[str, str] | None = None) -> None:
+    def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         """Optionally record a latency distribution **in seconds**.
 
         This is a **carcass method** so users can see how to implement it. Guard will call it
@@ -94,7 +92,7 @@ class OpenTelemetryMetrics(MetricsSink):
             Metric name. Accepted for compatibility and future extensions; ignored here.
         value: float
             Duration **in seconds** (as exposed by Guard).
-        labels: Dict[str, str] | None
+        labels: dict[str, str] | None
             OTEL Histogram accepts attributes; we pass them through if present.
         """
         if self._hist is None:
