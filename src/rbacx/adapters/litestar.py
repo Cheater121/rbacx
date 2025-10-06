@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, MutableMapping, cast
+from typing import TYPE_CHECKING
 
+# Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
 if TYPE_CHECKING:
-
-    class _BaseMiddleware: ...
+    # During type checking we don't want mypy to see multiple incompatible bases
+    # rebound into the same _BaseMiddleware name.
+    class _BaseMiddleware:  # minimal base for typing only
+        ...
 
     _MODE: str = "asgi"
 else:
-    try:
+    try:  # pragma: no cover
         from litestar.middleware import (
             ASGIMiddleware as _BaseMiddleware,  # type: ignore[import-not-found]
         )
@@ -37,12 +42,6 @@ from ._common import EnvBuilder
 logger = logging.getLogger(__name__)
 
 
-# Precise ASGI callables for mypy when invoking Starlette Response
-_ASGIScope = MutableMapping[str, Any]
-_ASGIReceive = Callable[[], Awaitable[MutableMapping[str, Any]]]
-_ASGISend = Callable[[MutableMapping[str, Any]], Awaitable[None]]
-
-
 class RBACXMiddleware(_BaseMiddleware):
     """Litestar middleware that checks access using RBACX Guard.
 
@@ -53,7 +52,7 @@ class RBACXMiddleware(_BaseMiddleware):
 
     def __init__(
         self,
-        app: Any,
+        app,
         *,
         guard: Guard,
         build_env: EnvBuilder,
@@ -61,9 +60,10 @@ class RBACXMiddleware(_BaseMiddleware):
     ) -> None:
         # AbstractMiddleware defines __init__(app) while ASGIMiddleware may not.
         try:
+            # works for AbstractMiddleware
             super().__init__(app=app)  # type: ignore[call-arg]
         except Exception:
-            self.app = app
+            self.app = app  # ASGIMiddleware or no-base fallback
 
         self.guard = guard
         self.build_env = build_env
@@ -71,7 +71,7 @@ class RBACXMiddleware(_BaseMiddleware):
 
     async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         # Only handle HTTP scopes; pass through others
-        scope_type: Any = None
+        scope_type = None
         try:
             scope_type = scope.get("type")  # type: ignore[attr-defined]
         except Exception:
@@ -87,33 +87,27 @@ class RBACXMiddleware(_BaseMiddleware):
             await self.app(scope, receive, send)  # type: ignore[arg-type]
             return
 
+        # Deny: keep body generic; optionally expose diagnostics via headers
         headers: dict[str, str] = {}
         if self.add_headers:
-            if decision.reason is not None:
+            if decision.reason:
                 headers["X-RBACX-Reason"] = str(decision.reason)
             rule_id = getattr(decision, "rule_id", None)
-            if rule_id is not None:
+            if rule_id:
                 headers["X-RBACX-Rule"] = str(rule_id)
             policy_id = getattr(decision, "policy_id", None)
-            if policy_id is not None:
+            if policy_id:
                 headers["X-RBACX-Policy"] = str(policy_id)
 
         from starlette.responses import JSONResponse  # type: ignore[import-not-found]
 
         res = JSONResponse({"detail": "Forbidden"}, status_code=403, headers=headers)
-
-        # Starlette Response is an ASGI app: __call__(scope, receive, send)
-        # Cast to the precise ASGI callable types expected by mypy.
-        asgi_scope = cast(_ASGIScope, scope)
-        asgi_receive = cast(_ASGIReceive, receive)
-        asgi_send = cast(_ASGISend, send)
-        await res(asgi_scope, asgi_receive, asgi_send)
+        await res(scope, receive, send)
 
     # New-style base (ASGIMiddleware) calls `handle()`
-    async def handle(self, scope: Scope, receive: Receive, send: Send, next_app: Any) -> None:
-        # We ignore next_app because we dispatch against self.app for both bases.
-        await self._dispatch(scope, receive, send)
+    async def handle(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+        return await self._dispatch(scope, receive, send)
 
     # Old-style base (AbstractMiddleware) expects `__call__`
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self._dispatch(scope, receive, send)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):  # type: ignore[override]
+        return await self._dispatch(scope, receive, send)
