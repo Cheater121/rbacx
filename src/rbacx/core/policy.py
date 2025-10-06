@@ -1,7 +1,6 @@
-from __future__ import annotations
-
+from collections.abc import Iterable, Sequence
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any
 
 Effect = str  # "permit" | "deny"
 
@@ -13,7 +12,7 @@ class ConditionTypeError(Exception):
 # ------------------------------- helpers ---------------------------------
 
 
-def match_actions(rule: Dict[str, Any], action: str) -> bool:
+def match_actions(rule: dict[str, Any], action: str) -> bool:
     acts_raw = rule.get("actions")
     if not isinstance(acts_raw, Iterable):
         return False
@@ -21,7 +20,7 @@ def match_actions(rule: Dict[str, Any], action: str) -> bool:
     return action in acts or "*" in acts
 
 
-def _is_strict(env: Dict[str, Any]) -> bool:
+def _is_strict(env: dict[str, Any]) -> bool:
     """Check if strict types mode is enabled via env flag."""
     try:
         return bool(env.get("__strict_types__"))
@@ -29,7 +28,7 @@ def _is_strict(env: Dict[str, Any]) -> bool:
         return False
 
 
-def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
+def match_resource(rdef: dict[str, Any], resource: dict[str, Any]) -> bool:
     if not isinstance(rdef, dict):
         return False
     if not rdef:
@@ -107,7 +106,7 @@ def match_resource(rdef: Dict[str, Any], resource: Dict[str, Any]) -> bool:
     return True
 
 
-def resolve(token: Any, env: Dict[str, Any]) -> Any:
+def resolve(token: Any, env: dict[str, Any]) -> Any:
     """Resolve a token; supports {"attr": "a.b.c"} lookups in env."""
     if isinstance(token, dict) and "attr" in token:
         path = str(token["attr"]).split(".")
@@ -137,7 +136,7 @@ def _ensure_str(a: Any, b: Any) -> tuple[str, str]:
     return a, b
 
 
-def _parse_dt(x: Any, strict: Optional[bool] = None) -> datetime:
+def _parse_dt(x: Any, strict: bool | None = None) -> datetime:
     """Parse to timezone-aware datetime (UTC).
     In strict mode (strict=True): accept only datetime with tzinfo (no implicit coercions).
     In lax mode (strict is False/None): accept datetime/epoch/ISO-8601 string.
@@ -170,7 +169,7 @@ def _as_collection(x: Any) -> Sequence[Any]:
 # ------------------------------- conditions -------------------------------
 
 
-def eval_condition(cond: Any, env: Dict[str, Any]) -> bool:
+def eval_condition(cond: Any, env: dict[str, Any]) -> bool:
     """Evaluate condition dict safely. On type mismatches, raise ConditionTypeError."""
     if not isinstance(cond, dict):
         return bool(cond)
@@ -290,24 +289,24 @@ def eval_condition(cond: Any, env: Dict[str, Any]) -> bool:
 
 
 def evaluate(
-    policy: Dict[str, Any],
-    env: Dict[str, Any],
+    policy: dict[str, Any],
+    env: dict[str, Any],
     *,
     algorithm: str | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Default algorithm: deny-overrides (conservative)
     algo = (algorithm or policy.get("algorithm") or "deny-overrides").lower()
 
     decision: Effect = "deny"
     reason = "no_match"
-    last_rule_id: Optional[str] = None
-    obligations: List[Dict[str, Any]] = []
+    last_rule_id: str | None = None
+    obligations: list[dict[str, Any]] = []
 
     any_permit = False
     any_deny = False
-    permit_rule_id: Optional[str] = None
-    deny_rule_id: Optional[str] = None
-    permit_obligations: List[Dict[str, Any]] = []
+    permit_rule_id: str | None = None
+    deny_rule_id: str | None = None
+    permit_obligations: list[dict[str, Any]] = []
 
     rules = policy.get("rules") or []
     if not isinstance(rules, list):
@@ -412,5 +411,5 @@ def evaluate(
 
 
 # Backwards-compatible alias
-def decide(policy: Dict[str, Any], env: Dict[str, Any]) -> Dict[str, Any]:
+def decide(policy: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
     return evaluate(policy, env)

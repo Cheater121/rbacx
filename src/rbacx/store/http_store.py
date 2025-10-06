@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Dict, Optional
+from typing import Any
 
 from rbacx.core.ports import PolicySource
 
@@ -12,22 +10,24 @@ class HTTPPolicySource(PolicySource):
     Extra: rbacx[http]
     """
 
-    def __init__(self, url: str, *, headers: Dict[str, str] | None = None, validate_schema: bool = False) -> None:
+    def __init__(
+        self, url: str, *, headers: dict[str, str] | None = None, validate_schema: bool = False
+    ) -> None:
         self.url = url
         # Optional schema validation flag (disabled by default)
         self.validate_schema = validate_schema
         self.headers = dict(headers or {})
-        self._etag: Optional[str] = None
-        self._policy_cache: Optional[Dict[str, Any]] = None
+        self._etag: str | None = None
+        self._policy_cache: dict[str, Any] | None = None
 
-    def load(self) -> Dict[str, Any]:
+    def load(self) -> dict[str, Any]:
         try:
             import requests  # type: ignore[import-untyped]
         except Exception as e:  # pragma: no cover - optional extra
             raise RuntimeError("requests is required (install rbacx[http])") from e
 
         # Build request headers, preserving user-specified values
-        hdrs: Dict[str, str] = dict(self.headers)
+        hdrs: dict[str, str] = dict(self.headers)
         if self._etag:
             # Conditional GET to avoid downloading body if unchanged
             hdrs.setdefault("If-None-Match", self._etag)
@@ -47,7 +47,7 @@ class HTTPPolicySource(PolicySource):
             r.raise_for_status()
 
         # Update cached ETag if server provided it (case-insensitive)
-        etag_header = None
+        etag_header: str | None = None
         try:
             # requests' Headers are case-insensitive, but stubs may be plain dicts
             etag_header = r.headers.get("ETag") if hasattr(r, "headers") else None
@@ -68,6 +68,7 @@ class HTTPPolicySource(PolicySource):
                     # Optionally validate the policy before returning
                     if self.validate_schema:
                         from rbacx.dsl.validate import validate_policy
+
                         validate_policy(obj)
                     self._policy_cache = obj
                     return obj
@@ -79,7 +80,7 @@ class HTTPPolicySource(PolicySource):
                 )
 
         # Determine content-type for parser hints
-        content_type = None
+        content_type: str | None = None
         try:
             ctype = r.headers.get("Content-Type") if hasattr(r, "headers") else None
             if ctype is None and isinstance(getattr(r, "headers", None), dict):
@@ -90,7 +91,7 @@ class HTTPPolicySource(PolicySource):
             content_type = None
 
         # Obtain text body; some stubs provide only .text, others only .content
-        body_text: Optional[str] = getattr(r, "text", None)
+        body_text: str | None = getattr(r, "text", None)
         if body_text is None:
             content = getattr(r, "content", None)
             if isinstance(content, (bytes, bytearray)):
@@ -101,9 +102,13 @@ class HTTPPolicySource(PolicySource):
             else:
                 body_text = ""
 
-        
         # If Content-Type indicates JSON but body text is empty, try JSON API as a last resort
-        if (body_text or "") == "" and content_type and "json" in content_type.lower() and hasattr(r, "json"):
+        if (
+            (body_text or "") == ""
+            and content_type
+            and "json" in content_type.lower()
+            and hasattr(r, "json")
+        ):
             obj = None
             try:
                 obj = r.json()
@@ -114,6 +119,7 @@ class HTTPPolicySource(PolicySource):
                 # Optionally validate; let validation errors propagate
                 if self.validate_schema:
                     from rbacx.dsl.validate import validate_policy
+
                     validate_policy(obj)
                 self._policy_cache = obj
                 return obj
@@ -122,10 +128,11 @@ class HTTPPolicySource(PolicySource):
         # Run schema validation only when explicitly enabled (text branch)
         if self.validate_schema:
             from rbacx.dsl.validate import validate_policy
+
             validate_policy(policy)
         # Cache the last successfully parsed policy for 304 reuse
         self._policy_cache = policy
         return policy
 
-    def etag(self) -> Optional[str]:
+    def etag(self) -> str | None:
         return self._etag

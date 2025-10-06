@@ -1,22 +1,17 @@
-
-from __future__ import annotations
-
-from typing import Dict, List, Set
-
-
 class StaticRoleResolver:
     """Simple in-memory role resolver with inheritance.
 
     graph: {role: [parent_role, ...]}
     expand(['manager']) -> ['manager', 'employee', 'user', ...]
     """
-    def __init__(self, graph: Dict[str, List[str]] | None = None) -> None:
+
+    def __init__(self, graph: dict[str, list[str]] | None = None) -> None:
         self.graph = graph or {}
 
-    def expand(self, roles: List[str] | None) -> List[str]:
+    def expand(self, roles: list[str] | None) -> list[str]:
         if not roles:
             return []
-        out: Set[str] = set()
+        out: set[str] = set()
         stack = list(roles)
         while stack:
             r = stack.pop()

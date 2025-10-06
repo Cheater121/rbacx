@@ -1,15 +1,14 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 
 @dataclass(frozen=True)
 class ObligationCheckResult:
     """Small DTO kept for backwards-compatibility if needed by contributors."""
+
     ok: bool
-    challenge: Optional[str] = None
-    reason: Optional[str] = None
+    challenge: str | None = None
+    reason: str | None = None
 
 
 class BasicObligationChecker:
@@ -35,7 +34,7 @@ class BasicObligationChecker:
       - `require_age_verified`   -> "age_verification"
     """
 
-    def check(self, decision: Dict[str, Any], context: Any) -> Tuple[bool, Optional[str]]:
+    def check(self, decision: dict[str, Any], context: Any) -> tuple[bool, str | None]:
         """Check obligations attached to a raw decision.
 
         Parameters
@@ -63,10 +62,12 @@ class BasicObligationChecker:
         if isinstance(decision_label, str):
             current_effect = "permit" if decision_label == "permit" else "deny"
         else:
-            current_effect = decision.get("effect") or ("permit" if decision.get("allowed") else "deny")
+            current_effect = decision.get("effect") or (
+                "permit" if decision.get("allowed") else "deny"
+            )
 
         # Baseline ok: permit -> True, deny -> False (fail-closed), but obligations may still add a challenge.
-        baseline_ok = (current_effect == "permit")
+        baseline_ok = current_effect == "permit"
 
         ctx = getattr(context, "attrs", context) or {}
 

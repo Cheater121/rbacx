@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable
 
 from . import __version__
 from .dsl.lint import analyze_policy, analyze_policyset
@@ -13,7 +13,7 @@ from .store.policy_loader import parse_policy_text
 # ------------------------------- utils ---------------------------------
 
 
-def _parse_require_attrs(s: str | None) -> Dict[str, List[str]]:
+def _parse_require_attrs(s: str | None) -> dict[str, list[str]]:
     """
     Parse --require-attrs string like:
         "subject:id,org;resource:type;:a,b"
@@ -25,7 +25,7 @@ def _parse_require_attrs(s: str | None) -> Dict[str, List[str]]:
     """
     if s is None:
         return {}
-    out: Dict[str, List[str]] = {}
+    out: dict[str, list[str]] = {}
     for part in [p for p in s.split(";")]:
         if ":" not in part:
             # keep legacy leniency: skip malformed chunk silently
@@ -40,7 +40,7 @@ def _parse_require_attrs(s: str | None) -> Dict[str, List[str]]:
     return out
 
 
-def _read_text_from_path_or_stdin(path: Optional[str]) -> Tuple[str, Optional[str]]:
+def _read_text_from_path_or_stdin(path: str | None) -> tuple[str, str | None]:
     """
     Read text from file path or STDIN when path is '-' or None.
     Returns (text, filename_for_format_detection).
@@ -52,7 +52,7 @@ def _read_text_from_path_or_stdin(path: Optional[str]) -> Tuple[str, Optional[st
     return data, None
 
 
-def _load_policy_from_arg(path: Optional[str]) -> Dict[str, Any]:
+def _load_policy_from_arg(path: str | None) -> dict[str, Any]:
     """
     Read and parse a single text document (JSON or YAML) into a dict.
     May raise FileNotFoundError / json.JSONDecodeError, which tests expect.
@@ -61,12 +61,12 @@ def _load_policy_from_arg(path: Optional[str]) -> Dict[str, Any]:
     return parse_policy_text(text, filename=fn)
 
 
-def _format_issues_text(issues: Iterable[Dict[str, Any]]) -> str:
+def _format_issues_text(issues: Iterable[dict[str, Any]]) -> str:
     """
     Human-friendly text formatter for lint issues.
     Keys may include: code, message, path, policy_index.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     for it in issues:
         code = it.get("code", "ISSUE")
         msg = it.get("message", "")
@@ -111,15 +111,15 @@ EXIT_SCHEMA_ERRORS = 6
 # ----------------------------- internal doc-based ops -------------------
 
 
-def _lint_doc(doc: Dict[str, Any], *, policyset: bool, require_attrs: Dict[str, List[str]]):
+def _lint_doc(doc: dict[str, Any], *, policyset: bool, require_attrs: dict[str, list[str]]):
     if policyset:
         return analyze_policyset(doc, require_attrs=require_attrs)
     return analyze_policy(doc, require_attrs=require_attrs)
 
 
-def _validate_doc(doc: Dict[str, Any], *, policyset: bool) -> List[Dict[str, Any]]:
+def _validate_doc(doc: dict[str, Any], *, policyset: bool) -> list[dict[str, Any]]:
     if policyset:
-        errs: List[Dict[str, Any]] = []
+        errs: list[dict[str, Any]] = []
         for idx, pol in enumerate(doc.get("policies") or []):
             try:
                 validate_policy(pol)
@@ -188,7 +188,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         _print(errs, "json")
     else:
         if errs:
-            lines = []
+            lines: list[str] = []
             for it in errs:
                 msg = it.get("message", "")
                 pidx = it.get("policy_index")
@@ -231,7 +231,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         _print(errs, "json")
     else:
         if errs:
-            lines = []
+            lines: list[str] = []
             for it in errs:
                 msg = it.get("message", "")
                 pidx = it.get("policy_index")
@@ -356,7 +356,7 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     # Prevent argparse from raising SystemExit(0) on --version.
     try:

@@ -1,7 +1,6 @@
-from __future__ import annotations
-
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any
 
 try:  # Optional dependency boundary
     from flask import jsonify, request  # type: ignore[import-not-found]
@@ -13,12 +12,14 @@ from ..core.engine import Guard
 from ._common import EnvBuilder
 
 
-def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = False):
+def require_access(
+    guard: Guard, build_env: EnvBuilder, *, add_headers: bool = False
+) -> Callable[..., Any]:
     """Decorator for Flask view functions to enforce access."""
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(fn)
-        def wrapped(*args: Any, **kwargs: Any):
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
             """Sync-only adapter: always uses Guard.evaluate_sync."""
             if jsonify is None:  # pragma: no cover
                 raise RuntimeError("flask is required for adapters.flask")
@@ -32,14 +33,16 @@ def require_access(guard: Guard, build_env: EnvBuilder, *, add_headers: bool = F
                 return fn(*args, **kwargs)
 
             # Do not leak reasons in the body. Optionally expose via headers.
-            headers: Dict[str, str] = {}
+            headers: dict[str, str] = {}
             if add_headers:
-                if decision.reason:
+                if decision.reason is not None:
                     headers["X-RBACX-Reason"] = str(decision.reason)
-                if getattr(decision, "rule_id", None):
-                    headers["X-RBACX-Rule"] = str(decision.rule_id)
-                if getattr(decision, "policy_id", None):
-                    headers["X-RBACX-Policy"] = str(decision.policy_id)
+                rule_id = getattr(decision, "rule_id", None)
+                if rule_id is not None:
+                    headers["X-RBACX-Rule"] = str(rule_id)
+                policy_id = getattr(decision, "policy_id", None)
+                if policy_id is not None:
+                    headers["X-RBACX-Policy"] = str(policy_id)
 
             # Flask supports returning (response, status, headers) tuples.
             return jsonify({"detail": "Forbidden"}), 403, headers

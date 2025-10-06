@@ -1,7 +1,6 @@
-from __future__ import annotations
-
 import importlib
-from typing import TYPE_CHECKING, Any, Callable, Optional, ParamSpec, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from ._common import EnvBuilder
 
@@ -31,13 +30,13 @@ else:
 
 
 # Module-level JSONResponse that tests may monkeypatch
-JSONResponse: Optional[Callable[..., Any]] = _ASGIJSONResponse  # may be replaced in tests
+JSONResponse: Callable[..., Any] | None = _ASGIJSONResponse  # may be replaced in tests
 
 
 def _coerce_asgi_json_response(
     data: Any,
     status_code: int,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
 ):
     # If Starlette is absent, use whatever JSONResponse was patched to (tests can inject a stub)
     if _ASGIJSONResponse is None:
@@ -49,7 +48,7 @@ def _coerce_asgi_json_response(
 
 def _eval_guard(
     guard: Any, env: tuple[Any, Any, Any, Any]
-) -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
+) -> tuple[bool, str | None, str | None, str | None]:
     sub, act, res, ctx = env
     # Prefer evaluate_sync (richer), then is_allowed_sync, then is_allowed
     if hasattr(guard, "evaluate_sync"):
@@ -70,7 +69,7 @@ def _eval_guard(
     )
 
 
-def _deny_headers(reason: Optional[str], add_headers: bool) -> dict[str, str]:
+def _deny_headers(reason: str | None, add_headers: bool) -> dict[str, str]:
     if not add_headers:
         return {}
     headers: dict[str, str] = {}

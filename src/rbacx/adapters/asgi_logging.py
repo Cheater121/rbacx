@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from typing import Any
 
@@ -13,20 +11,20 @@ class TraceIdMiddleware:
         self.app = app
         self.header_name = header_name.lower()  # normalize once
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
         if scope.get("type") != "http":
             await self.app(scope, receive, send)
             return
 
         req_headers = scope.get("headers", []) or []
-        rid = None
+        rid: str | None = None
         for k, v in req_headers:
-            k = k.lower()
-            if k == self.header_name:
+            key_lower = k.lower()
+            if key_lower == self.header_name:
                 rid = v.decode("latin1")
                 break
             # optional: accept W3C trace context too
-            if k == b"traceparent" and not rid:  # keep first-found
+            if key_lower == b"traceparent" and rid is None:
                 rid = v.decode("latin1")  # or parse to extract trace-id part
 
         if not rid:
@@ -34,13 +32,13 @@ class TraceIdMiddleware:
 
         token = set_current_trace_id(rid)
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: dict) -> None:
             if message.get("type") == "http.response.start":
                 headers = message.setdefault("headers", [])
                 try:
                     # remove any existing header to avoid duplicates
                     headers[:] = [h for h in headers if h[0].lower() != self.header_name]
-                    headers.append((self.header_name, rid.encode("latin1")))  # tuple of bytes
+                    headers.append((self.header_name, rid.encode("latin1")))
                 except Exception:
                     logger.debug("TraceIdMiddleware: failed to set response header", exc_info=True)
             await send(message)

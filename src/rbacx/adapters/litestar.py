@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 # Try the modern base first (Litestar >= 2.15), then fallback to the legacy one.
 if TYPE_CHECKING:
     # During type checking we don't want mypy to see multiple incompatible bases
     # rebound into the same _BaseMiddleware name.
-    class _BaseMiddleware(object):  # minimal base for typing only
+    class _BaseMiddleware:  # minimal base for typing only
         ...
 
     _MODE: str = "asgi"
@@ -88,7 +88,7 @@ class RBACXMiddleware(_BaseMiddleware):
             return
 
         # Deny: keep body generic; optionally expose diagnostics via headers
-        headers: Dict[str, str] = {}
+        headers: dict[str, str] = {}
         if self.add_headers:
             if decision.reason:
                 headers["X-RBACX-Reason"] = str(decision.reason)

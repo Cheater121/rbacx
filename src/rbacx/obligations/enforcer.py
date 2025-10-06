@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 import copy
-from typing import Any, Dict, List
+from typing import Any
 
 
 def _ensure_list_size(lst: list, idx: int) -> None:
@@ -63,11 +61,11 @@ def _set_by_path(obj: Any, path: str, value: Any) -> None:
 
 
 def apply_obligations(
-    payload: Dict[str, Any],
-    obligations: List[Dict[str, Any]] | None,
+    payload: dict[str, Any],
+    obligations: list[dict[str, Any]] | None,
     *,
     in_place: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Apply masking/redaction obligations to a payload.
 

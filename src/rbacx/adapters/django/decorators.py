@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 # Optional Django imports so the module stays importable without Django
 try:  # pragma: no cover
@@ -17,7 +15,7 @@ from .._common import EnvBuilder
 def require_access(
     build_env: EnvBuilder,
     *,
-    guard: Optional[Guard] = None,
+    guard: Guard | None = None,
     add_headers: bool = False,
     audit: bool = False,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -36,7 +34,7 @@ def require_access(
                 raise RuntimeError("Django is required for adapters.django")
 
             # Resolve guard: explicit param takes precedence, then request attribute.
-            effective_guard: Optional[Guard] = guard or getattr(request, "rbacx_guard", None)
+            effective_guard: Guard | None = guard or getattr(request, "rbacx_guard", None)
 
             # Fail-closed if no guard and not auditing.
             if effective_guard is None:

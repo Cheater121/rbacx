@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 # Optional DRF imports (module must stay importable without DRF)
 try:  # pragma: no cover - optional dependency
@@ -78,11 +76,8 @@ def rbacx_exception_handler(exc: Exception, context: dict[str, Any]):
     response = _drf_exception_handler(exc, context)
     if response is not None:
         req = context.get("request")
-        hdrs: Optional[dict[str, str]] = (
-            getattr(req, "_rbacx_denied_headers", None) if req else None
-        )
+        hdrs = getattr(req, "_rbacx_denied_headers", None) if req else None
         if hdrs:
             for k, v in hdrs.items():
-                # DRF Response supports header assignment directly.
                 response[k] = v
     return response

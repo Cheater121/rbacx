@@ -1,15 +1,13 @@
-from __future__ import annotations
-
 import json
 import logging
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..core.ports import DecisionLogSink
 from ..obligations.enforcer import apply_obligations
 
 # Safe-by-default set used only when opt-in flag `use_default_redactions=True`
-_DEFAULT_REDACTIONS: List[Dict[str, Any]] = [
+_DEFAULT_REDACTIONS: list[dict[str, Any]] = [
     {
         "type": "redact_fields",
         "fields": [
@@ -47,17 +45,16 @@ class DecisionLogger(DecisionLogSink):
         self,
         *,
         sample_rate: float = 1.0,
-        redactions: Optional[List[Dict[str, Any]]] = None,
+        redactions: list[dict[str, Any]] | None = None,
         logger_name: str = "rbacx.audit",
         as_json: bool = False,
         level: int = logging.INFO,
         redact_in_place: bool = False,
         use_default_redactions: bool = False,  # opt-in; keeps old behavior by default
         smart_sampling: bool = False,  # opt-in; keeps old behavior by default
-        category_sampling_rates: Optional[
-            Dict[str, float]
-        ] = None,  # e.g. {"deny":1.0,"permit_with_obligations":1.0}
-        max_env_bytes: Optional[int] = None,  # opt-in size limit for serialized env
+        category_sampling_rates: dict[str, float]
+        | None = None,  # e.g. {"deny":1.0,"permit_with_obligations":1.0}
+        max_env_bytes: int | None = None,  # opt-in size limit for serialized env
     ) -> None:
         # Sampling: 0.0 → drop all, 1.0 → log all
         self.sample_rate = float(sample_rate)
@@ -86,7 +83,7 @@ class DecisionLogger(DecisionLogSink):
             max_env_bytes if (isinstance(max_env_bytes, int) and max_env_bytes > 0) else None
         )
 
-    def log(self, payload: Dict[str, Any]) -> None:  # type: ignore[override]
+    def log(self, payload: dict[str, Any]) -> None:
         # Category-aware sampling if enabled; otherwise legacy sampling
         if self._should_drop_by_sampling(payload):
             return
@@ -95,7 +92,7 @@ class DecisionLogger(DecisionLogSink):
         safe = dict(payload)
 
         # Pull env (may be missing)
-        env_obj: Dict[str, Any] = dict(safe.get("env") or {})
+        env_obj: dict[str, Any] = dict(safe.get("env") or {})
 
         # Choose effective redaction set per strict priority
         if self._redactions_provided:
@@ -147,7 +144,7 @@ class DecisionLogger(DecisionLogSink):
 
     # ---------------------------- internals
 
-    def _should_drop_by_sampling(self, payload: Dict[str, Any]) -> bool:
+    def _should_drop_by_sampling(self, payload: dict[str, Any]) -> bool:
         """Return True if the record should be dropped by sampling."""
         if not self.smart_sampling:
             # Legacy single-rate sampling

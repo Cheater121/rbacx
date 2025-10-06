@@ -1,24 +1,21 @@
-from __future__ import annotations
-
 import contextvars
 import uuid
-from logging import Filter
-from typing import Optional
+from logging import Filter, LogRecord
 
-_trace_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+_trace_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "rbacx_trace_id", default=None
 )
 
 
-def set_current_trace_id(value: str) -> contextvars.Token:
+def set_current_trace_id(value: str) -> contextvars.Token[str | None]:
     return _trace_id.set(value)
 
 
-def get_current_trace_id() -> Optional[str]:
+def get_current_trace_id() -> str | None:
     return _trace_id.get()
 
 
-def clear_current_trace_id(token: contextvars.Token | None = None) -> None:
+def clear_current_trace_id(token: contextvars.Token[str | None] | None = None) -> None:
     if token is not None:
         _trace_id.reset(token)
     else:
@@ -30,6 +27,6 @@ def gen_trace_id() -> str:
 
 
 class TraceIdFilter(Filter):
-    def filter(self, record) -> bool:
+    def filter(self, record: LogRecord) -> bool:
         record.trace_id = get_current_trace_id() or "-"
         return True

@@ -1,12 +1,11 @@
-from __future__ import annotations
-
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from .policy import evaluate as evaluate_policy
 from .policyset import decide as decide_policyset
 
 
-def _actions(rule: Dict[str, Any]) -> Tuple[str, ...]:
+def _actions(rule: dict[str, Any]) -> tuple[str, ...]:
     acts_raw = rule.get("actions")
     if not isinstance(acts_raw, Iterable):
         return tuple()
@@ -14,7 +13,7 @@ def _actions(rule: Dict[str, Any]) -> Tuple[str, ...]:
     return tuple(acts)
 
 
-def _resource_types(rule: Dict[str, Any]) -> Tuple[str | None, ...]:
+def _resource_types(rule: dict[str, Any]) -> tuple[str | None, ...]:
     """Return declared resource types for the rule.
 
     None means 'wildcard/any type'.
@@ -26,7 +25,7 @@ def _resource_types(rule: Dict[str, Any]) -> Tuple[str | None, ...]:
     if isinstance(t, str):
         return (None,) if t == "*" else (t,)
     if isinstance(t, list):
-        out: List[str | None] = []
+        out: list[str | None] = []
         for x in t:
             if isinstance(x, str):
                 out.append(None if x == "*" else x)
@@ -34,12 +33,12 @@ def _resource_types(rule: Dict[str, Any]) -> Tuple[str | None, ...]:
     return (None,)
 
 
-def _has_id(rule: Dict[str, Any]) -> bool:
+def _has_id(rule: dict[str, Any]) -> bool:
     r = rule.get("resource") or {}
     return r.get("id") is not None
 
 
-def _has_attrs(rule: Dict[str, Any]) -> bool:
+def _has_attrs(rule: dict[str, Any]) -> bool:
     r = rule.get("resource") or {}
     attrs = (
         r.get("attrs") or r.get("attributes") or {}
@@ -53,7 +52,7 @@ def _type_matches(rule_types: Sequence[str | None], res_type: str | None) -> boo
     return (res_type in rule_types) or (None in rule_types)
 
 
-def _categorize(rule: Dict[str, Any], res_type: str | None) -> int | None:
+def _categorize(rule: dict[str, Any], res_type: str | None) -> int | None:
     """Return priority bucket for the rule relative to resource.
 
     0 -> (type match) & id-specific
@@ -74,7 +73,7 @@ def _categorize(rule: Dict[str, Any], res_type: str | None) -> int | None:
     return 3
 
 
-def compile(policy: Dict[str, Any]) -> Any:
+def compile(policy: dict[str, Any]) -> Any:
     """Compile a policy into a fast decision function with prioritized rule ordering.
 
     Priority within a request: pick the *most specific* non-empty bucket
@@ -89,8 +88,8 @@ def compile(policy: Dict[str, Any]) -> Any:
     algo = (policy.get("algorithm") or "permit-overrides").lower()
 
     # Map actions -> rules (stable order). '*' kept separately and appended last.
-    by_action: Dict[str, List[Dict[str, Any]]] = {}
-    star_rules: List[Dict[str, Any]] = []
+    by_action: dict[str, list[dict[str, Any]]] = {}
+    star_rules: list[dict[str, Any]] = []
     for rule in rules:
         acts = _actions(rule)
         if not acts:
@@ -102,7 +101,7 @@ def compile(policy: Dict[str, Any]) -> Any:
                 continue
             by_action.setdefault(a, []).append(rule)
 
-    def decide(env: Dict[str, Any]) -> Dict[str, Any]:
+    def decide(env: dict[str, Any]) -> dict[str, Any]:
         action_val = env.get("action")
         action: str = str(action_val) if action_val is not None else ""
         res = env.get("resource") or {}
@@ -110,7 +109,7 @@ def compile(policy: Dict[str, Any]) -> Any:
         res_type: str | None = None if _rt is None else str(_rt)
 
         # Collect action-matched rules, preserving insertion order and de-duplicating
-        candidates: List[Dict[str, Any]] = []
+        candidates: list[dict[str, Any]] = []
         seen: set[int] = set()
         for r in by_action.get(action, []):
             rid = id(r)
@@ -124,13 +123,13 @@ def compile(policy: Dict[str, Any]) -> Any:
                 seen.add(rid)
 
         # Put candidates into buckets and PICK ONLY the most specific non-empty bucket
-        buckets: List[List[Dict[str, Any]]] = [[], [], [], []]
+        buckets: list[list[dict[str, Any]]] = [[], [], [], []]
         for r in candidates:
             cat = _categorize(r, res_type)
             if cat is None:
                 continue
             buckets[cat].append(r)
-        selected: List[Dict[str, Any]] = []
+        selected: list[dict[str, Any]] = []
         for i in range(4):
             if buckets[i]:
                 selected = buckets[i]

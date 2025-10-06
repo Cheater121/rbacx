@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import logging
 from importlib import import_module
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 # Optional Django imports to keep the module importable without Django installed
 try:  # pragma: no cover
@@ -50,7 +48,7 @@ class RbacxDjangoMiddleware:
         if settings is None:  # pragma: no cover
             raise RuntimeError("Django is required to use RbacxDjangoMiddleware")
         self.get_response = get_response
-        self._guard: Optional[Any] = None
+        self._guard: Any | None = None
 
         factory_path = getattr(settings, "RBACX_GUARD_FACTORY", None)
         if factory_path:

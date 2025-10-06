@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 
 class AbstractCache(Protocol):
@@ -17,11 +15,11 @@ class AbstractCache(Protocol):
     set may accept an optional TTL in seconds.
     """
 
-    def get(self, key: str) -> Optional[Any]:  # pragma: no cover - protocol
+    def get(self, key: str) -> Any | None:  # pragma: no cover - protocol
         ...
 
     def set(
-        self, key: str, value: Any, ttl: Optional[int] = None
+        self, key: str, value: Any, ttl: int | None = None
     ) -> None:  # pragma: no cover - protocol
         ...
 
@@ -35,7 +33,7 @@ class AbstractCache(Protocol):
 @dataclass
 class _Entry:
     value: Any
-    expires_at: Optional[float]  # monotonic timestamp
+    expires_at: float | None  # monotonic timestamp
 
 
 class DefaultInMemoryCache(AbstractCache):
@@ -51,7 +49,7 @@ class DefaultInMemoryCache(AbstractCache):
     """
 
     def __init__(self, maxsize: int = 2048) -> None:
-        self._data: "OrderedDict[str, _Entry]" = OrderedDict()
+        self._data: OrderedDict[str, _Entry] = OrderedDict()
         self._maxsize = int(maxsize)
         self._lock = threading.RLock()
 
@@ -65,7 +63,7 @@ class DefaultInMemoryCache(AbstractCache):
         for k in to_delete:
             self._data.pop(k, None)
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         with self._lock:
             entry = self._data.get(key)
             if entry is None:
@@ -78,7 +76,7 @@ class DefaultInMemoryCache(AbstractCache):
             self._data.move_to_end(key)
             return entry.value
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         expires_at = None
         if ttl is not None and ttl > 0:
             expires_at = time.monotonic() + float(ttl)
