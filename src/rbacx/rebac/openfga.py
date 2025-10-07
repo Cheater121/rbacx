@@ -1,14 +1,12 @@
-from __future__ import annotations
-
 import logging
 import uuid
 from dataclasses import dataclass
 from typing import Any, Mapping
 
 try:
-    import httpx  # optional dependency (declare extra: rebac-openfga)
+    import httpx  # optional dependency, install via extra: rbacx[rebac-openfga]
 except Exception:  # pragma: no cover
-    httpx = None  # type: ignore[assignment]
+    httpx = None  # type: ignore
 
 from ..core.ports import RelationshipChecker
 
@@ -20,20 +18,19 @@ class OpenFGAConfig:
     """Minimal configuration for OpenFGA HTTP client."""
 
     api_url: str  # e.g. "http://localhost:8080"
-    store_id: str  # e.g. "01H..." (required for most endpoints)
+    store_id: str  # e.g. "01H..." (required)
     authorization_model_id: str | None = None
-    api_token: str | None = None  # Bearer <token>, if your deployment requires it
+    api_token: str | None = None  # Bearer <token>, if required
     timeout_seconds: float = 2.0
 
 
 class OpenFGAChecker(RelationshipChecker):
-    """ReBAC provider backed by OpenFGA HTTP API.
+    """
+    ReBAC provider backed by OpenFGA HTTP API.
 
     - Uses /stores/{store_id}/check and /stores/{store_id}/batch-check.
-    - If `authorization_model_id` is set in config (or passed per-call), it is forwarded.
-    - `context` (if any) is forwarded to support OpenFGA "conditions".
-      OpenFGA merges persisted context with request context; persisted wins on conflict.
-      See docs.  # https://openfga.dev/docs/modeling/conditions
+    - For conditions, forwards `context` (OpenFGA merges persisted and request contexts).
+    - If both clients are provided, AsyncClient takes precedence (methods return awaitables).
     """
 
     def __init__(
@@ -45,18 +42,17 @@ class OpenFGAChecker(RelationshipChecker):
     ) -> None:
         if httpx is None:
             raise RuntimeError(
-                "OpenFGAChecker requires 'httpx' installed. "
-                "Install with extra: rbacx[rebac-openfga]."
+                "OpenFGAChecker requires 'httpx'. Install with extra: rbacx[rebac-openfga]"
             )
         self.cfg = config
         self._client = client
         self._aclient = async_client
 
+        # Provide a sensible default: sync client if neither was passed.
         if self._client is None and self._aclient is None:
-            # Default to sync client; you can pass AsyncClient to return awaitables.
             self._client = httpx.Client(timeout=self.cfg.timeout_seconds)
 
-    # ------------- helpers -------------
+    # ------------ helpers ------------
 
     def _headers(self) -> dict[str, str]:
         h = {"content-type": "application/json"}
@@ -68,9 +64,9 @@ class OpenFGAChecker(RelationshipChecker):
         base = self.cfg.api_url.rstrip("/")
         return f"{base}/stores/{self.cfg.store_id}/{suffix.lstrip('/')}"
 
-    # ------------- RelationshipChecker -------------
+    # ------------ RelationshipChecker ------------
 
-    def check(  # overload-compatible: sync OR async depends on which client is provided
+    def check(  # overload-compatible: returns bool OR awaitable depending on client
         self,
         subject: str,
         relation: str,
@@ -80,7 +76,6 @@ class OpenFGAChecker(RelationshipChecker):
         authorization_model_id: str | None = None,
     ):
         body: dict[str, Any] = {
-            # REST form with tuple_key is canonical for raw API
             "tuple_key": {"user": subject, "relation": relation, "object": resource},
         }
         model_id = authorization_model_id or self.cfg.authorization_model_id
@@ -92,21 +87,44 @@ class OpenFGAChecker(RelationshipChecker):
         if self._aclient is not None:
 
             async def _run() -> bool:
-                resp = await self._aclient.post(
-                    self._url("check"), json=body, headers=self._headers()
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return bool(data.get("allowed", False))
+                try:
+                    resp = await self._aclient.post(
+                        self._url("check"),
+                        json=body,
+                        headers=self._headers(),
+                        timeout=self.cfg.timeout_seconds,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return bool(data.get("allowed", False))
+                except httpx.HTTPError as e:  # type: ignore[attr-defined]
+                    logger.warning("OpenFGA async check HTTP error: %s", e, exc_info=True)
+                    return False
+                except Exception:  # pragma: no cover
+                    logger.error("OpenFGA async check unexpected error", exc_info=True)
+                    return False
 
             return _run()
 
-        # sync
-        assert self._client is not None
-        resp = self._client.post(self._url("check"), json=body, headers=self._headers())
-        resp.raise_for_status()
-        data = resp.json()
-        return bool(data.get("allowed", False))
+        if self._client is None:
+            raise RuntimeError("No sync HTTP client configured for OpenFGAChecker")
+
+        try:
+            resp = self._client.post(
+                self._url("check"),
+                json=body,
+                headers=self._headers(),
+                timeout=self.cfg.timeout_seconds,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return bool(data.get("allowed", False))
+        except httpx.HTTPError as e:  # type: ignore[attr-defined]
+            logger.warning("OpenFGA check HTTP error: %s", e, exc_info=True)
+            return False
+        except Exception:  # pragma: no cover
+            logger.error("OpenFGA check unexpected error", exc_info=True)
+            return False
 
     def batch_check(
         self,
@@ -115,7 +133,7 @@ class OpenFGAChecker(RelationshipChecker):
         context: dict[str, Any] | None = None,
         authorization_model_id: str | None = None,
     ):
-        # Build server-side BatchCheck payload
+        # Build request with correlation_id per check (order is not guaranteed in responses)
         checks: list[dict[str, Any]] = []
         corr_ids: list[str] = []
         for s, r, o in triples:
@@ -138,30 +156,77 @@ class OpenFGAChecker(RelationshipChecker):
         if self._aclient is not None:
 
             async def _run() -> list[bool]:
-                resp = await self._aclient.post(
-                    self._url("batch-check"), json=body, headers=self._headers()
-                )
-                resp.raise_for_status()
-                data = resp.json() or {}
-                # Response shape maps correlation_id -> {allowed: bool}
-                # See docs for Batch Check.  # https://openfga.dev/docs/getting-started/perform-check
-                results_map: Mapping[str, Mapping[str, Any]] = data.get("results") or {}
-                out: list[bool] = []
-                for cid in corr_ids:
-                    allowed = bool((results_map.get(cid) or {}).get("allowed", False))
-                    out.append(allowed)
-                return out
+                try:
+                    resp = await self._aclient.post(
+                        self._url("batch-check"),
+                        json=body,
+                        headers=self._headers(),
+                        timeout=self.cfg.timeout_seconds,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json() or {}
+
+                    # Support both API shapes:
+                    # 1) REST map: {"results": { "<cid>": {"allowed": bool}, ... } }
+                    # 2) SDK array: {"result": [ {"correlationId": "...", "allowed": bool}, ... ] }
+                    out: list[bool] = []
+                    if isinstance(data.get("results"), dict):
+                        results_map: Mapping[str, Mapping[str, Any]] = data["results"]
+                        for cid in corr_ids:
+                            out.append(bool((results_map.get(cid) or {}).get("allowed", False)))
+                        return out
+
+                    if isinstance(data.get("result"), list):
+                        by_cid = {
+                            item.get("correlationId"): bool(item.get("allowed"))
+                            for item in data["result"]
+                        }
+                        for cid in corr_ids:
+                            out.append(bool(by_cid.get(cid, False)))
+                        return out
+
+                    return [False] * len(corr_ids)
+                except httpx.HTTPError as e:  # type: ignore[attr-defined]
+                    logger.warning("OpenFGA async batch-check HTTP error: %s", e, exc_info=True)
+                    return [False] * len(corr_ids)
+                except Exception:  # pragma: no cover
+                    logger.error("OpenFGA async batch-check unexpected error", exc_info=True)
+                    return [False] * len(corr_ids)
 
             return _run()
 
-        # sync
-        assert self._client is not None
-        resp = self._client.post(self._url("batch-check"), json=body, headers=self._headers())
-        resp.raise_for_status()
-        data = resp.json() or {}
-        results_map: Mapping[str, Mapping[str, Any]] = data.get("results") or {}
-        out: list[bool] = []
-        for cid in corr_ids:
-            allowed = bool((results_map.get(cid) or {}).get("allowed", False))
-            out.append(allowed)
-        return out
+        if self._client is None:
+            raise RuntimeError("No sync HTTP client configured for OpenFGAChecker")
+
+        try:
+            resp = self._client.post(
+                self._url("batch-check"),
+                json=body,
+                headers=self._headers(),
+                timeout=self.cfg.timeout_seconds,
+            )
+            resp.raise_for_status()
+            data = resp.json() or {}
+
+            out: list[bool] = []
+            if isinstance(data.get("results"), dict):
+                results_map: Mapping[str, Mapping[str, Any]] = data["results"]
+                for cid in corr_ids:
+                    out.append(bool((results_map.get(cid) or {}).get("allowed", False)))
+                return out
+
+            if isinstance(data.get("result"), list):
+                by_cid = {
+                    item.get("correlationId"): bool(item.get("allowed")) for item in data["result"]
+                }
+                for cid in corr_ids:
+                    out.append(bool(by_cid.get(cid, False)))
+                return out
+
+            return [False] * len(corr_ids)
+        except httpx.HTTPError as e:  # type: ignore[attr-defined]
+            logger.warning("OpenFGA batch-check HTTP error: %s", e, exc_info=True)
+            return [False] * len(corr_ids)
+        except Exception:  # pragma: no cover
+            logger.error("OpenFGA batch-check unexpected error", exc_info=True)
+            return [False] * len(corr_ids)
