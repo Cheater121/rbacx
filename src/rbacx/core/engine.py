@@ -14,7 +14,14 @@ from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
 from .policy import decide as decide_policy
 from .policyset import decide as decide_policyset
-from .ports import DecisionLogSink, MetricsSink, ObligationChecker, RoleResolver
+from .ports import (
+    DecisionLogSink,
+    MetricsSink,
+    ObligationChecker,
+    RelationshipChecker,
+    RoleResolver,
+)
+from .relctx import EVAL_LOOP, REL_CHECKER, REL_LOCAL_CACHE
 
 try:
     # optional compile step to speed up decision making
@@ -63,6 +70,7 @@ class Guard:
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
+        relationship_checker: RelationshipChecker | None = None,  # ← НОВОЕ
         cache: AbstractCache | None = None,
         cache_ttl: int | None = 300,
         strict_types: bool = False,
@@ -78,6 +86,7 @@ class Guard:
         self.policy_etag: str | None = None
         self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
+        self.relationship_checker = relationship_checker
 
         # Provide a "current" loop if missing (helps tests on Py3.12+).
         try:
@@ -146,14 +155,30 @@ class Guard:
         compiled/policy/policyset functions are sync -> offload via to_thread.
         """
         fn = self._compiled
+        loop = asyncio.get_running_loop()
+        token = EVAL_LOOP.set(loop)
         try:
             if fn is not None:
                 return await asyncio.to_thread(fn, env)
         except Exception:  # pragma: no cover
             logger.exception("RBACX: compiled decision failed; falling back")
-        if "policies" in self.policy:
-            return await asyncio.to_thread(decide_policyset, self.policy, env)
-        return await asyncio.to_thread(decide_policy, self.policy, env)
+        finally:
+            EVAL_LOOP.reset(token)
+
+        # policyset
+        token = EVAL_LOOP.set(loop)
+        try:
+            if "policies" in self.policy:
+                return await asyncio.to_thread(decide_policyset, self.policy, env)
+        finally:
+            EVAL_LOOP.reset(token)
+
+        # single policy
+        token = EVAL_LOOP.set(loop)
+        try:
+            return await asyncio.to_thread(decide_policy, self.policy, env)
+        finally:
+            EVAL_LOOP.reset(token)
 
     # ---------------------------------------------------------------- evaluation core (single source of truth)
 
@@ -201,7 +226,13 @@ class Guard:
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: cache.get failed")
         if raw is None:
-            raw = await self._decide_async(env)
+            _t1 = REL_CHECKER.set(self.relationship_checker)
+            _t2 = REL_LOCAL_CACHE.set({})
+            try:
+                raw = await self._decide_async(env)
+            finally:
+                REL_CHECKER.reset(_t1)
+                REL_LOCAL_CACHE.reset(_t2)
             if cache is not None:
                 try:
                     if key:

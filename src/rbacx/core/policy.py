@@ -1,6 +1,14 @@
+import asyncio
+import inspect
+import json
+import logging
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timezone
 from typing import Any
+
+from .relctx import EVAL_LOOP, REL_CHECKER, REL_LOCAL_CACHE
+
+logger = logging.getLogger("rbacx.policy")
 
 Effect = str  # "permit" | "deny"
 
@@ -120,6 +128,38 @@ def resolve(token: Any, env: dict[str, Any]) -> Any:
     return token
 
 
+def _canon_subject(env: dict[str, Any], override: Any = None) -> str:
+    if override is not None:
+        val = resolve(override, env)
+        if isinstance(val, str):
+            return val if ":" in val else f"user:{val}"
+    sid = env.get("subject", {}).get("id")
+    return f"user:{sid}" if sid is not None else "user:"
+
+
+def _canon_resource(env: dict[str, Any], override: Any = None) -> str:
+    if override is not None:
+        val = resolve(override, env)
+        if isinstance(val, str):
+            if ":" in val:
+                return val
+            rtype = env.get("resource", {}).get("type") or "object"
+            return f"{rtype}:{val}"
+    r = env.get("resource", {}) or {}
+    rtype = r.get("type") or "object"
+    rid = r.get("id")
+    return f"{rtype}:{rid}" if rid is not None else f"{rtype}:"
+
+
+def _ctx_hash(ctx: dict[str, Any] | None) -> str:
+    if not ctx:
+        return ""
+    try:
+        return json.dumps(ctx, sort_keys=True, separators=(",", ":"), default=str)
+    except Exception:
+        return repr(ctx)
+
+
 def _ensure_numeric_strict(a: Any, b: Any) -> tuple[float, float]:
     """Ensure both values are numeric (int/float). No string coercion."""
     if isinstance(a, bool) or isinstance(b, bool):
@@ -175,6 +215,86 @@ def eval_condition(cond: Any, env: dict[str, Any]) -> bool:
         return bool(cond)
 
     strict = _is_strict(env)  # STRICT: read once per condition tree
+
+    # ReBAC: relation check
+    if "rel" in cond:
+        expr = cond["rel"]
+        subject_str: str
+        resource_str: str
+        local_ctx: dict[str, Any] | None = None
+
+        if isinstance(expr, str):
+            relation = expr
+            subject_str = _canon_subject(env)
+            resource_str = _canon_resource(env)
+        elif isinstance(expr, dict):
+            relation = str(expr.get("relation") or "")
+            subject_str = _canon_subject(env, expr.get("subject"))
+            resource_str = _canon_resource(env, expr.get("resource"))
+            local_ctx = expr.get("ctx")
+        else:
+            return False
+        if not relation:
+            return False
+
+        # Caveats/conditions
+        env_ctx = env.get("context") or {}
+        rebac_ctx = dict(env_ctx.get("_rebac") or {})
+        if local_ctx:
+            rebac_ctx.update(dict(local_ctx))
+
+        checker = REL_CHECKER.get()
+        if checker is None:
+            return False  # fail-closed
+
+        cache = REL_LOCAL_CACHE.get()
+        key = (subject_str, relation, resource_str, _ctx_hash(rebac_ctx))
+        if isinstance(cache, dict) and key in cache:
+            return bool(cache[key])
+
+        try:
+            res = checker.check(subject_str, relation, resource_str, context=rebac_ctx)
+            if inspect.isawaitable(res):
+                loop = EVAL_LOOP.get()
+                if loop is None:
+                    # shouldn't happen under _decide_async; fail-closed with a clear message
+                    logger.warning(
+                        "Async RelationshipChecker returned awaitable but no loop is captured "
+                        "for (%s, %s, %s). Denying.",
+                        subject_str,
+                        relation,
+                        resource_str,
+                    )
+                    return False
+                try:
+                    # safely resolve the coroutine from the worker thread
+                    res = asyncio.run_coroutine_threadsafe(res, loop).result(timeout=5)
+                except Exception as exc:
+                    logger.warning(
+                        "ReBAC async check failed for (%s, %s, %s): %s",
+                        subject_str,
+                        relation,
+                        resource_str,
+                        exc,
+                        exc_info=True,
+                    )
+                    return False
+
+            allowed_bool = bool(res)
+        except Exception as exc:
+            logger.warning(
+                "ReBAC check() failed for (%s, %s, %s): %s",
+                subject_str,
+                relation,
+                resource_str,
+                exc,
+                exc_info=True,
+            )
+            allowed_bool = False
+
+        if isinstance(cache, dict):
+            cache[key] = allowed_bool
+        return allowed_bool
 
     if "==" in cond:
         a, b = cond["=="]

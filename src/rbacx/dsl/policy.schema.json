@@ -173,11 +173,28 @@
               "type": "array", "minItems": 2, "maxItems": 2,
               "prefixItems": [ { "$ref": "#/$defs/ContainerExpr" }, { "$ref": "#/$defs/ContainerExpr" } ],
               "items": false
+            },
+            "rel": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "relation": { "type": "string", "minLength": 1 },
+                    "subject": { "$ref": "#/$defs/StrExpr" },
+                    "resource": { "$ref": "#/$defs/StrExpr" },
+                    "ctx": { "type": "object" }
+                  },
+                  "required": ["relation"]
+                }
+              ]
             }
           }
         }
       ]
     },
+
 
     "AttrRef": {
       "type": "object",
@@ -216,4 +233,3 @@
     }
   }
 }
-

@@ -49,6 +49,8 @@ docs = [
 ]
 examples = ["uvicorn>=0.30", "fastapi>=0.110", "starlette>=0.37", "flask>=2.3", "django>=4.2", "djangorestframework>=3.14", "litestar>=2.8"]
 validate = ["jsonschema>=4.18"]
+rebac-openfga = ["httpx>=0.25"]
+rebac-spicedb = ["authzed>=1.22", "grpcio>=1.60"]
 
 [project.scripts]
 rbacx = "rbacx.cli:main"

@@ -31,3 +31,21 @@ class MetricsObserve(Protocol):
     def observe(
         self, name: str, value: float, labels: dict[str, str] | None = None
     ) -> None | Awaitable[None]: ...
+
+
+class RelationshipChecker(Protocol):
+    def check(
+        self,
+        subject: str,
+        relation: str,
+        resource: str,
+        *,
+        context: dict[str, Any] | None = None,
+    ) -> bool | Awaitable[bool]: ...
+
+    def batch_check(
+        self,
+        triples: list[tuple[str, str, str]],
+        *,
+        context: dict[str, Any] | None = None,
+    ) -> list[bool] | Awaitable[list[bool]]: ...
