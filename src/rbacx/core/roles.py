@@ -1,4 +1,7 @@
-class StaticRoleResolver:
+from rbacx.core.ports import RoleResolver
+
+
+class StaticRoleResolver(RoleResolver):
     """Simple in-memory role resolver with inheritance.
 
     graph: {role: [parent_role, ...]}
