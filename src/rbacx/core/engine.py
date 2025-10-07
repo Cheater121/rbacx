@@ -10,6 +10,7 @@ from typing import Any
 
 from .cache import AbstractCache
 from .decision import Decision
+from .helpers import maybe_await
 from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
 from .policy import decide as decide_policy
@@ -37,16 +38,6 @@ def _now() -> float:
     return time.perf_counter()
 
 
-async def _maybe_await(x: Any) -> Any:
-    """
-    Await a value if it's awaitable, otherwise return it as-is.
-    Lets us call sync/async DI uniformly.
-    """
-    if inspect.isawaitable(x):
-        return await x
-    return x
-
-
 class Guard:
     """Policy evaluation engine.
 
@@ -55,7 +46,7 @@ class Guard:
     Design:
       - Single async core `_evaluate_core_async` (one source of truth).
       - Sync API wraps the async core; if a loop is already running, uses a helper thread.
-      - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `_maybe_await`.
+      - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `maybe_await`.
       - CPU-bound evaluation is offloaded to a thread via `asyncio.to_thread`.
       - On init we ensure a current event loop exists in this thread so
         legacy tests using `asyncio.get_event_loop().run_until_complete(...)`
@@ -70,7 +61,7 @@ class Guard:
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
-        relationship_checker: RelationshipChecker | None = None,  # ← НОВОЕ
+        relationship_checker: RelationshipChecker | None = None,
         cache: AbstractCache | None = None,
         cache_ttl: int | None = 300,
         strict_types: bool = False,
@@ -158,24 +149,17 @@ class Guard:
         loop = asyncio.get_running_loop()
         token = EVAL_LOOP.set(loop)
         try:
-            if fn is not None:
-                return await asyncio.to_thread(fn, env)
-        except Exception:  # pragma: no cover
-            logger.exception("RBACX: compiled decision failed; falling back")
-        finally:
-            EVAL_LOOP.reset(token)
+            # compiled (if available)
+            try:
+                if fn is not None:
+                    return await asyncio.to_thread(fn, env)
+            except Exception:  # pragma: no cover
+                logger.exception("RBACX: compiled decision failed; falling back")
 
-        # policyset
-        token = EVAL_LOOP.set(loop)
-        try:
+            # policyset vs single policy
             if "policies" in self.policy:
                 return await asyncio.to_thread(decide_policyset, self.policy, env)
-        finally:
-            EVAL_LOOP.reset(token)
 
-        # single policy
-        token = EVAL_LOOP.set(loop)
-        try:
             return await asyncio.to_thread(decide_policy, self.policy, env)
         finally:
             EVAL_LOOP.reset(token)
@@ -195,7 +179,7 @@ class Guard:
         roles: list[str] = list(subject.roles or [])
         if self.role_resolver is not None:
             try:
-                roles = await _maybe_await(self.role_resolver.expand(roles))
+                roles = await maybe_await(self.role_resolver.expand(roles))
             except Exception:
                 logger.exception("RBACX: role resolver failed", exc_info=True)
         env: dict[str, Any] = {
@@ -225,7 +209,9 @@ class Guard:
                         raw = cached
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: cache.get failed")
+
         if raw is None:
+            # Make ReBAC provider and a per-decision local cache available to policy code
             _t1 = REL_CHECKER.set(self.relationship_checker)
             _t2 = REL_LOCAL_CACHE.set({})
             try:
@@ -233,6 +219,7 @@ class Guard:
             finally:
                 REL_CHECKER.reset(_t1)
                 REL_LOCAL_CACHE.reset(_t2)
+
             if cache is not None:
                 try:
                     if key:
@@ -249,7 +236,7 @@ class Guard:
 
         if allowed:
             try:
-                ok, ch = await _maybe_await(self.obligations.check(raw, context))
+                ok, ch = await maybe_await(self.obligations.check(raw, context))
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch

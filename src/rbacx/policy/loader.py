@@ -9,17 +9,11 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from ..core.engine import Guard
+from ..core.helpers import maybe_await
 from ..core.ports import PolicySource
 from ..store.file_store import FilePolicySource  # re-exported here for convenience
 
 logger = logging.getLogger("rbacx.policy.loader")
-
-
-async def _maybe_await(x: Any) -> Any:
-    """Await the value if it is awaitable; otherwise return it as-is."""
-    if inspect.isawaitable(x):
-        return await x
-    return x
 
 
 class HotReloader:
@@ -139,9 +133,9 @@ class HotReloader:
         try:
             if force:
                 # Full load regardless of current ETag.
-                policy = await _maybe_await(self.source.load())
+                policy = await maybe_await(self.source.load())
                 try:
-                    new_etag_any = await _maybe_await(self.source.etag())
+                    new_etag_any = await maybe_await(self.source.etag())
                     new_etag: str | None = new_etag_any if isinstance(new_etag_any, str) else None
                 except Exception:
                     new_etag = None
@@ -155,13 +149,13 @@ class HotReloader:
                 logger.info("RBACX: policy force-loaded from %s", self._src_name())
                 return True
 
-            etag_obj = await _maybe_await(self.source.etag())
+            etag_obj = await maybe_await(self.source.etag())
             etag: str | None = etag_obj if isinstance(etag_obj, str) else None
 
             if etag is not None and etag == last_etag:
                 return False
 
-            policy = await _maybe_await(self.source.load())
+            policy = await maybe_await(self.source.load())
 
             with self._lock:
                 self.guard.set_policy(policy)

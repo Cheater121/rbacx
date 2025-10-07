@@ -1,11 +1,10 @@
-import asyncio
-import inspect
 import json
 import logging
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timezone
 from typing import Any
 
+from .helpers import resolve_awaitable_in_worker
 from .relctx import EVAL_LOOP, REL_CHECKER, REL_LOCAL_CACHE
 
 logger = logging.getLogger("rbacx.policy")
@@ -55,9 +54,6 @@ def match_resource(rdef: dict[str, Any], resource: dict[str, Any]) -> bool:
     strict = _is_strict(
         resource if "__strict_types__" in resource else {}
     )  # will be overridden below if env provided
-
-    # If resource dict came from env["resource"], we may also have the flag in the outer env.
-    # Callers that pass only the resource won't include the flag; that's fine.
 
     # type check
     if r_type is not None:
@@ -254,31 +250,11 @@ def eval_condition(cond: Any, env: dict[str, Any]) -> bool:
 
         try:
             res = checker.check(subject_str, relation, resource_str, context=rebac_ctx)
-            if inspect.isawaitable(res):
-                loop = EVAL_LOOP.get()
-                if loop is None:
-                    # shouldn't happen under _decide_async; fail-closed with a clear message
-                    logger.warning(
-                        "Async RelationshipChecker returned awaitable but no loop is captured "
-                        "for (%s, %s, %s). Denying.",
-                        subject_str,
-                        relation,
-                        resource_str,
-                    )
-                    return False
-                try:
-                    # safely resolve the coroutine from the worker thread
-                    res = asyncio.run_coroutine_threadsafe(res, loop).result(timeout=5)
-                except Exception as exc:
-                    logger.warning(
-                        "ReBAC async check failed for (%s, %s, %s): %s",
-                        subject_str,
-                        relation,
-                        resource_str,
-                        exc,
-                        exc_info=True,
-                    )
-                    return False
+
+            # If provider returned an awaitable, resolve it via captured loop (engine sets EVAL_LOOP)
+            loop = EVAL_LOOP.get()
+            if loop is not None:
+                res = resolve_awaitable_in_worker(res, loop, timeout=5.0)
 
             allowed_bool = bool(res)
         except Exception as exc:
