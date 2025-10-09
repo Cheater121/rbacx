@@ -1,0 +1,38 @@
+schema: |
+  definition user {}
+
+  definition group {
+    relation member: user
+  }
+
+  definition site {
+    relation viewer: user | group#member
+    relation editor: user | group#member
+    relation owner:  user
+    permission view = viewer + editor + owner
+  }
+
+  definition camera {
+    relation parent: site
+    relation viewer: user | group#member
+    relation editor: user | group#member
+    relation owner:  user
+    permission view = viewer + editor + owner + parent->view
+  }
+
+  definition clip {
+    relation parent: camera
+    relation viewer: user | group#member
+    relation owner:  user
+    permission read = viewer + owner + parent->view
+    permission download = owner
+  }
+
+relationships: |
+  site:msk#owner@user:alice
+  site:msk#viewer@user:carol
+  camera:cam1#parent@site:msk
+  camera:cam1#editor@user:dave
+  clip:clip1#parent@camera:cam1
+  clip:clip1#viewer@user:alice
+  clip:clip2#parent@camera:cam1

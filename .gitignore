@@ -34,6 +34,7 @@ ENV/
 env/
 env.bak/
 venv.bak/
+!deploy/compose/spicedb/.env
 
 # Unit test / coverage reports
 .coverage
