@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-from google.protobuf.struct_pb2 import Struct
+from google.protobuf.struct_pb2 import Struct  # type: ignore[import-untyped]
 
 # Optional: install via extra rbacx[rebac-spicedb]
 try:
@@ -32,7 +32,7 @@ logger = logging.getLogger("rbacx.rebac.spicedb")
 
 @dataclass(frozen=True)
 class SpiceDBConfig:
-    """Minimal configuration for SpiceDB/Authzed gRPC client."""
+    """Minimal configuration for the SpiceDB/Authzed gRPC client."""
 
     endpoint: str  # "grpc.authzed.com:443" | "localhost:50051"
     token: str | None = None
@@ -60,18 +60,18 @@ class _ZedAsyncClient(Protocol):
 
 def _dict_to_struct(d: dict[str, Any]) -> Struct:
     s = Struct()
-    # update() принимает JSON-совместимый dict; 64-битные числа — строками (см. доки)
+    # update() accepts a JSON-compatible dict; 64-bit integers should be strings (see docs)
     s.update(d)
     return s
 
 
 class SpiceDBChecker(RelationshipChecker):
     """
-    ReBAC provider backed by SpiceDB/Authzed gRPC.
+    ReBAC provider backed by the SpiceDB/Authzed gRPC API.
 
-    - Uses CheckPermission; batch -> последовательные вызовы (у gRPC нет one-shot batch).
-    - Consistency: ZedToken (at_least_as_fresh) или fully_consistent.
-    - Caveats: контекст передаётся как google.protobuf.Struct.
+    - Uses CheckPermission; batch -> sequential calls (gRPC has no one-shot batch).
+    - Consistency: ZedToken (at_least_as_fresh) or fully_consistent.
+    - Caveats: pass context as google.protobuf.Struct.
     """
 
     def __init__(self, config: SpiceDBConfig, *, async_mode: bool = False) -> None:
@@ -82,17 +82,17 @@ class SpiceDBChecker(RelationshipChecker):
             )
         self.cfg = config
 
-        # Явные типы для mypy: либо sync, либо async клиент (один из них None)
+        # Explicit types for mypy: either the sync or async client is set (the other is None)
         self._client: _ZedSyncClient | None
         self._aclient: _ZedAsyncClient | None
 
         if config.insecure:
-            # Dev/local (no TLS): токен строкой прямо в InsecureClient
+            # Dev/local (no TLS): pass the raw token string directly to InsecureClient
             self._client = ZedInsecureClient(config.endpoint, config.token or "")
             self._aclient = None
         else:
             if async_mode:
-                # Берём AsyncClient динамически (чтобы не упасть, если его нет в конкретной версии)
+                # Import AsyncClient dynamically (avoid crashing if the symbol is absent in this version)
                 try:
                     azv1 = importlib.import_module("authzed.api.v1")
                     AsyncClient = azv1.AsyncClient
@@ -104,7 +104,7 @@ class SpiceDBChecker(RelationshipChecker):
                 self._client = None
                 self._aclient = AsyncClient(config.endpoint, self._bearer(config.token))
             else:
-                # TLS-клиент + bearer credentials (через grpcutil)
+                # TLS client + bearer credentials (via grpcutil)
                 self._client = ZedClient(config.endpoint, self._bearer(config.token))
                 self._aclient = None
 
@@ -120,11 +120,11 @@ class SpiceDBChecker(RelationshipChecker):
         zed_token: str | None = None,
     ) -> (
         bool | Any
-    ):  # Any здесь = Awaitable[bool], но без from __future__ annotations mypy ругается
+    ):  # Here Any = Awaitable[bool], but without 'from __future__ import annotations' mypy complains
         obj_type, obj_id = (resource.split(":", 1) + [""])[:2]
         subj_type, subj_id = (subject.split(":", 1) + [""])[:2]
 
-        # Consistency формируем заранее (конструктор запроса, не присваивание)
+        # Build Consistency upfront (supply via request constructor, not by post-assignment)
         consistency: Consistency | None = None
         if zed_token:
             consistency = Consistency(at_least_as_fresh=ZedToken(token=zed_token))
@@ -142,7 +142,7 @@ class SpiceDBChecker(RelationshipChecker):
         )
 
         if self._aclient is not None:
-            aclient = self._aclient  # раннее связывание для узкого типа
+            aclient = self._aclient  # early binding to narrow the type
 
             async def _run() -> bool:
                 try:
@@ -196,7 +196,7 @@ class SpiceDBChecker(RelationshipChecker):
 
     @staticmethod
     def _bearer(token: str | None):
-        """Return gRPC call credentials for TLS-enabled Client.
+        """Return gRPC call credentials for the TLS-enabled Client.
 
         NOTE: For insecure/dev usage we never call this; we use InsecureClient
         which accepts the raw token string directly.
@@ -204,7 +204,7 @@ class SpiceDBChecker(RelationshipChecker):
         if not token:  # pragma: no cover
             raise ValueError("SpiceDB token is required for secure client")
         try:
-            # creds в модуле 'grpcutil' из пакета authzed
+            # credentials live in the 'grpcutil' module from the 'authzed' package
             grpcutil = importlib.import_module("grpcutil")
             bearer_token_credentials = grpcutil.bearer_token_credentials
         except Exception as exc:  # pragma: no cover
