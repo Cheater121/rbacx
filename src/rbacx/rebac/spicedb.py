@@ -21,7 +21,7 @@ try:
     from authzed.api.v1 import (
         InsecureClient as ZedInsecureClient,  # sync insecure client
     )
-    from grpc import RpcError  # type: ignore[import-not-found]
+    from grpc import RpcError  # type: ignore[import-not-found,import-untyped]
 except Exception:  # pragma: no cover
     ZedClient = None  # type: ignore[misc,assignment]
 
@@ -121,24 +121,12 @@ class SpiceDBChecker(RelationshipChecker):
     ) -> (
         bool | Any
     ):  # Here Any = Awaitable[bool], but without 'from __future__ import annotations' mypy complains
-        obj_type, obj_id = (resource.split(":", 1) + [""])[:2]
-        subj_type, subj_id = (subject.split(":", 1) + [""])[:2]
-
-        # Build Consistency upfront (supply via request constructor, not by post-assignment)
-        consistency: Consistency | None = None
-        if zed_token:
-            consistency = Consistency(at_least_as_fresh=ZedToken(token=zed_token))
-        elif self.cfg.prefer_fully_consistent:
-            consistency = Consistency(fully_consistent=True)
-
-        req = CheckPermissionRequest(
-            resource=ObjectReference(object_type=obj_type, object_id=obj_id),
-            permission=relation,
-            subject=SubjectReference(
-                object=ObjectReference(object_type=subj_type, object_id=subj_id)
-            ),
-            consistency=consistency,
-            context=_dict_to_struct(context) if context else None,
+        req = self._build_request(
+            subject=subject,
+            relation=relation,
+            resource=resource,
+            context=context,
+            zed_token=zed_token,
         )
 
         if self._aclient is not None:
@@ -184,7 +172,11 @@ class SpiceDBChecker(RelationshipChecker):
             async def _run() -> list[bool]:
                 out: list[bool] = []
                 for s, r, o in triples:
-                    out.append(await self.check(s, r, o, context=context, zed_token=zed_token))
+                    out.append(
+                        await self._check_single_async(
+                            s, r, o, context=context, zed_token=zed_token
+                        )
+                    )
                 return out
 
             return _run()
@@ -213,3 +205,61 @@ class SpiceDBChecker(RelationshipChecker):
                 "Upgrade/install the 'authzed' client library."
             ) from exc
         return bearer_token_credentials(token)
+
+    def _build_request(
+        self,
+        *,
+        subject: str,
+        relation: str,
+        resource: str,
+        context: dict[str, Any] | None,
+        zed_token: str | None,
+    ) -> CheckPermissionRequest:
+        obj_type, obj_id = (resource.split(":", 1) + [""])[:2]
+        subj_type, subj_id = (subject.split(":", 1) + [""])[:2]
+
+        consistency: Consistency | None = None
+        if zed_token:
+            consistency = Consistency(at_least_as_fresh=ZedToken(token=zed_token))
+        elif self.cfg.prefer_fully_consistent:
+            consistency = Consistency(fully_consistent=True)
+
+        return CheckPermissionRequest(
+            resource=ObjectReference(object_type=obj_type, object_id=obj_id),
+            permission=relation,
+            subject=SubjectReference(
+                object=ObjectReference(object_type=subj_type, object_id=subj_id)
+            ),
+            consistency=consistency,
+            context=_dict_to_struct(context) if context else None,
+        )
+
+    async def _check_single_async(
+        self,
+        subject: str,
+        relation: str,
+        resource: str,
+        *,
+        context: dict[str, Any] | None = None,
+        zed_token: str | None = None,
+    ) -> bool:
+        """Pure async single-check for internal use."""
+        aclient = self._aclient
+        if aclient is None:
+            raise RuntimeError("No async gRPC client configured for SpiceDBChecker")
+        req = self._build_request(
+            subject=subject,
+            relation=relation,
+            resource=resource,
+            context=context,
+            zed_token=zed_token,
+        )
+        try:
+            resp = await aclient.CheckPermission(req, timeout=self.cfg.timeout_seconds)
+            return resp.permissionship == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION
+        except RpcError as e:  # type: ignore[misc]
+            logger.warning("SpiceDB async check RPC error: %s", e, exc_info=True)
+            return False
+        except Exception:  # pragma: no cover
+            logger.error("SpiceDB async check unexpected error", exc_info=True)
+            return False

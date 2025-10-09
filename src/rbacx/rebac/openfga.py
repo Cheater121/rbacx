@@ -87,8 +87,11 @@ class OpenFGAChecker(RelationshipChecker):
         if self._aclient is not None:
 
             async def _run() -> bool:
+                aclient = self._aclient
+                if aclient is None:
+                    raise RuntimeError("No async HTTP client configured for OpenFGAChecker")
                 try:
-                    resp = await self._aclient.post(
+                    resp = await aclient.post(
                         self._url("check"),
                         json=body,
                         headers=self._headers(),
@@ -156,8 +159,11 @@ class OpenFGAChecker(RelationshipChecker):
         if self._aclient is not None:
 
             async def _run() -> list[bool]:
+                aclient = self._aclient
+                if aclient is None:
+                    raise RuntimeError("No async HTTP client configured for OpenFGAChecker")
                 try:
-                    resp = await self._aclient.post(
+                    resp = await aclient.post(
                         self._url("batch-check"),
                         json=body,
                         headers=self._headers(),
