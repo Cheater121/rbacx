@@ -5,7 +5,6 @@ import threading
 import pytest
 
 # Import the module-under-test from your project.
-# Adjust the dotted path if these helpers live elsewhere.
 from rbacx.core.helpers import _await_compat, maybe_await, resolve_awaitable_in_worker
 
 
@@ -28,8 +27,7 @@ async def test__await_compat_awaits_any_awaitable():
 def _start_loop_in_thread():
     """
     Start a brand-new event loop in a dedicated thread and return (loop, thread).
-    This mirrors the documented pattern for run_coroutine_threadsafe: the loop
-    must be running (often via loop.run_forever()) on its own thread.  # noqa: E501
+    The loop must be running on its own thread for run_coroutine_threadsafe().
     """
     loop = asyncio.new_event_loop()
     ready = threading.Event()
@@ -45,13 +43,37 @@ def _start_loop_in_thread():
     return loop, th
 
 
+# NEW: drain helper to cancel/await all pending tasks in that loop
+async def _drain_pending_in_loop():
+    # enumerate *inside* the loop
+    cur = asyncio.get_running_loop()
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task(cur)]
+    for t in tasks:
+        t.cancel()
+    if tasks:
+        # Gather and swallow exceptions (e.g., CancelledError)
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
 def _stop_loop(loop, thread):
-    loop.call_soon_threadsafe(loop.stop)
+    # 1) Drain pending tasks in the foreign loop
+    try:
+        # We must submit the coroutine into that running loop.
+        fut = asyncio.run_coroutine_threadsafe(_drain_pending_in_loop(), loop)
+        fut.result(timeout=1)
+    except Exception:
+        # Best-effort: even if draining fails, continue shutdown.
+        pass
+
+    # 2) Stop and join the thread
+    if loop.is_running():
+        loop.call_soon_threadsafe(loop.stop)
     thread.join(timeout=5)
+
+    # 3) Close the loop
     try:
         loop.close()
     except RuntimeError:
-        # Loop might already be closed in some interpreters.
         pass
 
 
@@ -85,8 +107,11 @@ def test_resolve_awaitable_in_worker_non_awaitable_returns_as_is():
 def test_resolve_awaitable_in_worker_timeout_raises():
     """
     Also exercises lines 30–32: the Future is created via run_coroutine_threadsafe,
-    then .result(timeout=...) should raise concurrent.futures.TimeoutError if the
-    awaited coroutine does not finish in time.
+    then .result(timeout=...) raises concurrent.futures.TimeoutError if the coroutine
+    does not finish in time.
+
+    IMPORTANT: the pending task is drained in _stop_loop() to avoid the warning
+    "Task was destroyed but it is pending!".
     """
     loop, th = _start_loop_in_thread()
     try:
