@@ -23,7 +23,7 @@ def build_local_checker() -> LocalRelationshipChecker:
     # (i.e., traverse 'parent' from doc -> folder)
     store.add("folder:root", "parent", "document:doc1")
 
-    # NB: Bob has no relationships -> should be denied
+    # Note: Bob has no relationships -> should be denied
 
     # --- 2) userset rewrite rules (per object type) ---
     # Semantics:
@@ -48,8 +48,8 @@ def build_local_checker() -> LocalRelationshipChecker:
 
 
 def build_policy() -> dict:
-    # "Правдоподобная" политика: читать документ может тот, кто состоит
-    # в отношении 'viewer' к ресурсу (через ReBAC-граф).
+    # A "plausible" policy: a document can be read by someone who is in
+    # the 'viewer' relationship to the resource (through the ReBAC graph).
     return {
         "algorithm": "deny-overrides",
         "rules": [
@@ -58,7 +58,7 @@ def build_policy() -> dict:
                 "effect": "permit",
                 "actions": ["document.read"],
                 "resource": {"type": "document"},
-                # rel как строка: subject и resource берутся из env
+                # 'rel' as a string: subject and resource are taken from env
                 "condition": {"rel": "viewer"},
             }
         ],
