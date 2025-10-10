@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  openfga:
+    image: openfga/openfga:latest
+    container_name: openfga-openfga-1
+    command: ["run"]
+    ports:
+      - "8080:8080"   # HTTP API
+      - "8081:8081"   # gRPC API
+      - "3000:3000"   # Playground UI
+    restart: unless-stopped
+
+  fga-import:
+    image: openfga/cli:latest
+    depends_on:
+      openfga:
+        condition: service_started
+    environment:
+      FGA_API_URL: http://openfga:8080
+    volumes:
+      - ./store.fga.yaml:/import/store.fga.yaml:ro
+    command: ["store", "import", "--file", "/import/store.fga.yaml"]
+    restart: "no"

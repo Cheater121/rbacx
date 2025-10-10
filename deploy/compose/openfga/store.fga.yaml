@@ -1,0 +1,48 @@
+name: "rbacx-demo-store"
+
+model: |
+  model
+    schema 1.1
+
+  type user
+
+  type group
+    relations
+      define member: [user]
+
+  type site
+    relations
+      define viewer: [user, group#member]
+
+  type camera
+    relations
+      define parent: [site]
+      define viewer: [user, group#member] or viewer from parent
+
+  type clip
+    relations
+      define parent: [camera]
+      define viewer: [user, group#member] or viewer from parent
+      define read: viewer
+      define download: viewer
+
+tuples:
+  - user: user:carol
+    relation: member
+    object: group:site_viewers
+
+  - user: group:site_viewers#member
+    relation: viewer
+    object: site:site1
+
+  - user: site:site1#viewer
+    relation: parent
+    object: camera:cam1
+
+  - user: camera:cam1#viewer
+    relation: parent
+    object: clip:clip1
+
+  - user: user:alice
+    relation: viewer
+    object: clip:clip1
