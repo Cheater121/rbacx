@@ -15,8 +15,8 @@ cfg = OpenFGAConfig(
 checker = OpenFGAChecker(cfg)  # sync and async (httpx) are supported
 ```
 
-* Uses REST endpoints **`POST /stores/{store_id}/check`** and **`POST /stores/{store_id}/batch-check`**; decisions read the `allowed` boolean from the response. ([openfga.dev][1])
-* The server-side **Batch Check** returns a **`results` array** of objects each carrying a `correlationId` and `allowed`; ordering is **not guaranteed**, use `correlationId` to pair responses to requests. Requires OpenFGA **server ≥ 1.8.0**. ([openfga.dev][2])
+* Uses REST endpoints **`POST /stores/{store_id}/check`** and **`POST /stores/{store_id}/batch-check`**; decisions read the `allowed` boolean from the response.
+* The server-side **Batch Check** returns a **`results` array** of objects each carrying a `correlationId` and `allowed`; ordering is **not guaranteed**, use `correlationId` to pair responses to requests. Requires OpenFGA **server ≥ 1.8.0**.
 
 See `deploy/compose/openfga/` for a local Docker Compose and `deploy/compose/openfga/demo_openfga.py`.
 

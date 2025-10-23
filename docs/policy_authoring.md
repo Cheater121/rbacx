@@ -6,7 +6,7 @@ This guide outlines how to write clear and maintainable RBAC/ABAC/ReBAC policies
 
 * **RBAC** – users get **roles**, roles carry **permissions**. Keep roles stable, map users to roles dynamically.
 * **ABAC** – decisions come from evaluating **attributes** of subject, resource, action, and environment against **rules**.
-* **ReBAC** – decisions can depend on **relationships** between a subject and a resource (e.g., *user —owner→ document*). Relationships are typically managed in a graph/tuple store and checked via a `RelationshipChecker` port. See *Relationship conditions* below for policy syntax. ([AuthZed][1])
+* **ReBAC** – decisions can depend on **relationships** between a subject and a resource (e.g., *user —owner→ document*). Relationships are typically managed in a graph/tuple store and checked via a `RelationshipChecker` port. See *Relationship conditions* below for policy syntax.
 * **Combining algorithms** – `deny-overrides`, `permit-overrides`, `first-applicable`. Choose the one that matches your risk posture.
 
 ## Recommendations
