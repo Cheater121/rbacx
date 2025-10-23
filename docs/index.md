@@ -127,6 +127,11 @@ def docs():
 - [Custom Policy Source](custom_policy_source.md)
 - [HTTP mapping](http_mapping.md)
 
+**ReBAC**
+- [Overciew](rebac/index.md)
+- [Local Provider](rebac/local.md)
+- [OpenFGA Provider](rebac/openfga.md)
+- [SpiceDB / Authzed Provider](rebac/spicedb.md)
 **Integration**
 - [Web adapters](web_adapters.md)
 - [Custom adapters](adapters.md)
