@@ -106,3 +106,34 @@ The CLI prints JSON diagnostics. A non-empty list means warnings/errors were fou
 
 ---
 Need more? See the full docs site for adapters, middleware, metrics, and advanced configuration.
+
+
+### ReBAC (local) in 60 seconds
+
+```python
+from rbacx.core.engine import Guard
+from rbacx.rebac.local import LocalRelationshipChecker, InMemoryRelationshipStore, This
+
+# 1) Build a tiny graph in memory
+store = InMemoryRelationshipStore()
+store.add("document:doc1", "owner", "user:alice")
+# define inheritance / computed usersets in the checker
+checker = LocalRelationshipChecker(
+    store,
+    rules={
+        "document": {"viewer": [This(),], "owner": [This()]}
+    },
+)
+
+# 2) Policy uses the 'rel' condition
+policy = {
+    "id": "rebac-local-demo",
+    "alg": "deny-overrides",
+    "rules": [
+        {"id": "can-read", "when": {"rel": "viewer"}, "effect": "permit",
+         "actions": ["document.read"], "resources": [{"type": "document"}]}
+    ],
+}
+
+guard = Guard(policy, relationship_checker=checker)
+```

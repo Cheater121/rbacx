@@ -10,11 +10,19 @@ from typing import Any
 
 from .cache import AbstractCache
 from .decision import Decision
+from .helpers import maybe_await
 from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
 from .policy import decide as decide_policy
 from .policyset import decide as decide_policyset
-from .ports import DecisionLogSink, MetricsSink, ObligationChecker, RoleResolver
+from .ports import (
+    DecisionLogSink,
+    MetricsSink,
+    ObligationChecker,
+    RelationshipChecker,
+    RoleResolver,
+)
+from .relctx import EVAL_LOOP, REL_CHECKER, REL_LOCAL_CACHE
 
 try:
     # optional compile step to speed up decision making
@@ -30,16 +38,6 @@ def _now() -> float:
     return time.perf_counter()
 
 
-async def _maybe_await(x: Any) -> Any:
-    """
-    Await a value if it's awaitable, otherwise return it as-is.
-    Lets us call sync/async DI uniformly.
-    """
-    if inspect.isawaitable(x):
-        return await x
-    return x
-
-
 class Guard:
     """Policy evaluation engine.
 
@@ -48,7 +46,7 @@ class Guard:
     Design:
       - Single async core `_evaluate_core_async` (one source of truth).
       - Sync API wraps the async core; if a loop is already running, uses a helper thread.
-      - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `_maybe_await`.
+      - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `maybe_await`.
       - CPU-bound evaluation is offloaded to a thread via `asyncio.to_thread`.
       - On init we ensure a current event loop exists in this thread so
         legacy tests using `asyncio.get_event_loop().run_until_complete(...)`
@@ -63,6 +61,7 @@ class Guard:
         metrics: MetricsSink | None = None,
         obligation_checker: ObligationChecker | None = None,
         role_resolver: RoleResolver | None = None,
+        relationship_checker: RelationshipChecker | None = None,
         cache: AbstractCache | None = None,
         cache_ttl: int | None = 300,
         strict_types: bool = False,
@@ -78,6 +77,7 @@ class Guard:
         self.policy_etag: str | None = None
         self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
+        self.relationship_checker = relationship_checker
 
         # Provide a "current" loop if missing (helps tests on Py3.12+).
         try:
@@ -146,14 +146,23 @@ class Guard:
         compiled/policy/policyset functions are sync -> offload via to_thread.
         """
         fn = self._compiled
+        loop = asyncio.get_running_loop()
+        token = EVAL_LOOP.set(loop)
         try:
-            if fn is not None:
-                return await asyncio.to_thread(fn, env)
-        except Exception:  # pragma: no cover
-            logger.exception("RBACX: compiled decision failed; falling back")
-        if "policies" in self.policy:
-            return await asyncio.to_thread(decide_policyset, self.policy, env)
-        return await asyncio.to_thread(decide_policy, self.policy, env)
+            # compiled (if available)
+            try:
+                if fn is not None:
+                    return await asyncio.to_thread(fn, env)
+            except Exception:  # pragma: no cover
+                logger.exception("RBACX: compiled decision failed; falling back")
+
+            # policyset vs single policy
+            if "policies" in self.policy:
+                return await asyncio.to_thread(decide_policyset, self.policy, env)
+
+            return await asyncio.to_thread(decide_policy, self.policy, env)
+        finally:
+            EVAL_LOOP.reset(token)
 
     # ---------------------------------------------------------------- evaluation core (single source of truth)
 
@@ -170,7 +179,7 @@ class Guard:
         roles: list[str] = list(subject.roles or [])
         if self.role_resolver is not None:
             try:
-                roles = await _maybe_await(self.role_resolver.expand(roles))
+                roles = await maybe_await(self.role_resolver.expand(roles))
             except Exception:
                 logger.exception("RBACX: role resolver failed", exc_info=True)
         env: dict[str, Any] = {
@@ -200,8 +209,17 @@ class Guard:
                         raw = cached
             except Exception:  # pragma: no cover
                 logger.exception("RBACX: cache.get failed")
+
         if raw is None:
-            raw = await self._decide_async(env)
+            # Make ReBAC provider and a per-decision local cache available to policy code
+            _t1 = REL_CHECKER.set(self.relationship_checker)
+            _t2 = REL_LOCAL_CACHE.set({})
+            try:
+                raw = await self._decide_async(env)
+            finally:
+                REL_CHECKER.reset(_t1)
+                REL_LOCAL_CACHE.reset(_t2)
+
             if cache is not None:
                 try:
                     if key:
@@ -218,7 +236,7 @@ class Guard:
 
         if allowed:
             try:
-                ok, ch = await _maybe_await(self.obligations.check(raw, context))
+                ok, ch = await maybe_await(self.obligations.check(raw, context))
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch

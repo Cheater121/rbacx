@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
+from rbacx.core.ports import ObligationChecker
+
 
 @dataclass(frozen=True)
 class ObligationCheckResult:
@@ -11,7 +13,7 @@ class ObligationCheckResult:
     reason: str | None = None
 
 
-class BasicObligationChecker:
+class BasicObligationChecker(ObligationChecker):
     """Validate common obligations carried by a decision.
 
     Design goals (documented for contributors):

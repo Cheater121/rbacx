@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.8.0 — 2025-10-24
+
+**Highlights**
+First-class **ReBAC** support: a new `rel` policy condition, a pluggable `RelationshipChecker` port, a built-in local graph, and optional **OpenFGA**/**SpiceDB** providers. Unified sync/async execution, **fail-closed** semantics for `rel`, a `standard_userset` helper for common viewer/editor/owner patterns, fresh docs, and runnable examples.
+
+**Added**
+
+* Core / Ports:
+
+  * `RelationshipChecker` (sync/async) for relationship-based checks.
+  * `relationship_checker` kw-only parameter in `Guard.__init__(...)`.
+* Policy DSL:
+
+  * `rel` condition (`{"rel":"viewer"}` or extended object with `relation/subject/resource/ctx`).
+* ReBAC modules:
+
+  * `rbacx.rebac` namespace with:
+
+    * **Local**: `InMemoryRelationshipStore`, `LocalRelationshipChecker`, caveats (conditional tuples).
+    * **Helpers**: `standard_userset(...)` for viewer/editor/owner (+parent, +group grants).
+    * **OpenFGA**: `OpenFGAChecker` (+ extra `rbacx[rebac-openfga]`).
+    * **SpiceDB/Authzed**: `SpiceDBChecker` (+ extra `rbacx[rebac-spicedb]`).
+* Batch evaluations:
+
+  * `checker.batch_check(...)` across local/OpenFGA/SpiceDB backends.
+* Documentation:
+
+  * New **ReBAC** section (`docs/rebac/*`), provider pages, updated **Highlights**, **Architecture**, **Policy authoring**.
+  * `mkdocs.yml` navigation updated with a **ReBAC** group.
+* Examples:
+
+  * `examples/rebac/*` (local graph + helper).
+
+**Changed**
+
+* Evaluation:
+
+  * Relationship lookups are memoized within a single decision; compatible with the optional external cache.
+* Policy tooling:
+
+  * Schema/linter updated to accept `rel`; clearer errors for unknown operators / type mismatches.
+* Integrations:
+
+  * OpenFGA/SpiceDB checkers aligned on timeouts, error surfacing, and per-check context forwarding.
+
+**Fixed**
+
+* None
+
+**Deprecated**
+
+* None.
+
+**Removed**
+
+* None.
+
+**Migration notes**
+
+* No breaking changes; existing RBAC/ABAC policies continue to work unchanged.
+* To enable ReBAC:
+
+  * Install extras as needed: `pip install "rbacx[rebac-openfga]"` or `pip install "rbacx[rebac-spicedb]"`.
+  * Pass `relationship_checker=...` into `Guard(...)`.
+  * `rel` evaluates **false** unless a checker is configured (fail-closed).
+* If you maintain a custom docs site, rebuild to include the new ReBAC pages and API modules; update `mkdocs.yml` navigation accordingly.
+
+
 ## 1.7.1 — 2025-10-06
 
 **Highlights**

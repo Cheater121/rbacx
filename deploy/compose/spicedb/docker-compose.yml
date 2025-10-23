@@ -1,0 +1,27 @@
+services:
+  spicedb:
+    image: ${SPICEDB_IMAGE}
+    command: >
+      serve
+      --datastore-engine memory
+      --grpc-preshared-key ${SPICEDB_PRESHARED_KEY}
+      --grpc-addr :50051
+      --http-enabled
+      --http-addr :8443
+      --log-level debug
+    ports:
+      - "50051:50051"
+      - "8443:8443"
+    restart: unless-stopped
+
+  zed-import:
+    image: ${ZED_IMAGE}
+    depends_on:
+      spicedb:
+        condition: service_started
+    working_dir: /work
+    volumes:
+      - ./bootstrap.yaml:/work/bootstrap.yaml:ro
+    entrypoint: ["zed"]
+    command: ["import", "--endpoint", "spicedb:50051", "--token", "${SPICEDB_PRESHARED_KEY}", "--insecure", "/work/bootstrap.yaml"]
+    restart: "no"

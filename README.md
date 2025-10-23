@@ -12,7 +12,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/rbacx)](https://pypi.org/project/rbacx/)
 
 
-Universal **RBAC/ABAC** policy engine for Python with a clean core, policy sets, a compact condition DSL (including time ops), and adapters for common web frameworks.
+Universal **RBAC/ABAC/ReBAC** policy engine for Python with a clean core, policy sets, a compact condition DSL (including time ops), and adapters for common web frameworks.
 
 ## Features
 - Algorithms: `deny-overrides` (default), `permit-overrides`, `first-applicable`
