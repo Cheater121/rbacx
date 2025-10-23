@@ -52,6 +52,18 @@
 
 ---
 
+::: rbacx.rebac.helpers
+
+---
+
+::: rbacx.rebac.openfga
+
+---
+
+::: rbacx.rebac.spicedb
+
+---
+
 ::: rbacx.store.file_store
 
 ---
