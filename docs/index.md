@@ -128,7 +128,7 @@ def docs():
 - [HTTP mapping](http_mapping.md)
 
 **ReBAC**
-- [Overciew](rebac/index.md)
+- [Overview](rebac/index.md)
 - [Local Provider](rebac/local.md)
 - [OpenFGA Provider](rebac/openfga.md)
 - [SpiceDB / Authzed Provider](rebac/spicedb.md)
