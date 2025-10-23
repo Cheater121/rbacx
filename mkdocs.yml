@@ -42,6 +42,7 @@ nav:
       - Quickstart: quickstart.md
       - Highlights: highlights.md
       - Why choose RBACX: why_choose.md
+      - Strategies: strategies.md
   - Concepts:
       - Architecture: architecture.md
       - Security model: security.md
@@ -59,6 +60,11 @@ nav:
       - Policy stores: policy_stores.md
       - Custom PolicySource: custom_policy_source.md
       - HTTP mapping: http_mapping.md
+  - ReBAC:
+      - Overview: rebac/index.md
+      - Local Provider: rebac/local.md
+      - OpenFGA Provider: rebac/openfga.md
+      - SpiceDB / Authzed Provider: rebac/spicedb.md
   - Integration:
       - Web adapters: web_adapters.md
       - Custom Adapters: adapters.md

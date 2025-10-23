@@ -1,6 +1,6 @@
 # RBACX
 
-**RBAC + ABAC authorization for Python** with a clean architecture, declarative JSON policies, framework adapters, and optional hot reloading.
+**RBAC + ABAC + ReBAC authorization for Python** with a clean architecture, declarative JSON policies, framework adapters, and optional hot reloading.
 
 ---
 
@@ -17,11 +17,12 @@ RBACX is inspired by:
 
 ## What you get
 
-- **RBAC + ABAC** in a single engine (role checks + attribute conditions).
-- **Declarative policies** (JSON/YAML or Python dict) with compact operators, including time operators.
+- **RBAC + ABAC + ReBAC** in a single engine (role checks, attribute conditions, and relationship checks).
+- **Declarative policies** (JSON/YAML or Python dict) with compact operators, including time operators and `rel` condition for relationship checks.
 - **Secure defaults**: `deny-overrides` by default; also `permit-overrides`, `first-applicable`.
 - **Role hierarchy** via resolvers (`StaticRoleResolver` and custom implementations).
 - **Explainable decisions** (`allowed`, `effect`, `reason`, `rule_id`) and **obligations** (e.g., require MFA).
+- **ReBAC providers**: optional integrations for **OpenFGA** and **SpiceDB/Authzed**.
 - **Hot reload** from file/HTTP/S3 using ETag checks.
 - **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.
 - **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
@@ -105,6 +106,7 @@ def docs():
 - [Quickstart](quickstart.md)
 - [Why choose RBACX](why_choose.md)
 - [Highlights](highlights.md)
+- [Strategies](strategies.md)
 
 **Core concepts**
 - [Architecture](architecture.md)
