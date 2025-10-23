@@ -135,6 +135,7 @@ guard = Guard(policy, relationship_checker=checker)
 See runnable examples in:
 
 * `examples/rebac/rebac_local_demo.py`
+* `examples/rebac/rebac_local_demo_with_helper.py`
 * `examples/rebac/rebac_more_realistic_demo.py`
 
 ---
