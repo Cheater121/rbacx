@@ -85,7 +85,8 @@ def compile(policy: dict[str, Any]) -> Any:
         return lambda env: decide_policyset(policy, env)
 
     rules = policy.get("rules") or []
-    algo = (policy.get("algorithm") or "permit-overrides").lower()
+    # Default must match policy.evaluate() — deny-overrides (conservative).
+    algo = (policy.get("algorithm") or "deny-overrides").lower()
 
     # Map actions -> rules (stable order). '*' kept separately and appended last.
     by_action: dict[str, list[dict[str, Any]]] = {}

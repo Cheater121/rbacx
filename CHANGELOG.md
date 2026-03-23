@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.8.1 — 2026-03-23
+
+**Fixed**
+
+* `compiler.py`: default combining algorithm was `permit-overrides` instead of `deny-overrides`,
+  causing compiled and interpreted evaluation paths to return opposite decisions for policies
+  that omit the `algorithm` key. Both paths now consistently default to `deny-overrides`
+  (conservative / fail-closed). ([#bug] strict-types + compiler mismatch)
+
+* `policy.py` / `match_resource()`: `strict_types=True` was silently ignored during resource
+  matching because `__strict_types__` was read from the nested `resource` sub-dict instead of
+  the top-level `env` dict where the engine places it. Resource type, id, and attribute
+  comparisons now correctly apply strict (no-coercion) semantics when `Guard(strict_types=True)`
+  is used. `match_resource()` gains a keyword-only `strict: bool = False` parameter; existing
+  callers without the argument are unaffected.
+
 ## 1.8.0 — 2025-10-24
 
 **Highlights**

@@ -35,7 +35,7 @@ def _is_strict(env: dict[str, Any]) -> bool:
         return False
 
 
-def match_resource(rdef: dict[str, Any], resource: dict[str, Any]) -> bool:
+def match_resource(rdef: dict[str, Any], resource: dict[str, Any], *, strict: bool = False) -> bool:
     if not isinstance(rdef, dict):
         return False
     if not rdef:
@@ -50,10 +50,6 @@ def match_resource(rdef: dict[str, Any], resource: dict[str, Any]) -> bool:
     res_type = resource.get("type")
     res_id = resource.get("id")
     res_attrs = resource.get("attrs") or resource.get("attributes") or {}
-
-    strict = _is_strict(
-        resource if "__strict_types__" in resource else {}
-    )  # will be overridden below if env provided
 
     # type check
     if r_type is not None:
@@ -420,7 +416,7 @@ def evaluate(
             reason = "action_mismatch"
             continue
         rdef = rule.get("resource") or {}
-        if not match_resource(rdef, env.get("resource") or {}):
+        if not match_resource(rdef, env.get("resource") or {}, strict=_is_strict(env)):
             reason = "resource_mismatch"
             continue
 

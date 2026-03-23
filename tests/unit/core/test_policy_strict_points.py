@@ -20,45 +20,36 @@ def test__is_strict_fallback_on_bad_env_returns_false():
 def test_match_resource_type_strict_exact_match_required():
     rdef = {"type": ["doc", "file"]}
 
-    # strict mode is toggled via flag placed into the resource dict
-    resource_ok = {"type": "doc", "__strict_types__": True}
-    resource_bad_type_obj = {"type": 123, "__strict_types__": True}  # not a str -> must fail
-
-    assert match_resource(rdef, resource_ok) is True
-    assert match_resource(rdef, resource_bad_type_obj) is False
+    # strict mode is passed via the strict= keyword argument (fixed in 1.8.1:
+    # previously the flag was read from the resource dict, which was incorrect)
+    assert match_resource(rdef, {"type": "doc"}, strict=True) is True
+    assert match_resource(rdef, {"type": 123}, strict=True) is False  # not a str -> must fail
 
 
 def test_match_resource_id_strict_no_string_coercion():
     rdef = {"id": "1"}
-    resource_same_type = {"id": "1", "__strict_types__": True}
-    resource_other_type = {"id": 1, "__strict_types__": True}
 
-    assert match_resource(rdef, resource_same_type) is True
-    assert match_resource(rdef, resource_other_type) is False  # "1" != 1 in strict mode
+    assert match_resource(rdef, {"id": "1"}, strict=True) is True
+    assert match_resource(rdef, {"id": 1}, strict=True) is False  # "1" != 1 in strict mode
 
 
 def test_match_resource_id_lax_allows_string_coercion_for_backward_compat():
     rdef = {"id": "1"}
-    resource_other_type = {"id": 1}  # no strict flag -> lax
-    assert match_resource(rdef, resource_other_type) is True
+    assert match_resource(rdef, {"id": 1}, strict=False) is True
 
 
 def test_match_resource_attrs_one_of_strict_no_coercion():
     rdef = {"attrs": {"tag": ["1", "2"]}}
-    resource_ok = {"attrs": {"tag": "1"}, "__strict_types__": True}
-    resource_bad = {"attrs": {"tag": 1}, "__strict_types__": True}  # int vs str
 
-    assert match_resource(rdef, resource_ok) is True
-    assert match_resource(rdef, resource_bad) is False
+    assert match_resource(rdef, {"attrs": {"tag": "1"}}, strict=True) is True
+    assert match_resource(rdef, {"attrs": {"tag": 1}}, strict=True) is False  # int vs str
 
 
 def test_match_resource_attrs_scalar_strict_exact_equality():
     rdef = {"attrs": {"level": 1}}
-    resource_ok = {"attrs": {"level": 1}, "__strict_types__": True}
-    resource_bad = {"attrs": {"level": "1"}, "__strict_types__": True}
 
-    assert match_resource(rdef, resource_ok) is True
-    assert match_resource(rdef, resource_bad) is False
+    assert match_resource(rdef, {"attrs": {"level": 1}}, strict=True) is True
+    assert match_resource(rdef, {"attrs": {"level": "1"}}, strict=True) is False
 
 
 def test__parse_dt_strict_accepts_only_aware_datetime_and_returns_it():
