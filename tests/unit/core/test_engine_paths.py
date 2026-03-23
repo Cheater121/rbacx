@@ -66,9 +66,10 @@ def test_engine_async_and_logging_metrics(monkeypatch):
     res = Resource(type="doc", id="1")
     ctx = Context()
 
-    # Async path delegates to sync
+    # Async path — use asyncio.run() instead of the deprecated
+    # get_event_loop().run_until_complete() pattern (removed in Python 3.10+).
     import asyncio
 
-    d = asyncio.get_event_loop().run_until_complete(g.evaluate_async(sub, act, res, ctx))
+    d = asyncio.run(g.evaluate_async(sub, act, res, ctx))
     assert d.allowed is True
     assert g.is_allowed_sync(sub, act, res, ctx) is True

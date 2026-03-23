@@ -17,6 +17,15 @@ def test__is_strict_fallback_on_bad_env_returns_false():
     assert _is_strict(NoGet()) is False
 
 
+def test_match_resource_type_strict_not_in_allowed():
+    rdef = {"type": ["doc", "file"]}
+    resource = {"type": "note"}
+
+    result = match_resource(rdef, resource, strict=True)
+
+    assert result is False
+
+
 def test_match_resource_type_strict_exact_match_required():
     rdef = {"type": ["doc", "file"]}
 

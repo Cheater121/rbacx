@@ -6,7 +6,7 @@ import logging
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
+from typing import Any, ClassVar
 
 from .cache import AbstractCache
 from .decision import Decision
@@ -45,13 +45,19 @@ class Guard:
 
     Design:
       - Single async core `_evaluate_core_async` (one source of truth).
-      - Sync API wraps the async core; if a loop is already running, uses a helper thread.
+      - Sync API wraps the async core; if a loop is already running, uses a
+        class-level ThreadPoolExecutor (created lazily, shared across all Guard
+        instances) to avoid the overhead of spawning a new thread pool on every
+        call.
       - DI (resolver/obligations/metrics/logger) can be sync or async; both supported via `maybe_await`.
       - CPU-bound evaluation is offloaded to a thread via `asyncio.to_thread`.
-      - On init we ensure a current event loop exists in this thread so
-        legacy tests using `asyncio.get_event_loop().run_until_complete(...)`
-        don’t crash on Python 3.12+.
     """
+
+    # Shared executor for evaluate_sync() when called from a running event loop.
+    # Created lazily on first use; one thread is sufficient because each submitted
+    # coroutine runs its own asyncio.run() and does not block the worker thread
+    # while awaiting I/O.
+    _executor: ClassVar[ThreadPoolExecutor | None] = None
 
     def __init__(
         self,
@@ -78,21 +84,6 @@ class Guard:
         self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
         self.relationship_checker = relationship_checker
-
-        # Provide a "current" loop if missing (helps tests on Py3.12+).
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            try:
-                asyncio.get_event_loop()
-            except RuntimeError:
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                except Exception:  # pragma: no cover
-                    logger.debug(
-                        "Guard.__init__: failed to create or set a new event loop", exc_info=True
-                    )
 
         self._recompute_etag()
 
@@ -326,10 +317,14 @@ class Guard:
         resource: Resource,
         context: Context | None = None,
     ) -> Decision:
-        """
-        Synchronous wrapper for the async core.
-        - If no running loop in this thread: use asyncio.run(...)
-        - If a loop is running: run the async core in a helper thread with its own loop.
+        """Synchronous wrapper for the async core.
+
+        - If no running loop in this thread: use asyncio.run() directly.
+        - If a loop is running (e.g. called from sync code inside an async
+          framework): submit to the class-level ThreadPoolExecutor so the
+          worker thread gets its own event loop via asyncio.run().  The
+          executor is created lazily and reused across calls to avoid the
+          overhead of spawning a new thread pool on every invocation.
         """
         try:
             asyncio.get_running_loop()
@@ -344,9 +339,10 @@ class Guard:
         def _runner() -> Decision:
             return asyncio.run(self._evaluate_core_async(subject, action, resource, context))
 
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(_runner)
-            return fut.result()
+        if Guard._executor is None:
+            Guard._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rbacx-sync")
+        fut = Guard._executor.submit(_runner)
+        return fut.result()
 
     async def evaluate_async(
         self,
