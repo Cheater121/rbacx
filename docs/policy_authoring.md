@@ -103,7 +103,7 @@ Semantics:
 }
 ```
 
-### Combine ABAC and ReBAC: editors in same tenant, during office hours
+### Combine ABAC and ReBAC: editors in same tenant, during a time window
 
 ```yaml
 algorithm: deny-overrides
@@ -113,12 +113,11 @@ rules:
     actions: [edit]
     resource: { type: doc, attrs: { tenant_id: "${context.tenant_id}" } }
     condition:
-      all:
+      and:
         - rel: editor
         - between:
-            attr: context.now
-            start: "09:00"
-            end: "18:00"
+            - attr: context.now
+            - ["2025-01-01T09:00:00Z", "2025-12-31T18:00:00Z"]
 ```
 
 ### First-applicable

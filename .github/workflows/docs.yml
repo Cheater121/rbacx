@@ -22,7 +22,7 @@ jobs:
           python -m pip install -U pip
           pip install "mkdocs==1.6.1" \
                       "mkdocs-material==9.5.20" \
-                      "mkdocstrings[python]>=0.26.2" \
+                      "mkdocstrings[python]>=0.26.2,<0.30" \
                       "mkdocs-autorefs>=1.4.2"
           pip install -e .
 

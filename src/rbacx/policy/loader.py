@@ -6,7 +6,7 @@ import random
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
+from typing import Any, ClassVar
 
 from ..core.engine import Guard
 from ..core.helpers import maybe_await
@@ -38,6 +38,11 @@ class HotReloader:
             unless the policy changes. (Backwards-compatible with previous versions.)
           - True: do not prime ETag; the first check will load the current policy.
     """
+
+    # Shared executor for check_and_reload() when called from a running event loop.
+    # Created lazily on first use; reused across all HotReloader instances to avoid
+    # spawning a new thread pool on every invocation.
+    _executor: ClassVar[ThreadPoolExecutor | None] = None
 
     def __init__(
         self,
@@ -112,9 +117,12 @@ class HotReloader:
         def _runner() -> bool:
             return asyncio.run(self.check_and_reload_async(force=force))
 
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(_runner)
-            return fut.result()
+        if HotReloader._executor is None:
+            HotReloader._executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="rbacx-reload"
+            )
+        fut = HotReloader._executor.submit(_runner)
+        return fut.result()
 
     async def check_and_reload_async(self, *, force: bool = False) -> bool:
         """

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rbacx"
-version = "1.9.0"
+version = "1.9.1"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,7 +45,7 @@ docs = [
   "mkdocs>=1.6.1,<1.7",
   "mkdocs-material>=9.5.19,<10",
   "mkdocs-autorefs>=1.4.2,<2",
-  "mkdocstrings[python]>=0.26.2,<1",
+  "mkdocstrings[python]>=0.26.2,<0.30",
 ]
 examples = ["uvicorn>=0.30", "fastapi>=0.110", "starlette>=0.37", "flask>=2.3", "django>=4.2", "djangorestframework>=3.14", "litestar>=2.8"]
 validate = ["jsonschema>=4.18"]

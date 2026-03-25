@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.9.1 — 2026-03-26
+
+**Changed**
+
+* `policy/loader.py` / `HotReloader.check_and_reload()`: the `ThreadPoolExecutor`
+  used when `check_and_reload()` is called from inside a running event loop is now
+  a class-level attribute (`HotReloader._executor`) created lazily on first use and
+  reused across all subsequent calls. Previously a new one-thread pool was created
+  and torn down on every invocation, mirroring the same inefficiency that was fixed
+  in `Guard.evaluate_sync()` in 1.9.0.
+
+**Fixed**
+
+* `pyproject.toml` / `.github/workflows/docs.yml`: pinned
+  `mkdocstrings[python]<0.30` to prevent `griffe 1.x` from breaking the
+  documentation build on GitHub Pages. The unpinned `<1` upper bound allowed
+  `mkdocstrings-python 1.16+` to install, which requires `griffe>=1.0` and
+  changes internal APIs in a way that breaks `mkdocs build --strict`.
+
 ## 1.9.0 — 2026-03-24
 
 **Changed**
