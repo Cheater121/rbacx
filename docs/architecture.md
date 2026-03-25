@@ -15,3 +15,5 @@ flowchart LR
   Reloader --> Core
   Core["rbacx.core: Guard / Policy / Obligations"]
 ```
+
+For a more detailed view of the component relationships, see [architecture_detailed.svg](../../docs/architecture_detailed.svg).
