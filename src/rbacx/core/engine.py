@@ -224,6 +224,8 @@ class Guard:
         obligations_list = list(raw.get("obligations") or [])
         challenge = raw.get("challenge")
         allowed = decision_str == "permit"
+        # Local variable for reason — never mutate raw (it may be a cached object).
+        reason = raw.get("reason")
 
         if allowed:
             try:
@@ -234,7 +236,7 @@ class Guard:
                 # Auto-deny when an obligation is not met
                 if not allowed:
                     effect = "deny"
-                    raw["reason"] = "obligation_failed"
+                    reason = "obligation_failed"
             except Exception:
                 # do not fail on obligation checker errors
                 logger.exception("RBACX: obligation checker failed", exc_info=True)
@@ -246,7 +248,7 @@ class Guard:
             challenge=challenge,
             rule_id=raw.get("last_rule_id") or raw.get("rule_id"),
             policy_id=raw.get("policy_id"),
-            reason=raw.get("reason"),
+            reason=reason,
         )
 
         # metrics (do not use return values; conditionally await)

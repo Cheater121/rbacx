@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.9.2 — 2026-03-26
+
+**Fixed**
+
+* `core/engine.py` / `Guard._evaluate_core_async()`: when an obligation was not
+  met the engine wrote ``raw["reason"] = "obligation_failed"`` directly into the
+  dict that had been stored in the decision cache. On the next request with the
+  same env (e.g. the user now satisfying MFA), the cached raw dict already
+  carried ``reason="obligation_failed"``, so ``Decision.reason`` was wrong even
+  though the decision was permitted. Fixed by introducing a local ``reason``
+  variable that is updated instead; the cached object is never mutated.
+
 ## 1.9.1 — 2026-03-26
 
 **Changed**
@@ -17,6 +29,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   in `Guard.evaluate_sync()` in 1.9.0.
 
 **Fixed**
+
+* `docs/policy_authoring.md`: the "Combine ABAC and ReBAC" example used two
+  incorrect constructs that would silently deny at runtime:
+  * `all:` operator replaced with `and:` — `all` is not a valid DSL operator.
+  * `between` rewritten to use the correct two-element list syntax
+    `[start_datetime, end_datetime]` instead of the non-existent
+    `start:`/`end:` key form. The placeholder time strings (`"09:00"`) were
+    also replaced with valid ISO-8601 datetimes.
 
 * `pyproject.toml` / `.github/workflows/docs.yml`: pinned
   `mkdocstrings[python]<0.30` to prevent `griffe 1.x` from breaking the
