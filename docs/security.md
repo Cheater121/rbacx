@@ -32,3 +32,9 @@
 > confirm the new (correct) behaviour matches your intent.
 
 > **Note (caching):** when using shared/external caches, avoid putting sensitive data into keys/metadata and choose a backend that fits your security requirements. The default in-memory cache is per-process/per-Guard.
+
+> **Note (HTTPPolicySource, v1.9.5+):** `HTTPPolicySource` validates the URL
+> scheme against an `allowed_schemes` whitelist and optionally blocks numeric
+> private/loopback IP literals (`block_private_ips=True`).  TLS verification,
+> timeout, and redirect behaviour are configurable via `verify_ssl`, `timeout`,
+> and `allow_redirects`.  See `docs/policy_stores.md` for details.

@@ -20,7 +20,7 @@ def make_requests_stub(status_code=200, etag=None, json_obj=None, capture=None):
 
     m = types.SimpleNamespace()
 
-    def _get(url, headers=None, timeout=None):
+    def _get(url, headers=None, timeout=None, **_kwargs):
         if capture is not None:
             capture.append(dict(url=url, headers=headers or {}, timeout=timeout))
         return Resp()

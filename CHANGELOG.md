@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.9.5 — 2026-03-28
+
+**Fixed**
+
+* `store/http_store.py` — **security: missing TLS verification and SSRF
+  exposure in `HTTPPolicySource`** ([#security]).
+
+  `HTTPPolicySource` made no attempt to validate the target URL and forwarded
+  no security configuration to `requests.get`, leaving three attack surfaces
+  open:
+
+  1. **No SSL verification control.** `requests.get` was always called
+     without a `verify` argument, so the underlying `requests` default applied
+     (usually `True`, but easy to break with environment variables or session
+     overrides).  There was no way for callers to explicitly enforce or
+     disable certificate verification.
+
+  2. **No SSRF protection.** Any URL could be supplied, including
+     `http://169.254.169.254/...` (AWS EC2 metadata), `http://127.0.0.1/...`,
+     or internal RFC-1918 addresses.  An attacker who can influence the
+     configured policy URL could redirect the host process to internal
+     endpoints.
+
+  3. **No scheme whitelist.** Schemes such as `file://` or `ftp://` were
+     accepted silently and passed to `requests`, leading to unexpected
+     behaviour.
+
+  **New constructor parameters (all keyword-only, fully backward-compatible):**
+
+  | Parameter | Default | Description |
+  |-----------|---------|-------------|
+  | `verify_ssl` | `True` | Passed as `verify=` to `requests.get` |
+  | `timeout` | `5.0` | Request timeout in seconds (was hard-coded) |
+  | `allow_redirects` | `True` | Passed as `allow_redirects=` to `requests.get` |
+  | `allowed_schemes` | `("http", "https")` | URL scheme whitelist; raise `ValueError` at construction for other schemes |
+  | `block_private_ips` | `False` | When `True`, raise `ValueError` if the URL host is a numeric private/loopback/link-local IP (SSRF guard) |
+
+  The `_validate_url` method and `_is_private_ip` helper are called once at
+  construction time so invalid configurations are caught eagerly.  `timeout`
+  is now an instance attribute instead of a magic literal in `load()`.
+
+  **Hostname literals** (e.g. `"localhost"`) are intentionally **not** blocked
+  by `block_private_ips` — DNS resolution at validation time introduces a
+  TOCTOU race and is out of scope.  Use network-level controls or a custom
+  `requests.Session` with hostname-aware resolvers for full hostname-based
+  SSRF protection.
+
+  Existing tests updated to accept `**_kwargs` in `fake_get` stubs.
+  Regression tests added in
+  `tests/unit/store/test_http_store_security.py` (54 test cases).
+
 ## 1.9.4 — 2026-03-28
 
 **Fixed**
@@ -34,6 +85,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `tests/unit/core/test_policy_condition_depth.py`
   (17 test cases covering all three operators, the exact limit boundary,
   500-level nesting, and fail-closed engine behaviour).
+
+## 1.9.5 — 2026-03-28
+
+**Fixed**
+
+* `store/http_store.py` — **security: missing TLS verification and SSRF
+  exposure in `HTTPPolicySource`** ([#security]).
+
+  `HTTPPolicySource` made no attempt to validate the target URL and forwarded
+  no security configuration to `requests.get`, leaving three attack surfaces
+  open:
+
+  1. **No SSL verification control.** `requests.get` was always called
+     without a `verify` argument, so the underlying `requests` default applied
+     (usually `True`, but easy to break with environment variables or session
+     overrides).  There was no way for callers to explicitly enforce or
+     disable certificate verification.
+
+  2. **No SSRF protection.** Any URL could be supplied, including
+     `http://169.254.169.254/...` (AWS EC2 metadata), `http://127.0.0.1/...`,
+     or internal RFC-1918 addresses.  An attacker who can influence the
+     configured policy URL could redirect the host process to internal
+     endpoints.
+
+  3. **No scheme whitelist.** Schemes such as `file://` or `ftp://` were
+     accepted silently and passed to `requests`, leading to unexpected
+     behaviour.
+
+  **New constructor parameters (all keyword-only, fully backward-compatible):**
+
+  | Parameter | Default | Description |
+  |-----------|---------|-------------|
+  | `verify_ssl` | `True` | Passed as `verify=` to `requests.get` |
+  | `timeout` | `5.0` | Request timeout in seconds (was hard-coded) |
+  | `allow_redirects` | `True` | Passed as `allow_redirects=` to `requests.get` |
+  | `allowed_schemes` | `("http", "https")` | URL scheme whitelist; raise `ValueError` at construction for other schemes |
+  | `block_private_ips` | `False` | When `True`, raise `ValueError` if the URL host is a numeric private/loopback/link-local IP (SSRF guard) |
+
+  The `_validate_url` method and `_is_private_ip` helper are called once at
+  construction time so invalid configurations are caught eagerly.  `timeout`
+  is now an instance attribute instead of a magic literal in `load()`.
+
+  **Hostname literals** (e.g. `"localhost"`) are intentionally **not** blocked
+  by `block_private_ips` — DNS resolution at validation time introduces a
+  TOCTOU race and is out of scope.  Use network-level controls or a custom
+  `requests.Session` with hostname-aware resolvers for full hostname-based
+  SSRF protection.
+
+  Existing tests updated to accept `**_kwargs` in `fake_get` stubs.
+  Regression tests added in
+  `tests/unit/store/test_http_store_security.py` (54 test cases).
 
 ## 1.9.4 — 2026-03-28
 
@@ -72,6 +174,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `WARNING`, and records `reason = "condition_depth_exceeded"` — the rule is
   treated as a non-match and evaluation continues with the next rule
   (fail-closed).
+
+  Regression tests added in
+  `tests/unit/core/test_condition_depth_guard.py` (22 test cases).
 
 ## 1.9.3 — 2026-03-28
 

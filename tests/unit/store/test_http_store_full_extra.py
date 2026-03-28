@@ -17,7 +17,7 @@ def test_http_json_path_sets_etag_case_insensitive(monkeypatch):
 
         def raise_for_status(self): ...
 
-    def fake_get(url, headers, timeout):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     req_mod = types.SimpleNamespace(get=fake_get)
@@ -40,7 +40,7 @@ def test_http_yaml_uses_content_bytes_when_no_text(monkeypatch):
 
         def raise_for_status(self): ...
 
-    def fake_get(url, headers, timeout):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     req_mod = types.SimpleNamespace(get=fake_get)
@@ -62,7 +62,7 @@ def test_http_304_not_modified_returns_empty_when_etag_present(monkeypatch):
 
     calls = []
 
-    def fake_get(url, headers, timeout):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         calls.append(headers.copy())
         return Resp()
 
@@ -89,7 +89,7 @@ def test_http_json_method_failure_falls_back_to_text(monkeypatch):
 
         def raise_for_status(self): ...
 
-    def fake_get(url, headers, timeout):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     req_mod = types.SimpleNamespace(get=fake_get)
@@ -119,7 +119,7 @@ def test_http_raise_for_status_propagates(monkeypatch):
         def raise_for_status(self):
             raise HTTPError("boom")
 
-    def fake_get(url, headers, timeout):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     req_mod = types.SimpleNamespace(get=fake_get)
