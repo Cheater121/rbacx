@@ -43,7 +43,7 @@
 
 ## Performance Considerations
 
-* Internal indexing/compilation of policies to quickly skip irrelevant rules (e.g., by resource type).
+* Internal compilation of policies into a fast decision function: rules are sorted by resource-specificity (id-specific → wildcard) and type-incompatible rules are filtered at decision time.  The compiled path is always semantically equivalent to the authoritative interpreter for all combining algorithms.
 * Stateless `Guard` suitable for horizontal scaling; shared policy sources (e.g., S3/file) can be used across instances.
 * Documentation includes guidance on avoiding overly broad conditions and caching expensive context computations.
 * **ReBAC checks**: Relationship lookups are memoized within a single decision; backends may implement `batch_check(...)` to reduce round-trips for bulk evaluations.
