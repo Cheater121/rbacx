@@ -7,6 +7,21 @@
 - Consider step-up auth challenges (e.g., MFA) for high-risk actions.
 
 
+> **Note (condition depth limit, v1.9.4+):** `eval_condition` limits
+> `and`/`or`/`not` nesting to `MAX_CONDITION_DEPTH` (default 50) to prevent a
+> maliciously crafted policy from exhausting the Python call stack.  A rule
+> whose condition exceeds this limit is treated as a non-match (fail-closed)
+> with `reason = "condition_depth_exceeded"`.  Legitimate policies rarely
+> exceed 5–10 levels of nesting; the default limit is intentionally generous.
+
+
+> **Note (condition depth, v1.9.4+):** condition trees loaded from external
+> sources are evaluated with a recursion depth limit of `MAX_CONDITION_DEPTH`
+> (default 50).  A policy whose `and`/`or`/`not` nesting exceeds this limit
+> raises `ConditionDepthError`, which `evaluate()` catches and treats as a
+> non-match (fail-closed, `reason = "condition_depth_exceeded"`).  The process
+> never crashes with `RecursionError` regardless of policy content.
+
 > **Note (compiled fast-path, v1.9.3+):** the compiled decision path is always
 > semantically equivalent to the interpreter for all combining algorithms.
 > In particular, a `deny` rule at any resource-specificity level (wildcard,

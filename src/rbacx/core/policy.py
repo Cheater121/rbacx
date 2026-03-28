@@ -16,6 +16,22 @@ class ConditionTypeError(Exception):
     """Raised when a condition compares incompatible types."""
 
 
+class ConditionDepthError(Exception):
+    """Raised when a condition tree exceeds the maximum nesting depth.
+
+    This is a security guard against DoS via deeply nested ``and``/``or``/``not``
+    chains in policies loaded from untrusted external sources (HTTP, S3, etc.).
+    The engine treats this as a failed condition (fail-closed) and records
+    ``reason = "condition_depth_exceeded"`` in the decision.
+    """
+
+
+#: Maximum nesting depth for ``and`` / ``or`` / ``not`` condition trees.
+#: Legitimate policies rarely exceed 5–10 levels; 50 is generous while
+#: remaining well below the Python recursion limit (~499 for this call stack).
+MAX_CONDITION_DEPTH: int = 50
+
+
 # ------------------------------- helpers ---------------------------------
 
 
@@ -201,8 +217,21 @@ def _as_collection(x: Any) -> Sequence[Any]:
 # ------------------------------- conditions -------------------------------
 
 
-def eval_condition(cond: Any, env: dict[str, Any]) -> bool:
-    """Evaluate condition dict safely. On type mismatches, raise ConditionTypeError."""
+def eval_condition(cond: Any, env: dict[str, Any], _depth: int = 0) -> bool:
+    """Evaluate condition dict safely.
+
+    Raises ``ConditionTypeError`` on type mismatches and
+    ``ConditionDepthError`` when the ``and``/``or``/``not`` nesting exceeds
+    ``MAX_CONDITION_DEPTH`` (default 50).  The depth guard prevents a
+    maliciously crafted policy loaded from an external source (HTTP, S3, …)
+    from triggering a Python ``RecursionError`` and crashing the process.
+
+    ``_depth`` is an internal parameter — callers must not pass it.
+    """
+    if _depth > MAX_CONDITION_DEPTH:
+        raise ConditionDepthError(
+            f"condition tree exceeds maximum nesting depth ({MAX_CONDITION_DEPTH})"
+        )
     if not isinstance(cond, dict):
         return bool(cond)
 
@@ -365,14 +394,14 @@ def eval_condition(cond: Any, env: dict[str, Any]) -> bool:
         subs = cond["and"]
         if not isinstance(subs, Iterable):
             raise ConditionTypeError("condition_type_mismatch")
-        return all(eval_condition(c, env) for c in subs)
+        return all(eval_condition(c, env, _depth + 1) for c in subs)
     if "or" in cond:
         subs = cond["or"]
         if not isinstance(subs, Iterable):
             raise ConditionTypeError("condition_type_mismatch")
-        return any(eval_condition(c, env) for c in subs)
+        return any(eval_condition(c, env, _depth + 1) for c in subs)
     if "not" in cond:
-        return not eval_condition(cond["not"], env)
+        return not eval_condition(cond["not"], env, _depth + 1)
 
     return False
 
@@ -426,6 +455,14 @@ def evaluate(
                 if not eval_condition(cond, env):
                     reason = "condition_mismatch"
                     continue
+            except ConditionDepthError:
+                logger.warning(
+                    "RBACX: condition depth limit exceeded in rule %r; "
+                    "treating as condition mismatch (fail-closed)",
+                    rid,
+                )
+                reason = "condition_depth_exceeded"
+                continue
             except ConditionTypeError:
                 reason = "condition_type_mismatch"
                 continue
