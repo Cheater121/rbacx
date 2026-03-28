@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.9.4 — 2026-03-28
+
+**Fixed**
+
+* `core/policy.py` — **security: DoS via unbounded recursion in condition
+  evaluation** ([#security]).
+
+  `eval_condition` evaluates `and`, `or`, and `not` operators by recursing
+  into their sub-conditions without any depth limit.  A policy loaded from an
+  untrusted external source (HTTP, S3) could contain thousands of nested
+  operators, exhaust the Python call stack, and crash the process with an
+  unhandled `RecursionError`.
+
+  The fix introduces:
+
+  * `ConditionDepthError` — a new exception raised when `and`/`or`/`not`
+    nesting exceeds `MAX_CONDITION_DEPTH` (default **50**, well above any
+    legitimate use case while remaining far below the Python recursion limit).
+  * A `_depth: int = 0` internal counter added to `eval_condition`'s
+    signature and propagated at all three recursive call sites.
+  * Fail-closed handling in `evaluate()`: a rule whose condition exceeds the
+    depth limit is treated as a non-match (`continue`); `reason` is set to
+    `"condition_depth_exceeded"`.  The exception is never surfaced to the
+    caller and never produces a `permit` decision.
+
+  Regression tests added in
+  `tests/unit/core/test_policy_condition_depth.py`
+  (17 test cases covering all three operators, the exact limit boundary,
+  500-level nesting, and fail-closed engine behaviour).
+
+## 1.9.4 — 2026-03-28
+
+**Fixed**
+
+* `core/policy.py` — **security: DoS via unbounded recursion in condition
+  evaluation** ([#security]).
+
+  `eval_condition` is recursive: the `and`, `or`, and `not` operators each
+  call `eval_condition` recursively on their sub-expressions.  There was no
+  limit on nesting depth, so a policy containing a deeply nested condition
+  tree (≥ ~499 levels on a default Python stack) caused a `RecursionError`
+  that propagated out of `evaluate()` uncaught and crashed the interpreter
+  thread.
+
+  An attacker who controls the policy loaded from an external source
+  (HTTP, S3, or any custom `PolicySource`) could exploit this for a
+  denial-of-service by supplying a JSON document with thousands of nested
+  `and`/`or`/`not` operators.
+
+  **Fix** — two additions to `policy.py`:
+
+  * `ConditionDepthError` — a new exception class, distinct from
+    `ConditionTypeError`, raised when the nesting depth exceeds the limit.
+  * `MAX_CONDITION_DEPTH = 50` — the enforced ceiling.  Real policies rarely
+    exceed 5–10 levels; 50 is generous while remaining roughly 10× below the
+    crash threshold.
+
+  `eval_condition` now accepts an internal `_depth` counter (default `0`)
+  incremented on every recursive call.  When `_depth > MAX_CONDITION_DEPTH`
+  the function raises `ConditionDepthError` immediately, unwinding the stack
+  cleanly without touching the Python recursion limit.
+
+  `evaluate()` catches `ConditionDepthError` with a dedicated `except`
+  clause (separate from the existing `ConditionTypeError` handler), logs a
+  `WARNING`, and records `reason = "condition_depth_exceeded"` — the rule is
+  treated as a non-match and evaluation continues with the next rule
+  (fail-closed).
+
 ## 1.9.3 — 2026-03-28
 
 **Fixed**

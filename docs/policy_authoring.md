@@ -149,3 +149,8 @@ rules:
 * Include **negative tests** for missing relations (ReBAC) and type mismatches (ABAC).
 * In CI, run the **linter** and **schema validation** before deploying policies.
 * For ReBAC backends, seed **fixture tuples/relationships** for deterministic tests.
+
+> **Depth limit:** condition trees are evaluated up to `MAX_CONDITION_DEPTH`
+> levels of `and`/`or`/`not` nesting (default: 50).  Real policies are
+> well within this limit; it exists solely as a DoS guard for policies
+> loaded from external sources.
