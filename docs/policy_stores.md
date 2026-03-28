@@ -70,10 +70,18 @@ tag = source.etag()   # last ETag (if provided by the server)
 * On `304 Not Modified`, returns empty dict `{}` — a signal that applying can be skipped.
 * If schema validation is enabled, the loaded policy is validated against the built-in schema before being returned.
 
-### Constructor options (core)
+### Constructor options
 
 * `headers: dict[str, str] | None = None` — additional HTTP headers.
-* `validate_schema: bool = False` — when `True`, the store validates the parsed policy during `load()`. The default is `False` to preserve backward-compatible behavior and avoid adding a validation dependency unless explicitly requested.
+* `validate_schema: bool = False` — when `True`, the store validates the parsed policy during `load()`.
+
+**Security parameters** (all keyword-only, default values maintain backward compatibility):
+
+* `verify_ssl: bool = True` — TLS certificate verification, passed as `verify=` to `requests.get`.
+* `timeout: float = 5.0` — request timeout in seconds.
+* `allow_redirects: bool = True` — whether to follow HTTP redirects.
+* `allowed_schemes: tuple[str, ...] = ("http", "https")` — URL scheme whitelist; raises `ValueError` at construction for any other scheme. Pass `("https",)` to enforce HTTPS-only.
+* `block_private_ips: bool = False` — when `True`, raises `ValueError` if the URL host is a numeric private, loopback, or link-local IP address (SSRF guard). Hostname literals are not resolved.
 
 ---
 
