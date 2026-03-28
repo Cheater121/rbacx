@@ -14,7 +14,7 @@ def test_http_load_returns_cached_on_304(monkeypatch):
         def raise_for_status(self):
             pass
 
-    def fake_get(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         # Ensure If-None-Match can be present but is irrelevant here
         assert isinstance(headers, dict)
         return Resp304()
@@ -47,7 +47,7 @@ def test_http_load_etag_headers_exception_is_caught(monkeypatch):
         def json(self):
             return []  # non-dict => fall through (covers 65->76 false path)
 
-    def fake_get(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     fake_requests = types.SimpleNamespace(get=fake_get)
@@ -89,7 +89,7 @@ def test_http_load_json_non_dict_then_content_type_raises_and_empty_body(monkeyp
         def json(self):
             return []  # non-dict => cover 65->76 "False" path
 
-    def fake_get(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     fake_requests = types.SimpleNamespace(get=fake_get)
@@ -126,7 +126,7 @@ def test_http_load_json_fast_path_success_updates_cache_and_returns(monkeypatch)
         def json(self):
             return {"k": "v"}  # dict => early return from JSON fast-path
 
-    def fake_get(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     fake_requests = types.SimpleNamespace(get=fake_get)
@@ -153,7 +153,7 @@ def test_http_load_content_type_none_without_exception(monkeypatch):
 
         # NOTE: no .json attribute on purpose
 
-    def fake_get(url, headers=None, timeout=None):
+    def fake_get(url, headers=None, timeout=None, **_kwargs):
         return Resp()
 
     fake_requests = types.SimpleNamespace(get=fake_get)

@@ -65,7 +65,8 @@ reloader = HotReloader(guard, src, initial_load=True)  # loads immediately when 
 
   * Verify payload integrity when possible (signed artifact, checksum, or versioned objects).
   * Secure transport: TLS; consider **mTLS / pinning** for internal services.
-  * For HTTP caches/validators, see HTTP semantics (RFC 9110) for strong/weak validators and conditional requests. 
+  * For the built-in `HTTPPolicySource`, use `verify_ssl=True` (default), `allowed_schemes=("https",)`, and `block_private_ips=True` in production. See [Policy stores](policy_stores.md) for the full parameter reference.
+  * For HTTP caches/validators, see HTTP semantics (RFC 9110) for strong/weak validators and conditional requests.
 
 * **Sensible defaults**
 
@@ -78,8 +79,8 @@ reloader = HotReloader(guard, src, initial_load=True)  # loads immediately when 
 
 RBACX’s `HotReloader` supports both sync **and async** `PolicySource` implementations. Below is a production-style **async** HTTP source using `httpx`:
 
-* Uses `httpx.AsyncClient` with explicit **timeouts**. Default HTTPX timeouts are \~5s of inactivity; set your own per your SLOs. 
-* Supports **ETag** caching and conditional GET via `If-None-Match` to receive `304 Not Modified` when the policy hasn’t changed. 
+* Uses `httpx.AsyncClient` with explicit **timeouts**. Default HTTPX timeouts are \~5s of inactivity; set your own per your SLOs.
+* Supports **ETag** caching and conditional GET via `If-None-Match` to receive `304 Not Modified` when the policy hasn’t changed.
 * Implements **capped exponential backoff with jitter** on transient failures — no extra dependencies.
 
 ```python
@@ -189,9 +190,9 @@ class AsyncHTTPPolicySource(PolicySource):
 
 > **Notes**
 >
-> * HTTP semantics for ETags and conditional requests: MDN (`ETag`, `If-None-Match`, `304`) and RFC 9110 are the authoritative references. 
-> * HTTPX async client, timeouts, and options (e.g., `http2`, `verify`): see official docs. 
-> * Backoff with **jitter** is recommended to avoid retry storms. 
+> * HTTP semantics for ETags and conditional requests: MDN (`ETag`, `If-None-Match`, `304`) and RFC 9110 are the authoritative references.
+> * HTTPX async client, timeouts, and options (e.g., `http2`, `verify`): see official docs.
+> * Backoff with **jitter** is recommended to avoid retry storms.
 
 ### Using it with the reloader
 
@@ -218,7 +219,7 @@ await src.close()
 
 ## Operational tips
 
-* **Polling**: Pick an interval that fits your update cadence; add small random jitter to reduce thundering herds. For HTTP, prefer conditional requests so unchanged policies return `304 Not Modified`. 
+* **Polling**: Pick an interval that fits your update cadence; add small random jitter to reduce thundering herds. For HTTP, prefer conditional requests so unchanged policies return `304 Not Modified`.
 * **Observability**: Log failures with context (source, attempt, delay), add metrics (reload success/failure, last apply time).
 * **Circuit-breakers**: If your backend is unstable, short-circuit after N attempts and try later.
 * **Rollouts**: Version your policies; keep a quick rollback path (e.g., previous `VersionId` / artifact).
@@ -229,7 +230,7 @@ await src.close()
 
 * **Unit**: Prove `etag()` stability for no-change scenarios; verify change detection and that `load()` rejects malformed data.
 * **Integration**: Exercise `HotReloader.check_and_reload(force=True)` and the background `start()/stop()` loop.
-* **Failure modes**: Simulate timeouts/5xx and ensure backoff+jitter take effect and logs are clear. AWS guidance on timeouts/retries/jitter is a good reference. 
+* **Failure modes**: Simulate timeouts/5xx and ensure backoff+jitter take effect and logs are clear. AWS guidance on timeouts/retries/jitter is a good reference.
 
 ---
 
@@ -240,4 +241,3 @@ await src.close()
 * [ ] Remote backends: timeouts, retries, **exponential backoff with jitter**, max cap.
 * [ ] Integrity/security measures in place (versioning, checksums, signatures, TLS/mTLS).
 * [ ] Good logs/metrics for visibility; clear rollback path.
-

@@ -21,7 +21,7 @@ class _Resp:
 
 
 def test_http_uses_lowercase_content_type_and_bytes_fallback(monkeypatch):
-    def _get(_url, headers=None, timeout=None):
+    def _get(_url, headers=None, timeout=None, **_kwargs):
         # Lowercase content-type; body is YAML text
         hdrs = {"content-type": "application/yaml", "etag": "E1"}
         txt = "rules:\n  - id: R1\n    effect: permit"
@@ -39,7 +39,7 @@ def test_http_uses_lowercase_content_type_and_bytes_fallback(monkeypatch):
 
 
 def test_http_bytes_decode_error_with_yaml_content_type(monkeypatch):
-    def _get(_url, headers=None, timeout=None):
+    def _get(_url, headers=None, timeout=None, **_kwargs):
         # Provide invalid UTF-8 content to trigger bytes fallback path
         hdrs = {"Content-Type": "application/yaml", "ETag": "E2"}
         bad = b"\xff\xfe\xfa"

@@ -70,10 +70,18 @@ tag = source.etag()   # last ETag (if provided by the server)
 * On `304 Not Modified`, returns empty dict `{}` — a signal that applying can be skipped.
 * If schema validation is enabled, the loaded policy is validated against the built-in schema before being returned.
 
-### Constructor options (core)
+### Constructor options
 
 * `headers: dict[str, str] | None = None` — additional HTTP headers.
-* `validate_schema: bool = False` — when `True`, the store validates the parsed policy during `load()`. The default is `False` to preserve backward-compatible behavior and avoid adding a validation dependency unless explicitly requested.
+* `validate_schema: bool = False` — when `True`, the store validates the parsed policy during `load()`.
+
+**Security parameters** (all keyword-only, default values maintain backward compatibility):
+
+* `verify_ssl: bool = True` — TLS certificate verification, passed as `verify=` to `requests.get`.
+* `timeout: float = 5.0` — request timeout in seconds.
+* `allow_redirects: bool = True` — whether to follow HTTP redirects.
+* `allowed_schemes: tuple[str, ...] = ("http", "https")` — URL scheme whitelist; raises `ValueError` at construction for any other scheme. Pass `("https",)` to enforce HTTPS-only.
+* `block_private_ips: bool = False` — when `True`, raises `ValueError` if the URL host is a numeric private, loopback, or link-local IP address (SSRF guard). Hostname literals are not resolved.
 
 ---
 
@@ -142,3 +150,36 @@ HotReloader(guard, s3_src, poll_interval=5.0).start()
 ```
 
 It is recommended to begin with an explicit `check_and_reload()` when the process starts, and then either enable background polling with `start()` or call `check_and_reload()` at request boundaries (see `RbacxMiddleware`).
+
+## HTTPPolicySource security parameters
+
+All parameters are keyword-only and fully backward-compatible with existing
+code that only passes `url`.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `verify_ssl` | `bool` | `True` | Enable TLS certificate verification (`verify=` in `requests.get`). Set to `False` only in dev environments. |
+| `timeout` | `float` | `5.0` | Request timeout in seconds. |
+| `allow_redirects` | `bool` | `True` | Whether to follow HTTP redirects. Set to `False` to prevent open-redirect abuse. |
+| `allowed_schemes` | `tuple[str, ...]` | `("http", "https")` | URL scheme whitelist. Raise `ValueError` at construction for any other scheme. Pass `("https",)` to enforce HTTPS-only. |
+| `block_private_ips` | `bool` | `False` | When `True`, raise `ValueError` if the URL's host is a numeric private, loopback, or link-local IP address (SSRF guard). Hostname literals are not resolved. |
+
+```python
+from rbacx.store import HTTPPolicySource
+
+# HTTPS-only, strict TLS, no redirects, SSRF guard enabled
+src = HTTPPolicySource(
+    "https://policy-server.internal/policy.json",
+    allowed_schemes=("https",),
+    verify_ssl=True,
+    allow_redirects=False,
+    block_private_ips=True,
+    timeout=10.0,
+)
+```
+
+> **Note on `block_private_ips` and hostnames:** only numeric IP literals are
+> checked (e.g. `192.168.1.1`).  Hostname literals such as `localhost` are not
+> resolved at construction time to avoid DNS TOCTOU races.  For full hostname-
+> based SSRF protection use network-level controls or a custom `requests`
+> session.

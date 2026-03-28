@@ -15,13 +15,6 @@
 > exceed 5–10 levels of nesting; the default limit is intentionally generous.
 
 
-> **Note (condition depth, v1.9.4+):** condition trees loaded from external
-> sources are evaluated with a recursion depth limit of `MAX_CONDITION_DEPTH`
-> (default 50).  A policy whose `and`/`or`/`not` nesting exceeds this limit
-> raises `ConditionDepthError`, which `evaluate()` catches and treats as a
-> non-match (fail-closed, `reason = "condition_depth_exceeded"`).  The process
-> never crashes with `RecursionError` regardless of policy content.
-
 > **Note (compiled fast-path, v1.9.3+):** the compiled decision path is always
 > semantically equivalent to the interpreter for all combining algorithms.
 > In particular, a `deny` rule at any resource-specificity level (wildcard,
@@ -32,3 +25,9 @@
 > confirm the new (correct) behaviour matches your intent.
 
 > **Note (caching):** when using shared/external caches, avoid putting sensitive data into keys/metadata and choose a backend that fits your security requirements. The default in-memory cache is per-process/per-Guard.
+
+> **Note (HTTPPolicySource, v1.9.5+):** `HTTPPolicySource` validates the URL
+> scheme against an `allowed_schemes` whitelist and optionally blocks numeric
+> private/loopback IP literals (`block_private_ips=True`).  TLS verification,
+> timeout, and redirect behaviour are configurable via `verify_ssl`, `timeout`,
+> and `allow_redirects`.  See `docs/policy_stores.md` for details.

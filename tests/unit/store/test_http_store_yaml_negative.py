@@ -17,7 +17,9 @@ def test_http_policy_source_yaml_without_pyyaml_raises(monkeypatch):
 
     import requests
 
-    monkeypatch.setattr(requests, "get", lambda url, headers, timeout: DummyResp())
+    monkeypatch.setattr(
+        requests, "get", lambda url, headers=None, timeout=None, **_kwargs: DummyResp()
+    )
     # Simulate missing PyYAML
     monkeypatch.setitem(sys.modules, "yaml", None)
 
