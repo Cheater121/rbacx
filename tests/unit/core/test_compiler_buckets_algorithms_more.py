@@ -62,8 +62,11 @@ def test_categorize_all_buckets_and_none():
     assert _dec(dec, action="read", t="img", id="1") in {"permit", "deny"}
 
 
-def test_algorithm_overrides_paths_exercised():
-    # deny-overrides: any deny wins
+def test_algorithm_overrides_paths_exercised() -> None:
+    """deny-overrides and permit-overrides must agree with the interpreter."""
+    from rbacx.core.policy import evaluate as eval_policy
+
+    # deny-overrides: any deny wins — both rules in same bucket (type-only)
     pol_deny_over = {
         "algorithm": "deny-overrides",
         "rules": [
@@ -71,7 +74,7 @@ def test_algorithm_overrides_paths_exercised():
             {"id": "d", "actions": ["read"], "resource": {"type": "doc"}, "effect": "deny"},
         ],
     }
-    # permit-overrides: any permit wins
+    # permit-overrides: any permit wins — both rules in same bucket (type-only)
     pol_permit_over = {
         "algorithm": "permit-overrides",
         "rules": [
@@ -79,10 +82,14 @@ def test_algorithm_overrides_paths_exercised():
             {"id": "p2", "actions": ["read"], "resource": {"type": "doc"}, "effect": "permit"},
         ],
     }
+    env = _env(action="read")
     dec_deny = compile_policy(pol_deny_over)
     dec_permit = compile_policy(pol_permit_over)
+
     assert _dec(dec_deny, action="read") == "deny"
+    assert _dec(dec_deny, action="read") == eval_policy(pol_deny_over, env)["decision"]
     assert _dec(dec_permit, action="read") == "permit"
+    assert _dec(dec_permit, action="read") == eval_policy(pol_permit_over, env)["decision"]
 
 
 def test_policyset_vs_policy_dispatch_and_empty_selected_rules():

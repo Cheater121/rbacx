@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.9.3 — 2026-03-28
+
+**Fixed**
+
+* `core/compiler.py` — **security: rule-bypass via cross-bucket elimination in
+  the compiled fast-path** ([#security]).
+
+  The compiled fast-path grouped rules into four resource-specificity buckets
+  (0 = id-specific → 3 = wildcard) and evaluated **only the most specific
+  non-empty bucket**, discarding all others.  This optimisation is incorrect for
+  every combining algorithm when rules span multiple specificity levels:
+
+  * **`deny-overrides`** (default): a deny rule in a broader bucket
+    (e.g. `resource: {}`) was silently dropped when a permit rule existed in a
+    more specific bucket, producing `permit` instead of `deny` — a direct
+    security bypass.  Three concrete scenarios:
+
+    | Deny bucket | Permit bucket | Result before fix |
+    |-------------|---------------|-------------------|
+    | 3 – wildcard `resource: {}` | 2 – type-only | `permit` ❌ |
+    | 2 – type-only `{type:"doc"}` | 0 – id-specific | `permit` ❌ |
+    | 1 – attrs `{attrs:{archived:true}}` | 0 – id-specific | `permit` ❌ |
+
+  * **`permit-overrides`**: a permit rule in a broader bucket was dropped when a
+    deny rule existed in a more specific bucket, producing `deny` instead of
+    `permit`.
+
+  * **`first-applicable`**: the `by_action` / `star_rules` split changed the
+    declaration order that `first-applicable` semantics require, causing the
+    wrong rule to fire first.
+
+  The fix introduces `_select_rules()` with per-algorithm behaviour:
+
+  * For `deny-overrides`, `permit-overrides`, and unknown algorithms: **all**
+    matching resource-specificity buckets are merged in specificity order (0 → 3)
+    and passed to the interpreter.  No rule can be silently dropped.
+  * For `first-applicable`: the original policy rule list is walked in
+    **declaration order**; rules are filtered by action/resource-type
+    compatibility only.  The `by_action` split is deliberately bypassed.
+
+  `Guard` uses the compiled path by default, so every production deployment with
+  policies that mix deny and permit rules at different resource-specificity
+  levels was affected.
+
+  Regression tests added in
+  `tests/unit/core/test_compiler_deny_overrides_cross_bucket.py`
+  (18 test cases including 500 × randomised equivalence assertions).
+
 ## 1.9.2 — 2026-03-26
 
 **Fixed**

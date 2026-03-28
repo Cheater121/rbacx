@@ -1,6 +1,9 @@
 # Performance
 
 - Keep rules specific (avoid global `"*"` when possible).
+- The compiled fast-path is enabled automatically; it is always equivalent to
+  the authoritative interpreter for all combining algorithms (`deny-overrides`,
+  `permit-overrides`, `first-applicable`).  No configuration is required.
 - Cache expensive context derivations outside of Guard calls.
 - Use **smart sampling** to reduce log volume while keeping critical events (`deny`, `permit_with_obligations`).
 - Bound log record size with `max_env_bytes`; prefer `as_json=True` for cheaper formatting.
