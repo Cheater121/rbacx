@@ -54,6 +54,7 @@ nav:
       - Types: types.md
   - Policy:
       - Authoring: policy_authoring.md
+      - AI Policy Authoring: ai_policy_authoring.md
       - Policy catalog: policy_catalog.md
       - Time operators: time_operators.md
       - Policy loading (hot reload): policy_loading.md

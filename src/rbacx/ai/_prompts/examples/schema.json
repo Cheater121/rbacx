@@ -1,0 +1,183 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TaskManagerAPI",
+    "version": "1.0.0",
+    "description": "A simple multi-tenant task and project management API."
+  },
+  "paths": {
+    "/tasks": {
+      "get": {
+        "tags": ["task"],
+        "summary": "List tasks",
+        "parameters": [
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "OK"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Access denied"}
+        }
+      },
+      "post": {
+        "tags": ["task"],
+        "summary": "Create task",
+        "parameters": [
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "201": {"description": "Created"},
+          "401": {"description": "Token expired or invalid"},
+          "402": {"description": "Task limit reached"},
+          "403": {"description": "Access denied"}
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "patch": {
+        "tags": ["task"],
+        "summary": "Update task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          },
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Updated"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Wrong task owner"},
+          "404": {"description": "Task not found"}
+        }
+      },
+      "delete": {
+        "tags": ["task"],
+        "summary": "Delete task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          },
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Deleted"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Wrong task owner or insufficient role"},
+          "404": {"description": "Task not found"}
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": ["project"],
+        "summary": "List projects",
+        "parameters": [
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "OK"},
+          "401": {"description": "Token expired or invalid"}
+        }
+      },
+      "post": {
+        "tags": ["project"],
+        "summary": "Create project",
+        "parameters": [
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "201": {"description": "Created"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Access denied"}
+        }
+      }
+    },
+    "/projects/{id}": {
+      "delete": {
+        "tags": ["project"],
+        "summary": "Delete project",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          },
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Deleted"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Only admins can delete projects"},
+          "404": {"description": "Project not found"}
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["user"],
+        "summary": "Get user profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "x-jwt-token",
+            "in": "header",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "OK"},
+          "401": {"description": "Token expired or invalid"},
+          "403": {"description": "Can only read own profile"}
+        }
+      }
+    }
+  }
+}

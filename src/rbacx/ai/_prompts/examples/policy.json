@@ -1,0 +1,90 @@
+{
+  "algorithm": "deny-overrides",
+  "rules": [
+    {
+      "id": "admin_full_task_access",
+      "effect": "permit",
+      "actions": ["read", "create", "update", "delete"],
+      "resource": {"type": "task"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["admin"]]
+      }
+    },
+    {
+      "id": "admin_full_project_access",
+      "effect": "permit",
+      "actions": ["read", "create", "delete"],
+      "resource": {"type": "project"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["admin"]]
+      }
+    },
+    {
+      "id": "member_task_read_create_update",
+      "effect": "permit",
+      "actions": ["read", "create", "update"],
+      "resource": {"type": "task"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["member"]]
+      }
+    },
+    {
+      "id": "member_project_read_create",
+      "effect": "permit",
+      "actions": ["read", "create"],
+      "resource": {"type": "project"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["member"]]
+      }
+    },
+    {
+      "id": "viewer_task_read",
+      "effect": "permit",
+      "actions": ["read"],
+      "resource": {"type": "task"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["viewer"]]
+      }
+    },
+    {
+      "id": "viewer_project_read",
+      "effect": "permit",
+      "actions": ["read"],
+      "resource": {"type": "project"},
+      "condition": {
+        "hasAny": [{"attr": "subject.roles"}, ["viewer"]]
+      }
+    },
+    {
+      "id": "user_read_own_profile",
+      "effect": "permit",
+      "actions": ["read"],
+      "resource": {"type": "user"},
+      "condition": {
+        "==": [{"attr": "subject.id"}, {"attr": "resource.id"}]
+      }
+    },
+    {
+      "id": "deny_task_delete_non_admin",
+      "effect": "deny",
+      "actions": ["delete"],
+      "resource": {"type": "task"},
+      "condition": {
+        "not": {
+          "hasAny": [{"attr": "subject.roles"}, ["admin"]]
+        }
+      }
+    },
+    {
+      "id": "deny_project_delete_non_admin",
+      "effect": "deny",
+      "actions": ["delete"],
+      "resource": {"type": "project"},
+      "condition": {
+        "not": {
+          "hasAny": [{"attr": "subject.roles"}, ["admin"]]
+        }
+      }
+    }
+  ]
+}

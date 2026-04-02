@@ -21,11 +21,14 @@ Universal **RBAC/ABAC/ReBAC** policy engine for Python with a clean core, policy
 - Policy sets: combine multiple policies with the same algorithms
 - Hot reload: file/HTTP/S3 sources with ETag and a polling manager
 - Types & lint: mypy-friendly core, Ruff-ready
+- AI Policy Authoring (`rbacx[ai]`): generate, refine, and explain policies using any OpenAI-compatible LLM
 
 ## Installation
 ```bash
 pip install rbacx
 ```
+
+Optional extras include adapters, metrics, YAML support, and AI policy authoring.
 
 ## Quickstart
 ```python

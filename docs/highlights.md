@@ -52,6 +52,7 @@
 
 * **Python**: see project metadata (pyproject.toml).
 * **Frameworks**: FastAPI, Flask, Django/DRF, Starlette/Litestar (via adapters).
+* **AI providers** (`rbacx[ai]`): any OpenAI-compatible endpoint — OpenAI, OpenRouter, Ollama, Qwen, Azure OpenAI.
 
 ## Async support
 

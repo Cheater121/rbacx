@@ -28,6 +28,7 @@ RBACX is inspired by:
 - **Observability**: logging hooks and metrics sinks (Prometheus/OpenTelemetry).
 - **Optional decision caching**: pluggable cache (`AbstractCache`) per `Guard`, with in-memory LRU+TTL default. Enable via `cache` / `cache_ttl`; clear with `guard.clear_cache()`.
 - **CLI & linting**: `rbacx validate` to schema‑check, `rbacx lint` to lint, `rbacx check` to validate then lint.
+- **AI Policy Authoring** (`rbacx[ai]`): generate policies from OpenAPI schemas, refine iteratively with natural-language feedback, and explain decisions in plain English.
 - **Test coverage** around **100%** across core decision paths.
 
 ---
@@ -151,6 +152,9 @@ def docs():
 - [Benchmarks](benchmarks.md)
 - [CI](ci.md)
 - [Migration (RBAC→ABAC)](migration_rbac_to_abac.md)
+
+**AI**
+- [AI Policy Authoring](ai_policy_authoring.md)
 
 **Reference**
 - [Public API](api.md)

@@ -28,6 +28,7 @@ pip install rbacx
 | `s3`               | S3 policy source (boto3)                         | `pip install rbacx[s3]`                    |
 | `dates`            | Time operators support (python‑dateutil)         | `pip install rbacx[dates]`                 |
 | `yaml`             | YAML policies support                            | `pip install rbacx[yaml]`                  |
+| `ai`               | AI Policy Authoring System (OpenAI-compatible)   | `pip install rbacx[ai]`                    |
 
 
 You can combine extras:

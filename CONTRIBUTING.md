@@ -7,7 +7,7 @@ Thanks for your interest!
 ```bash
 python -m venv .venv && source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e .[dev,tests,docs,examples,validate]
+pip install -e .[dev,tests,docs,examples,validate,ai]
 pre-commit install
 ```
 

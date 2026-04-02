@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rbacx"
-version = "1.9.5"
+version = "1.10.0"
 description = "RBAC/ABAC policy engine for Python with policy sets, condition DSL, and hot reload"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -51,6 +51,7 @@ examples = ["uvicorn>=0.30", "fastapi>=0.110", "starlette>=0.37", "flask>=2.3", 
 validate = ["jsonschema>=4.18"]
 rebac-openfga = ["httpx>=0.25"]
 rebac-spicedb = ["authzed>=1.22", "grpcio>=1.60"]
+ai = ["openai>=1.0", "PyYAML>=6.0"]
 
 [project.scripts]
 rbacx = "rbacx.cli:main"
@@ -78,12 +79,12 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-rbacx = ["py.typed", "dsl/policy.schema.json"]
+rbacx = ["py.typed", "dsl/policy.schema.json", "ai/_prompts/**/*"]
 
 [tool.mypy]
 python_version = "3.10"
 strict = false
 
 [[tool.mypy.overrides]]
-module = ["django.*", "litestar.*", "boto3.*", "requests.*", "authzed.*", "httpx", "httpx.*"]
+module = ["django.*", "litestar.*", "boto3.*", "requests.*", "authzed.*", "httpx", "httpx.*", "openai", "openai.*"]
 ignore_missing_imports = true
