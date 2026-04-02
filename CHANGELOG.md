@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.0] — unreleased
+
+**Added**
+
+* `rbacx[ai]` — new optional extra: **AI Policy Authoring System**
+  (`openai>=1.0`, `PyYAML>=6.0`).  Install with `pip install rbacx[ai]`.
+
+* `AIPolicy` — main entry point for AI-assisted policy generation and
+  authoring.  Accepts any OpenAI-compatible provider via `api_key`, `model`,
+  and optional `base_url` (standard OpenAI, OpenRouter, Ollama, Azure, etc.).
+
+* `AIPolicy.from_schema(schema, *, context, safe_mode, compile, explain, raw)`
+  — generate a valid rbacx policy from an OpenAPI 3.x or 2.0 schema supplied
+  as a file path (JSON or YAML), raw JSON string, or pre-loaded `dict`.
+
+  Runs the `safe_mode=True` pipeline by default:
+  generate → validate (JSON Schema) → retry with fix-prompt on failure →
+  lint → optional compile → optional per-rule LLM explanation.
+
+* `AIPolicy.refine_policy(feedback, *, policy, compile)` — iteratively refine
+  a policy with natural-language feedback.  Maintains a **persistent
+  conversation history** so the model accumulates context across calls.
+  Accepts an optional `policy=` argument to reset the session to an explicit
+  starting point without a prior `from_schema` call.
+
+* `AIPolicy.explain_decision(policy, input)` — explain a specific access
+  decision.  The allow/deny outcome is evaluated **deterministically** by a
+  minimal `Guard` instance (no hallucination on the security-critical result);
+  the LLM only generates the human-readable explanation of *why*.
+
+* `PolicyResult` — frozen dataclass returned by `from_schema` and
+  `refine_policy`.  Fields: `dsl`, `warnings`, `compiled`, `explanation`,
+  `raw`.
+
+* `DecisionExplanation` — frozen dataclass returned by `explain_decision`.
+  Fields: `decision` (authoritative `Decision` from `Guard`), `human`
+  (LLM-generated plain-English explanation).
+
+* `SchemaParseError`, `ValidationRetryError`, `PolicyGenerationError` —
+  typed exceptions for the AI authoring pipeline.
+
+  * `ValidationRetryError` carries `.raw` (last LLM output) and
+    `.validation_errors` (list of jsonschema error strings) for post-mortem
+    debugging.
+  * `PolicyGenerationError` carries `.cause` for the underlying exception.
+
+* `RefinementSession` / `RefinementIteration` — internal stateful objects
+  that track multi-turn refinement history (not part of the public API but
+  accessible via `AIPolicy._session` for advanced use).
+
+* `ai/_prompts/system.md` — embedded DSL specification and few-shot example
+  (TaskManagerAPI → policy) used as the LLM system prompt.  Bundled in the
+  package distribution; loaded via `importlib.resources` at import time.
+
+* `docs/ai_policy_authoring.md` — full documentation for the AI module:
+  installation, provider setup, all three public methods with examples,
+  `safe_mode` pipeline diagram, `PolicyResult` field reference, and exception
+  handling guide.
+
 ## 1.9.5 — 2026-03-28
 
 **Fixed**

@@ -118,6 +118,12 @@ Fields returned by `Guard.evaluate*`:
 
 ---
 
+## AI Policy Authoring
+
+::: rbacx.ai
+
+---
+
 ### YAML policies
 
 All built-in policy sources accept JSON and, with the optional `rbacx[yaml]` extra, YAML.
