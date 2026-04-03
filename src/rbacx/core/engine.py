@@ -252,7 +252,12 @@ class Guard:
 
         if allowed:
             try:
-                ok, ch = await maybe_await(self.obligations.check(raw, context))
+                # Pass the full evaluation env to the checker so that obligation
+                # conditions (``condition`` field) can reference subject / resource /
+                # action / context attributes via eval_condition.
+                # We shallow-copy raw to avoid mutating the (possibly cached) object.
+                raw_for_checker: dict[str, Any] = {**raw, "__env__": env}
+                ok, ch = await maybe_await(self.obligations.check(raw_for_checker, context))
                 allowed = bool(ok)
                 if ch is not None:
                     challenge = ch

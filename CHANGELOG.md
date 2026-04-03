@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.13.0 — 2026-04-04
+
+**Added**
+
+* **Conditional obligations** — the `condition` field is now supported on
+  individual obligation objects inside a rule's `obligations` list.
+
+  When `condition` is present, the obligation is only enforced if the
+  condition evaluates to `True` against the full evaluation environment
+  (`subject`, `resource`, `action`, `context`).  All condition operators
+  supported by rule conditions (`==`, `!=`, `hasAny`, `hasAll`, `before`,
+  `after`, `rel`, …) are available.
+
+  ```json
+  {
+    "type": "require_mfa",
+    "on": "permit",
+    "condition": {"==": [{"attr": "resource.attrs.sensitivity"}, "high"]}
+  }
+  ```
+
+  **Fail-safe semantics:** if the condition raises `ConditionTypeError` or
+  `ConditionDepthError`, the obligation is skipped (not enforced).  This
+  prevents a broken condition from inadvertently blocking all access.
+
+  Obligations without a `condition` field behave exactly as before
+  (backward-compatible).
+
+  The `condition` field was already present in the JSON Schema
+  (`dsl/policy.schema.json`) but had no runtime effect — it is now
+  fully implemented.
+
 ## 1.12.1 — 2026-04-04
 
 **Fixed**

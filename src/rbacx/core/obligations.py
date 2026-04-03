@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
+from rbacx.core.policy import ConditionDepthError, ConditionTypeError, eval_condition
 from rbacx.core.ports import ObligationChecker
 
 
@@ -78,6 +79,20 @@ class BasicObligationChecker(ObligationChecker):
             on = (ob or {}).get("on") or "permit"
             if on not in ("permit", "deny") or on != current_effect:
                 continue
+
+            # Optional condition: if present, evaluate it against the full env
+            # that was attached by the engine under the "__env__" key.
+            # If the condition is False, skip this obligation entirely (no-op).
+            # On evaluation errors (type mismatch, depth exceeded) we fail-safe
+            # by skipping — an obligation with a broken condition is not enforced.
+            condition = (ob or {}).get("condition")
+            if condition is not None:
+                _env = decision.get("__env__") or {}
+                try:
+                    if not eval_condition(condition, _env):
+                        continue
+                except (ConditionTypeError, ConditionDepthError):
+                    continue
 
             typ = (ob or {}).get("type")
             attrs = (ob or {}).get("attrs") or {}

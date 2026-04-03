@@ -117,6 +117,85 @@ class CustomObligationChecker(BasicObligationChecker):
 
 Then wire your checker into the Guard (where you construct your PDP/PEP integration). The Guard should consume `(ok, challenge)` and, on failure, flip `permit → deny`, adding the `challenge` to the final `Decision`.
 
+
+## Conditional obligations
+
+An obligation may carry an optional ``condition`` field evaluated against the
+full request env before the obligation is enforced.  When the condition is
+``False`` the obligation is silently skipped; when the field is absent the
+behaviour is unchanged.
+
+```json
+{
+  "type": "require_mfa",
+  "on": "permit",
+  "condition": {"==": [{"attr": "resource.attrs.sensitivity"}, "high"]}
+}
+```
+
+The condition supports the full DSL — comparisons, collections, time operators,
+logical operators, and ``attr`` references to ``subject``, ``resource``,
+``action``, and ``context``.
+
+### Examples
+
+**MFA only for high-sensitivity resources:**
+
+```json
+{
+  "obligations": [
+    {
+      "type": "require_mfa",
+      "on": "permit",
+      "condition": {"==": [{"attr": "resource.attrs.sensitivity"}, "high"]}
+    }
+  ]
+}
+```
+
+**Step-up auth only for premium users:**
+
+```json
+{
+  "obligations": [
+    {
+      "type": "require_level",
+      "on": "permit",
+      "attrs": {"min": 2},
+      "condition": {"==": [{"attr": "subject.attrs.tier"}, "premium"]}
+    }
+  ]
+}
+```
+
+**Mixed — conditional and unconditional obligations together:**
+
+```json
+{
+  "obligations": [
+    {
+      "type": "require_mfa",
+      "on": "permit",
+      "condition": {"==": [{"attr": "resource.attrs.sensitivity"}, "high"]}
+    },
+    {
+      "type": "require_terms_accept",
+      "on": "permit"
+    }
+  ]
+}
+```
+
+MFA is required only when the resource is high-sensitivity; ToS acceptance
+is always required on permit.
+
+### Error handling
+
+If the condition raises a type error or exceeds the depth limit, the obligation
+is **skipped** (fail-safe).  A broken condition never causes the obligation to
+fire unexpectedly.
+
+---
 ## Context contract (quick reference)
 
 The checker reads the following `context.attrs[...]` keys when relevant:
@@ -129,6 +208,74 @@ The checker reads the following `context.attrs[...]` keys when relevant:
 * `reauth_age_seconds: int`
 * `age_verified: bool`
 * `geo: str` (custom example)
+
+
+## Conditional obligations
+
+An obligation can carry an optional `condition` field.  The obligation is
+enforced **only when the condition evaluates to `True`** against the full
+evaluation environment (`subject`, `resource`, `action`, `context`).
+All operators available in rule conditions are supported.
+
+### Example — MFA only for sensitive resources
+
+```json
+{
+  "rules": [
+    {
+      "id": "doc-read",
+      "effect": "permit",
+      "actions": ["read"],
+      "resource": {"type": "doc"},
+      "obligations": [
+        {
+          "type": "require_mfa",
+          "on": "permit",
+          "condition": {"==": [{"attr": "resource.attrs.sensitivity"}, "high"]}
+        }
+      ]
+    }
+  ]
+}
+```
+
+With this policy, MFA is required only when `resource.attrs.sensitivity == "high"`.
+Requests for low-sensitivity documents are permitted without MFA.
+
+### Example — step-up auth for premium users
+
+```json
+{
+  "type": "require_level",
+  "on": "permit",
+  "attrs": {"min": 2},
+  "condition": {"==": [{"attr": "subject.attrs.tier"}, "premium"]}
+}
+```
+
+### Condition namespace
+
+Inside an obligation condition, the same attribute paths available in rule
+conditions are accessible:
+
+| Path | Description |
+|---|---|
+| `subject.id` | Subject identifier |
+| `subject.roles` | Subject role list |
+| `subject.attrs.*` | Subject attributes |
+| `resource.type` | Resource type |
+| `resource.id` | Resource identifier |
+| `resource.attrs.*` | Resource attributes |
+| `context.*` | Context attributes |
+
+### Fail-safe behaviour
+
+If a condition raises a type error (`ConditionTypeError`) or exceeds the
+nesting depth limit (`ConditionDepthError`), the obligation is **skipped**
+— not enforced.  This prevents a broken condition from inadvertently
+blocking all access.
+
+Obligations without a `condition` field behave exactly as before.
 
 ## Notes & best practices
 
