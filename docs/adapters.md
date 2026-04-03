@@ -47,6 +47,29 @@ guard = Guard(
 
 Rule of thumb: if your handler is already `async` or runs on an event loop, use the async call; otherwise use the sync call.
 
+### Batch evaluation
+
+When you need to check multiple actions for the same request context at once (e.g., building a UI that shows which buttons are enabled), use the batch variants instead of calling `evaluate_*` in a loop:
+
+* Use **`guard.evaluate_batch_sync([...])`** in synchronous contexts.
+* Use **`await guard.evaluate_batch_async([...])`** in async contexts.
+
+```python
+# Instead of N sequential calls:
+can_read   = guard.evaluate_sync(subject, Action("read"),   resource, ctx)
+can_write  = guard.evaluate_sync(subject, Action("write"),  resource, ctx)
+can_delete = guard.evaluate_sync(subject, Action("delete"), resource, ctx)
+
+# Use one batch call (requests run concurrently):
+read, write, delete = guard.evaluate_batch_sync([
+    (subject, Action("read"),   resource, ctx),
+    (subject, Action("write"),  resource, ctx),
+    (subject, Action("delete"), resource, ctx),
+])
+```
+
+Results are returned in the same order as the input. All DI hooks (metrics, logger, cache, obligations) apply per request exactly as with the single-request methods.
+
 ---
 
 ## The 3 steps to implement your adapter

@@ -42,6 +42,8 @@ RBACX brings together role-based, attribute-based, and **relationship-based** ac
 
 * **Optional decision cache** to reduce latency on repeat checks, with safe invalidation on policy change.
 
+* **Batch evaluation** — `evaluate_batch_async` / `evaluate_batch_sync` let you check multiple actions for a user in one call. Requests run concurrently, so populating a UI (e.g., "which buttons are enabled?") costs one round-trip instead of N sequential checks.
+
 ---
 
 ## Verdict

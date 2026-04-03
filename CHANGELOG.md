@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.11.0 — 2026-04-03
+
+**Added**
+
+* **Batch evaluation** — `Guard.evaluate_batch_async` and `Guard.evaluate_batch_sync`.
+
+  Evaluates a sequence of `(Subject, Action, Resource, Context | None)` tuples
+  in a single call and returns `list[Decision]` in the same order.  Requests
+  run concurrently via `asyncio.gather`, so wall-clock time grows with the
+  slowest individual request rather than the total count.
+
+  ```python
+  decisions = await guard.evaluate_batch_async([
+      (subject, Action("read"),   resource, ctx),
+      (subject, Action("write"),  resource, ctx),
+      (subject, Action("delete"), resource, ctx),
+  ])
+  # -> list[Decision], one per tuple, order preserved
+  ```
+
+  All DI hooks (metrics, logger, obligation checker, role resolver, cache) are
+  invoked per request, exactly as with `evaluate_async` / `evaluate_sync`.
+
+  `evaluate_batch_sync` follows the same running-loop strategy as
+  `evaluate_sync`: uses `asyncio.run()` directly when no loop is active, and
+  delegates to the class-level `ThreadPoolExecutor` otherwise.
+
 ## 1.10.0 — 2026-04-02
 
 **Added**

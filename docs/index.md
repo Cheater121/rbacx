@@ -22,6 +22,7 @@ RBACX is inspired by:
 - **Secure defaults**: `deny-overrides` by default; also `permit-overrides`, `first-applicable`.
 - **Role hierarchy** via resolvers (`StaticRoleResolver` and custom implementations).
 - **Explainable decisions** (`allowed`, `effect`, `reason`, `rule_id`) and **obligations** (e.g., require MFA).
+- **Batch evaluation** (`evaluate_batch_async` / `evaluate_batch_sync`): evaluate multiple requests concurrently in a single call, results in input order — ideal for populating UIs that need to know which actions are available for a user.
 - **ReBAC providers**: optional integrations for **OpenFGA** and **SpiceDB/Authzed**.
 - **Hot reload** from file/HTTP/S3 using ETag checks.
 - **Adapters** for FastAPI/Starlette, Flask, Django/DRF, Litestar.

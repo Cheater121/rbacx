@@ -57,4 +57,5 @@
 ## Async support
 
 * `Guard` provides both `evaluate_sync(...)` and `evaluate_async(...)`. Injected ports (resolver, obligations, metrics, logger) can be synchronous **or** asynchronous; both forms are supported.
+* `Guard` provides **`evaluate_batch_sync(...)`** and **`evaluate_batch_async(...)`** for evaluating multiple requests in a single call — results are returned in the same order as the input. Requests run concurrently via `asyncio.gather`, making it efficient for UI scenarios that need to know which actions are permitted for a given user.
 * `HotReloader` provides `check_and_reload(...)` (sync) and `check_and_reload_async(...)` (async) and accepts `PolicySource` implementations with sync or async `load()`/`etag()`.
