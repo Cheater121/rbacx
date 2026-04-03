@@ -104,6 +104,66 @@
 
 ---
 
+## Batch evaluation
+
+`Guard` exposes two methods for evaluating multiple access requests in a single
+call — useful for populating UIs that need to know which buttons/tabs/actions
+to show for a given user.
+
+```python
+from rbacx import Guard, Subject, Action, Resource, Context
+
+guard = Guard(policy)
+subject = Subject(id="u1", roles=["editor"])
+resource = Resource(type="document", id="doc-42")
+ctx = Context(attrs={"mfa": True})
+
+# Async (preferred in ASGI applications)
+decisions = await guard.evaluate_batch_async([
+    (subject, Action("read"),   resource, ctx),
+    (subject, Action("write"),  resource, ctx),
+    (subject, Action("delete"), resource, ctx),
+])
+
+# Sync (works everywhere, including inside a running event loop)
+decisions = guard.evaluate_batch_sync([
+    (subject, Action("read"),   resource, ctx),
+    (subject, Action("write"),  resource, ctx),
+    (subject, Action("delete"), resource, ctx),
+])
+
+for action_name, decision in zip(["read", "write", "delete"], decisions):
+    print(action_name, "→", "allow" if decision.allowed else "deny")
+```
+
+**Signature**
+
+```python
+async def evaluate_batch_async(
+    self,
+    requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+) -> list[Decision]: ...
+
+def evaluate_batch_sync(
+    self,
+    requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+) -> list[Decision]: ...
+```
+
+**Guarantees**
+
+* Results are returned in the **same order** as the input sequence.
+* Requests are evaluated **concurrently** via `asyncio.gather` — wall-clock
+  time grows with the slowest single request rather than the total count.
+* An **empty** input list returns `[]` immediately without any evaluation.
+* `Context` may be `None` for any individual request.
+* All DI hooks (metrics, logger, obligation checker, role resolver, cache) are
+  invoked **per request**, exactly as with `evaluate_async` / `evaluate_sync`.
+* If any individual request raises an exception the entire batch propagates
+  that exception (**fail-fast** semantics, consistent with `asyncio.gather`).
+
+---
+
 ## Decision object
 
 Fields returned by `Guard.evaluate*`:

@@ -4,7 +4,7 @@ import inspect
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar
 
@@ -355,6 +355,82 @@ class Guard:
     ) -> Decision:
         """True async API for ASGI frameworks."""
         return await self._evaluate_core_async(subject, action, resource, context)
+
+    # ---------------------------------------------------------------- batch APIs
+
+    async def evaluate_batch_async(
+        self,
+        requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+    ) -> list[Decision]:
+        """Evaluate multiple access requests concurrently, preserving order.
+
+        Runs all requests in parallel via :func:`asyncio.gather`.  The
+        returned list has exactly one :class:`Decision` per input tuple, in
+        the same order.  If any individual evaluation raises an exception the
+        whole batch propagates that exception (fail-fast semantics).
+
+        Args:
+            requests: sequence of ``(subject, action, resource, context)``
+                tuples.  *context* may be ``None``.
+
+        Returns:
+            List of :class:`Decision` objects, one per request, preserving
+            input order.
+
+        Example::
+
+            decisions = await guard.evaluate_batch_async([
+                (subject, Action("read"),   resource1, ctx),
+                (subject, Action("write"),  resource1, ctx),
+                (subject, Action("delete"), resource2, None),
+            ])
+        """
+        if not requests:
+            return []
+        return list(
+            await asyncio.gather(
+                *[self._evaluate_core_async(s, a, r, c) for s, a, r, c in requests]
+            )
+        )
+
+    def evaluate_batch_sync(
+        self,
+        requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+    ) -> list[Decision]:
+        """Synchronous wrapper for :meth:`evaluate_batch_async`.
+
+        Uses the same loop-detection strategy as :meth:`evaluate_sync`: runs
+        directly via :func:`asyncio.run` when no event loop is active, or
+        submits to the class-level :class:`~concurrent.futures.ThreadPoolExecutor`
+        when called from within a running loop.
+
+        Args:
+            requests: sequence of ``(subject, action, resource, context)``
+                tuples.  *context* may be ``None``.
+
+        Returns:
+            List of :class:`Decision` objects, one per request, preserving
+            input order.
+        """
+        if not requests:
+            return []
+
+        try:
+            asyncio.get_running_loop()
+            loop_running = True
+        except RuntimeError:
+            loop_running = False
+
+        if not loop_running:
+            return asyncio.run(self.evaluate_batch_async(requests))
+
+        def _runner() -> list[Decision]:
+            return asyncio.run(self.evaluate_batch_async(requests))
+
+        if Guard._executor is None:
+            Guard._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rbacx-sync")
+        fut = Guard._executor.submit(_runner)
+        return fut.result()
 
     # convenience
 
