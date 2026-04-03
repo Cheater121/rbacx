@@ -429,6 +429,10 @@ def evaluate(
     deny_rule_id: str | None = None
     permit_obligations: list[dict[str, Any]] = []
 
+    # Trace: only allocate when explain mode is active (zero cost otherwise).
+    collect_trace: bool = bool(env.get("__explain__"))
+    trace: list[dict[str, Any]] | None = [] if collect_trace else None
+
     rules = policy.get("rules") or []
     if not isinstance(rules, list):
         return {
@@ -437,16 +441,37 @@ def evaluate(
             "rule_id": last_rule_id,
             "last_rule_id": last_rule_id,
             "obligations": obligations,
+            "trace": trace,
         }
 
     for rule in rules:
         rid = rule.get("id") or ""
+        rule_effect: Effect = (rule.get("effect") or "permit").lower()
+
         if not match_actions(rule, env.get("action") or ""):
             reason = "action_mismatch"
+            if collect_trace:
+                trace.append(  # type: ignore[union-attr]
+                    {
+                        "rule_id": rid,
+                        "effect": rule_effect,
+                        "matched": False,
+                        "skip_reason": "action_mismatch",
+                    }
+                )
             continue
         rdef = rule.get("resource") or {}
         if not match_resource(rdef, env.get("resource") or {}, strict=_is_strict(env)):
             reason = "resource_mismatch"
+            if collect_trace:
+                trace.append(  # type: ignore[union-attr]
+                    {
+                        "rule_id": rid,
+                        "effect": rule_effect,
+                        "matched": False,
+                        "skip_reason": "resource_mismatch",
+                    }
+                )
             continue
 
         cond = rule.get("condition")
@@ -454,6 +479,15 @@ def evaluate(
             try:
                 if not eval_condition(cond, env):
                     reason = "condition_mismatch"
+                    if collect_trace:
+                        trace.append(  # type: ignore[union-attr]
+                            {
+                                "rule_id": rid,
+                                "effect": rule_effect,
+                                "matched": False,
+                                "skip_reason": "condition_mismatch",
+                            }
+                        )
                     continue
             except ConditionDepthError:
                 logger.warning(
@@ -462,22 +496,45 @@ def evaluate(
                     rid,
                 )
                 reason = "condition_depth_exceeded"
+                if collect_trace:
+                    trace.append(  # type: ignore[union-attr]
+                        {
+                            "rule_id": rid,
+                            "effect": rule_effect,
+                            "matched": False,
+                            "skip_reason": "condition_depth_exceeded",
+                        }
+                    )
                 continue
             except ConditionTypeError:
                 reason = "condition_type_mismatch"
+                if collect_trace:
+                    trace.append(  # type: ignore[union-attr]
+                        {
+                            "rule_id": rid,
+                            "effect": rule_effect,
+                            "matched": False,
+                            "skip_reason": "condition_type_mismatch",
+                        }
+                    )
                 continue
 
-        effect: Effect = (rule.get("effect") or "permit").lower()
+        # Rule matched — record before any break/continue.
+        if collect_trace:
+            trace.append(  # type: ignore[union-attr]
+                {"rule_id": rid, "effect": rule_effect, "matched": True, "skip_reason": None}
+            )
+
         rule_obl = rule.get("obligations") or []
         last_rule_id = rid
 
         if algo == "first-applicable":
-            decision = effect
+            decision = rule_effect
             obligations = list(rule_obl) if isinstance(rule_obl, list) else []
-            reason = "explicit_deny" if effect == "deny" else "matched"
+            reason = "explicit_deny" if rule_effect == "deny" else "matched"
             break
 
-        if effect == "deny":
+        if rule_effect == "deny":
             any_deny = True
             deny_rule_id = rid
             if algo == "deny-overrides":
@@ -536,6 +593,7 @@ def evaluate(
         "rule_id": last_rule_id,
         "last_rule_id": last_rule_id,
         "obligations": obligations,
+        "trace": trace,
     }
 
 

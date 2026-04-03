@@ -104,6 +104,64 @@
 
 ---
 
+## Decision explanation / trace
+
+Pass `explain=True` to any evaluation method to get a per-rule evaluation log
+attached to the returned `Decision`.
+
+```python
+d = guard.evaluate_sync(subject, action, resource, context, explain=True)
+
+for entry in d.trace:
+    status = "matched" if entry.matched else f"skipped ({entry.skip_reason})"
+    print(f"  rule {entry.rule_id!r} [{entry.effect}] → {status}")
+```
+
+When `explain=False` (the default) `Decision.trace` is `None` — there is no
+overhead on the hot path.
+
+**`RuleTrace` fields**
+
+| Field | Type | Description |
+|---|---|---|
+| `rule_id` | `str` | The `id` field of the rule as declared in the policy |
+| `effect` | `str` | Declared effect: `"permit"` or `"deny"` |
+| `matched` | `bool` | `True` when the rule fully matched; `False` when skipped |
+| `skip_reason` | `str \| None` | Why the rule was skipped, or `None` when `matched=True` |
+
+Possible `skip_reason` values: `"action_mismatch"`, `"resource_mismatch"`,
+`"condition_mismatch"`, `"condition_type_mismatch"`, `"condition_depth_exceeded"`.
+
+**Algorithm-specific trace behaviour**
+
+* `deny-overrides` — trace includes every rule up to and including the first
+  matching deny (the loop breaks there).  When only permits fire, all rules
+  are present.
+* `permit-overrides` — trace up to and including the first matching permit.
+* `first-applicable` — trace up to and including the first match; subsequent
+  rules are absent.
+* No match — every rule appears in the trace with `matched=False`.
+
+`explain=True` is supported on all four evaluation methods:
+
+```python
+# Single request
+d = guard.evaluate_sync(..., explain=True)
+d = await guard.evaluate_async(..., explain=True)
+
+# Batch — explain applies to every request in the batch
+decisions = guard.evaluate_batch_sync([...], explain=True)
+decisions = await guard.evaluate_batch_async([...], explain=True)
+```
+
+`RuleTrace` is importable directly from the root package:
+
+```python
+from rbacx import RuleTrace
+```
+
+---
+
 ## Batch evaluation
 
 `Guard` exposes two methods for evaluating multiple access requests in a single
@@ -142,11 +200,15 @@ for action_name, decision in zip(["read", "write", "delete"], decisions):
 async def evaluate_batch_async(
     self,
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+    *,
+    explain: bool = False,
 ) -> list[Decision]: ...
 
 def evaluate_batch_sync(
     self,
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+    *,
+    explain: bool = False,
 ) -> list[Decision]: ...
 ```
 
@@ -175,6 +237,7 @@ Fields returned by `Guard.evaluate*`:
 * `rule_id: Optional[str]`
 * `policy_id: Optional[str]`
 * `reason: Optional[str]`
+* `trace: Optional[List[RuleTrace]]` — populated when `explain=True`; `None` by default
 
 ---
 

@@ -32,7 +32,7 @@
 
 ## Observability & Tooling
 
-* **Decision Introspection**: Decision objects expose fields such as `allowed`, `effect`, `reason`, `rule_id`, enabling audit and explainability.
+* **Decision Introspection**: Decision objects expose fields such as `allowed`, `effect`, `reason`, `rule_id`, enabling audit and explainability.  Pass `explain=True` to any evaluation method to also receive `Decision.trace: list[RuleTrace]` — a per-rule log of what matched and why each rule was skipped.  `trace` is `None` by default (zero overhead on the hot path).
 * **Metrics & Logging**: Sinks for Prometheus / OpenTelemetry and structured logging are pluggable via ports.
 * **Linting**: Policy linter/CLI to validate policy consistency before/at runtime.
 

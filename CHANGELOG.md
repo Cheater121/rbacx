@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.12.0 — 2026-04-03
+
+**Added**
+
+* **Decision explanation / full trace** — `explain=True` parameter on all
+  evaluation methods populates `Decision.trace: list[RuleTrace] | None`.
+
+  `RuleTrace` fields:
+  - `rule_id: str` — the rule's `id` as declared in the policy
+  - `effect: str` — `"permit"` or `"deny"`
+  - `matched: bool` — `True` when all checks passed; `False` when skipped
+  - `skip_reason: str | None` — why the rule was skipped, or `None` when
+    `matched=True`.  Possible values: `"action_mismatch"`,
+    `"resource_mismatch"`, `"condition_mismatch"`,
+    `"condition_type_mismatch"`, `"condition_depth_exceeded"`
+
+  When `explain=False` (default) `Decision.trace` is `None` — zero
+  allocation overhead on the hot path.
+
+  All four evaluation methods accept `explain`:
+
+  ```python
+  d = guard.evaluate_sync(..., explain=True)
+  d = await guard.evaluate_async(..., explain=True)
+  decisions = guard.evaluate_batch_sync([...], explain=True)
+  decisions = await guard.evaluate_batch_async([...], explain=True)
+  ```
+
+  `RuleTrace` is importable from the root package:
+
+  ```python
+  from rbacx import RuleTrace
+  ```
+
+  **Algorithm-specific behaviour:**
+  - `deny-overrides`: trace includes every rule up to and including the
+    first matching deny (loop breaks there); all-permit scans include
+    the full rule list.
+  - `permit-overrides`: trace up to and including the first matching
+    permit.
+  - `first-applicable`: trace up to and including the first match.
+  - When no rule matches, all rules appear with `matched=False`.
+
 ## 1.11.0 — 2026-04-03
 
 **Added**

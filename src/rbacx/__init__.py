@@ -5,7 +5,7 @@ except Exception:  # pragma: no cover
     PackageNotFoundError = Exception  # type: ignore
 
 # Public, convenient imports
-from .core.decision import Decision
+from .core.decision import Decision, RuleTrace
 from .core.engine import Guard
 from .core.model import Action, Context, Resource, Subject
 from .policy.loader import HotReloader, load_policy
@@ -17,6 +17,7 @@ __all__ = [
     "Resource",
     "Context",
     "Decision",
+    "RuleTrace",
     "HotReloader",
     "load_policy",
     "core",

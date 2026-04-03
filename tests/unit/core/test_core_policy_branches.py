@@ -345,7 +345,7 @@ def test_eval_condition_bool_and_default_false_and_return_shape():
     # Ensure the final result dict shape (covers final return ~265)
     pol = {"rules": [{"id": "p1", "actions": ["*"], "resource": {}, "effect": "permit"}]}
     out = evaluate(pol, {"action": "anything", "resource": {}})
-    keys = {"decision", "reason", "rule_id", "last_rule_id", "obligations"}
+    keys = {"decision", "reason", "rule_id", "last_rule_id", "obligations", "trace"}
     assert set(out.keys()) == keys
 
 

@@ -206,7 +206,7 @@ changed = await reloader.check_and_reload_async()
 ## Deprecated API
 
 - `ReloadingPolicyManager` is **deprecated** and kept only for compatibility. Constructing it emits a `DeprecationWarning` and a log warning; it delegates to `HotReloader` with legacy semantics (`initial_load=False`). Please migrate to `HotReloader`.
-- `PolicyManager` from `rbacx.store.manager` is **deprecated**; use `HotReloader` (plus a `PolicySource` such as `FilePolicySource`) instead.
+- `PolicyManager` from `rbacx.store.manager` has been **removed** (raises `ImportError` on import). Use `HotReloader` (plus a `PolicySource` such as `FilePolicySource`) instead.
 
 ---
 

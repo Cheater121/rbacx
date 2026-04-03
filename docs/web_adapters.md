@@ -1,6 +1,6 @@
 # Web framework adapters
 
-RBACX ships simple adapters for popular frameworks. for popular Python web frameworks.
+RBACX ships simple adapters for popular Python web frameworks.
 They all follow the same conventions:
 
 - **EnvBuilder** builds `(Subject, Action, Resource, Context)` from the framework request/scope.
