@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar
 
 from .cache import AbstractCache
-from .decision import Decision
+from .decision import Decision, RuleTrace
 from .helpers import maybe_await
 from .model import Action, Context, Resource, Subject
 from .obligations import BasicObligationChecker
@@ -135,17 +135,24 @@ class Guard:
         """
         Async decision that keeps the event loop responsive:
         compiled/policy/policyset functions are sync -> offload via to_thread.
+
+        When ``__explain__`` is set in *env* the compiled fast-path is skipped:
+        the compiler pre-filters rules by action/resource-type before handing
+        them to the interpreter, so action- or resource-mismatched rules would
+        never be seen and could not appear in the trace.  The uncompiled path
+        passes *all* rules to ``evaluate_policy`` which records every skip.
         """
         fn = self._compiled
         loop = asyncio.get_running_loop()
         token = EVAL_LOOP.set(loop)
         try:
-            # compiled (if available)
-            try:
-                if fn is not None:
+            # compiled fast-path — bypassed when explain mode is active so that
+            # every rule (including skipped ones) appears in Decision.trace.
+            if fn is not None and not env.get("__explain__"):
+                try:
                     return await asyncio.to_thread(fn, env)
-            except Exception:  # pragma: no cover
-                logger.exception("RBACX: compiled decision failed; falling back")
+                except Exception:  # pragma: no cover
+                    logger.exception("RBACX: compiled decision failed; falling back")
 
             # policyset vs single policy
             if "policies" in self.policy:
@@ -163,6 +170,8 @@ class Guard:
         action: Action,
         resource: Resource,
         context: Context | None,
+        *,
+        explain: bool = False,
     ) -> Decision:
         start = _now()
 
@@ -186,6 +195,9 @@ class Guard:
 
         if self.strict_types:
             env["__strict_types__"] = True
+
+        if explain:
+            env["__explain__"] = True
 
         raw = None
         cache = getattr(self, "cache", None)
@@ -241,6 +253,21 @@ class Guard:
                 # do not fail on obligation checker errors
                 logger.exception("RBACX: obligation checker failed", exc_info=True)
 
+        # Build trace: convert raw dicts to RuleTrace objects when present.
+        raw_trace = raw.get("trace")
+        trace: list[RuleTrace] | None = None
+        if isinstance(raw_trace, list):
+            trace = [
+                RuleTrace(
+                    rule_id=str(t.get("rule_id") or ""),
+                    effect=str(t.get("effect") or "deny"),
+                    matched=bool(t.get("matched")),
+                    skip_reason=t.get("skip_reason") or None,
+                )
+                for t in raw_trace
+                if isinstance(t, dict)
+            ]
+
         d = Decision(
             allowed=allowed,
             effect=effect,
@@ -249,6 +276,7 @@ class Guard:
             rule_id=raw.get("last_rule_id") or raw.get("rule_id"),
             policy_id=raw.get("policy_id"),
             reason=reason,
+            trace=trace,
         )
 
         # metrics (do not use return values; conditionally await)
@@ -318,6 +346,8 @@ class Guard:
         action: Action,
         resource: Resource,
         context: Context | None = None,
+        *,
+        explain: bool = False,
     ) -> Decision:
         """Synchronous wrapper for the async core.
 
@@ -327,6 +357,10 @@ class Guard:
           worker thread gets its own event loop via asyncio.run().  The
           executor is created lazily and reused across calls to avoid the
           overhead of spawning a new thread pool on every invocation.
+
+        Args:
+            explain: when ``True``, populate :attr:`Decision.trace` with a
+                per-rule evaluation log.  Has no effect on the decision itself.
         """
         try:
             asyncio.get_running_loop()
@@ -335,11 +369,15 @@ class Guard:
             loop_running = False
 
         if not loop_running:
-            return asyncio.run(self._evaluate_core_async(subject, action, resource, context))
+            return asyncio.run(
+                self._evaluate_core_async(subject, action, resource, context, explain=explain)
+            )
 
         # Avoid interacting with the already running loop from sync code.
         def _runner() -> Decision:
-            return asyncio.run(self._evaluate_core_async(subject, action, resource, context))
+            return asyncio.run(
+                self._evaluate_core_async(subject, action, resource, context, explain=explain)
+            )
 
         if Guard._executor is None:
             Guard._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rbacx-sync")
@@ -352,15 +390,24 @@ class Guard:
         action: Action,
         resource: Resource,
         context: Context | None = None,
+        *,
+        explain: bool = False,
     ) -> Decision:
-        """True async API for ASGI frameworks."""
-        return await self._evaluate_core_async(subject, action, resource, context)
+        """True async API for ASGI frameworks.
+
+        Args:
+            explain: when ``True``, populate :attr:`Decision.trace` with a
+                per-rule evaluation log.  Has no effect on the decision itself.
+        """
+        return await self._evaluate_core_async(subject, action, resource, context, explain=explain)
 
     # ---------------------------------------------------------------- batch APIs
 
     async def evaluate_batch_async(
         self,
         requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+        *,
+        explain: bool = False,
     ) -> list[Decision]:
         """Evaluate multiple access requests concurrently, preserving order.
 
@@ -372,6 +419,8 @@ class Guard:
         Args:
             requests: sequence of ``(subject, action, resource, context)``
                 tuples.  *context* may be ``None``.
+            explain: when ``True``, populate :attr:`Decision.trace` on every
+                returned :class:`Decision`.
 
         Returns:
             List of :class:`Decision` objects, one per request, preserving
@@ -389,13 +438,15 @@ class Guard:
             return []
         return list(
             await asyncio.gather(
-                *[self._evaluate_core_async(s, a, r, c) for s, a, r, c in requests]
+                *[self._evaluate_core_async(s, a, r, c, explain=explain) for s, a, r, c in requests]
             )
         )
 
     def evaluate_batch_sync(
         self,
         requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
+        *,
+        explain: bool = False,
     ) -> list[Decision]:
         """Synchronous wrapper for :meth:`evaluate_batch_async`.
 
@@ -407,6 +458,8 @@ class Guard:
         Args:
             requests: sequence of ``(subject, action, resource, context)``
                 tuples.  *context* may be ``None``.
+            explain: when ``True``, populate :attr:`Decision.trace` on every
+                returned :class:`Decision`.
 
         Returns:
             List of :class:`Decision` objects, one per request, preserving
@@ -422,10 +475,10 @@ class Guard:
             loop_running = False
 
         if not loop_running:
-            return asyncio.run(self.evaluate_batch_async(requests))
+            return asyncio.run(self.evaluate_batch_async(requests, explain=explain))
 
         def _runner() -> list[Decision]:
-            return asyncio.run(self.evaluate_batch_async(requests))
+            return asyncio.run(self.evaluate_batch_async(requests, explain=explain))
 
         if Guard._executor is None:
             Guard._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rbacx-sync")

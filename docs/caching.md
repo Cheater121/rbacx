@@ -91,6 +91,7 @@ A custom cache must conform to the `AbstractCache` protocol. Below is a descript
 - **Stampede mitigation.** For “hot” keys, consider small TTL jitter or a “serve stale then revalidate” approach to avoid synchronized expirations.
 - **Optional observability.** If feasible, expose simple hit/miss and size indicators to tune TTL and capacity.
 - **Strict mode.** With `strict_types=True`, the engine injects `__strict_types__` into the env, so cache keys differ from lax mode. See [Types](types.md).
+- **Explain mode.** With `explain=True`, the engine injects `__explain__` into the env, so cache keys for traced evaluations differ from non-traced ones.  A cached non-traced result will not be served for a traced request and vice versa, ensuring `Decision.trace` is always consistent with the flags passed.
 
 ---
 

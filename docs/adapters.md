@@ -175,7 +175,7 @@ result = {"ok": True} if decision.allowed else {"ok": False, "error": "Forbidden
 
 ## Decision shape (what you can use)
 
-`Decision` exposes: `allowed`, `effect`, `reason`, `rule_id`, `policy_id`, `obligations`, `challenge`. Keep reasons/ids disabled by default; surface them only in explicit diagnostic/audit modes.
+`Decision` exposes: `allowed`, `effect`, `reason`, `rule_id`, `policy_id`, `obligations`, `challenge`, and `trace` (populated when `explain=True`; `None` by default). Keep reasons/ids/trace disabled by default; surface them only in explicit diagnostic/audit modes.
 
 ---
 

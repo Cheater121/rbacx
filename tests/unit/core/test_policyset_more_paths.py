@@ -91,6 +91,7 @@ def test_decide_policies_not_a_list_returns_no_match():
         "last_rule_id": None,
         "policy_id": None,
         "obligations": [],
+        "trace": None,
     }
 
 
@@ -154,6 +155,7 @@ def test_decide_else_continue_then_final_no_match_with_last_rule_id(monkeypatch)
         "last_rule_id": "rx",
         "policy_id": None,
         "obligations": [],
+        "trace": None,
     }
 
 
@@ -193,6 +195,7 @@ def test_deny_overrides_breaks_on_first_deny(monkeypatch):
         "last_rule_id": "r1",
         "policy_id": "p1",
         "obligations": ["o1"],
+        "trace": None,
     }
 
 
@@ -235,3 +238,41 @@ def test_permit_overrides_two_denies_then_permit_no_break(monkeypatch):
     assert out["policy_id"] == "p3"
     assert out.get("rule_id") == "rp" or out.get("last_rule_id") == "rp"
     assert out.get("obligations") == ["op"]
+
+
+# --- _merge_traces: child result has trace=None (not a list) ---
+def test_merge_traces_child_trace_not_list_is_skipped(monkeypatch):
+    """When explain=True but a child policy returns trace=None (not a list),
+    _merge_traces must skip the extend() branch (line 31 → 33 directly)
+    without raising and leave the accumulated trace unchanged.
+
+    This exercises the False-branch of ``if isinstance(child_trace, list)``
+    in _merge_traces — the coverage gap at policyset.py line 31→33.
+    """
+    import rbacx.core.policyset as _ps
+
+    def fake_eval_no_trace(policy, env):
+        # Simulate a child policy that returns a result without a list trace
+        # (e.g. compiled path, or any source that sets trace=None).
+        return {
+            "decision": "permit",
+            "rule_id": "r-stub",
+            "last_rule_id": "r-stub",
+            "obligations": [],
+            "trace": None,  # not a list → _merge_traces must not call extend()
+        }
+
+    monkeypatch.setattr(_ps, "evaluate_policy", fake_eval_no_trace, raising=True)
+
+    out = _ps.decide(
+        {
+            "algorithm": "deny-overrides",
+            "policies": [{"id": "p1"}],
+        },
+        env={"__explain__": True},  # activate trace collection
+    )
+
+    # Decision is correct
+    assert out["decision"] == "permit"
+    # Trace is an empty list — child's None was not extended into it
+    assert out["trace"] == []

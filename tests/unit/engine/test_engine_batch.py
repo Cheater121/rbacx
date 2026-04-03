@@ -460,9 +460,9 @@ async def test_batch_async_requests_run_concurrently():
     original_core = Guard._evaluate_core_async
     sleep_sec = 0.05
 
-    async def _slow_core(self, subject, action, resource, context):
+    async def _slow_core(self, subject, action, resource, context, *, explain=False):
         await asyncio.sleep(sleep_sec)
-        return await original_core(self, subject, action, resource, context)
+        return await original_core(self, subject, action, resource, context, explain=explain)
 
     Guard._evaluate_core_async = _slow_core  # type: ignore[method-assign]
     try:

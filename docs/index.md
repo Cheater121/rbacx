@@ -21,7 +21,7 @@ RBACX is inspired by:
 - **Declarative policies** (JSON/YAML or Python dict) with compact operators, including time operators and `rel` condition for relationship checks.
 - **Secure defaults**: `deny-overrides` by default; also `permit-overrides`, `first-applicable`.
 - **Role hierarchy** via resolvers (`StaticRoleResolver` and custom implementations).
-- **Explainable decisions** (`allowed`, `effect`, `reason`, `rule_id`) and **obligations** (e.g., require MFA).
+- **Explainable decisions** (`allowed`, `effect`, `reason`, `rule_id`) and **obligations** (e.g., require MFA).  Pass `explain=True` to get `Decision.trace: list[RuleTrace]` — a per-rule log showing which rules matched and why others were skipped.
 - **Batch evaluation** (`evaluate_batch_async` / `evaluate_batch_sync`): evaluate multiple requests concurrently in a single call, results in input order — ideal for populating UIs that need to know which actions are available for a user.
 - **ReBAC providers**: optional integrations for **OpenFGA** and **SpiceDB/Authzed**.
 - **Hot reload** from file/HTTP/S3 using ETag checks.

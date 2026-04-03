@@ -16,10 +16,32 @@ def _is_applicable(result: dict[str, Any]) -> bool:
     return isinstance(rid, str) and rid != ""
 
 
+def _merge_traces(
+    existing: list[dict[str, Any]] | None,
+    result: dict[str, Any],
+) -> list[dict[str, Any]] | None:
+    """Append trace entries from *result* into *existing*, return updated list.
+
+    Returns ``None`` when trace collection is inactive (existing is None).
+    Entries from *result* that are already plain dicts are appended as-is.
+    """
+    if existing is None:
+        return None
+    child_trace = result.get("trace")
+    if isinstance(child_trace, list):
+        existing.extend(child_trace)
+    return existing
+
+
 def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
     """Evaluate a policy set with combining algorithm over its child policies."""
     algo = (policyset.get("algorithm") or "deny-overrides").lower()
     policies = policyset.get("policies") or []
+
+    # Trace: only allocate when explain mode is active.
+    collect_trace: bool = bool(env.get("__explain__"))
+    trace: list[dict[str, Any]] | None = [] if collect_trace else None
+
     if not isinstance(policies, list):
         return {
             "decision": "deny",
@@ -28,6 +50,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
             "last_rule_id": None,
             "policy_id": None,
             "obligations": [],
+            "trace": trace,
         }
 
     any_permit: bool = False
@@ -47,6 +70,9 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
     for pol in policies:
         pid = pol.get("id")
         res = _decide_single(pol, env)
+
+        # Accumulate trace from this child policy regardless of applicability.
+        trace = _merge_traces(trace, res)
 
         rid = res.get("last_rule_id") or res.get("rule_id")
         if isinstance(rid, str) and rid:
@@ -82,6 +108,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
         if first_applicable_result is not None:
             out = dict(first_applicable_result)
             out["policy_id"] = first_applicable_pid
+            out["trace"] = trace
             return out
         return {
             "decision": "deny",
@@ -90,6 +117,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
             "last_rule_id": last_rule_id,
             "policy_id": None,
             "obligations": [],
+            "trace": trace,
         }
 
     if algo == "deny-overrides":
@@ -101,11 +129,13 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
                 "last_rule_id": deny_result.get("last_rule_id") or deny_result.get("rule_id"),
                 "policy_id": deny_pid,
                 "obligations": list(deny_result.get("obligations") or []),
+                "trace": trace,
             }
         if any_permit and permit_result is not None:
             out = dict(permit_result)
             out["policy_id"] = permit_pid
             out["reason"] = out.get("reason") or "matched"
+            out["trace"] = trace
             return out
         return {
             "decision": "deny",
@@ -114,6 +144,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
             "last_rule_id": last_rule_id,
             "policy_id": None,
             "obligations": [],
+            "trace": trace,
         }
 
     # permit-overrides
@@ -121,6 +152,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
         out = dict(permit_result)
         out["policy_id"] = permit_pid
         out["reason"] = out.get("reason") or "matched"
+        out["trace"] = trace
         return out
     if any_deny and deny_result is not None:
         return {
@@ -130,6 +162,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
             "last_rule_id": deny_result.get("last_rule_id") or deny_result.get("rule_id"),
             "policy_id": deny_pid,
             "obligations": list(deny_result.get("obligations") or []),
+            "trace": trace,
         }
 
     return {
@@ -139,6 +172,7 @@ def decide(policyset: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
         "last_rule_id": last_rule_id,
         "policy_id": None,
         "obligations": [],
+        "trace": trace,
     }
 
 
