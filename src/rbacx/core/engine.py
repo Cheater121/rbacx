@@ -3,6 +3,7 @@ import hashlib
 import inspect
 import json
 import logging
+import threading
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -84,18 +85,28 @@ class Guard:
         self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
         self.relationship_checker = relationship_checker
+        # Guards atomic replacement of policy / etag / compiled function.
+        # RLock allows re-entrant acquisition: set_policy -> _recompute_etag -> clear_cache
+        # can all hold the lock in the same thread without deadlocking.
+        self._policy_lock: threading.RLock = threading.RLock()
 
         self._recompute_etag()
 
     # ---------------------------------------------------------------- set/update
 
     def set_policy(self, policy: dict[str, Any]) -> None:
-        """Replace policy/policyset."""
-        self.policy = policy
-        self._recompute_etag()
-        # Invalidate cache entirely; etag changes will naturally change keys,
-        # but clearing avoids memory growth and stale entries.
-        self.clear_cache()
+        """Replace policy/policyset.
+
+        Thread-safe: acquires ``_policy_lock`` so that concurrent readers in
+        ``_decide_async`` always see a consistent triple of
+        ``(policy, policy_etag, _compiled)``.
+        """
+        with self._policy_lock:
+            self.policy = policy
+            self._recompute_etag()
+            # Invalidate cache entirely; etag changes will naturally change keys,
+            # but clearing avoids memory growth and stale entries.
+            self.clear_cache()
 
     def update_policy(self, policy: dict[str, Any]) -> None:
         """Alias kept for backward-compatibility."""
@@ -502,14 +513,20 @@ class Guard:
     # ---------------------------------------------------------------- internals
 
     def _recompute_etag(self) -> None:
-        try:
-            raw = json.dumps(self.policy, sort_keys=True).encode("utf-8")
-            self.policy_etag = hashlib.sha3_256(raw).hexdigest()
-        except Exception:
-            self.policy_etag = None
-        # compile if compiler available
-        try:
-            if compile_policy is not None:
-                self._compiled = compile_policy(self.policy)
-        except Exception:
-            self._compiled = None
+        """Recompute ``policy_etag`` and ``_compiled`` atomically under ``_policy_lock``.
+
+        Must be called while the caller already holds ``_policy_lock`` (re-entrant),
+        or during ``__init__`` before the instance is shared across threads.
+        """
+        with self._policy_lock:
+            try:
+                raw = json.dumps(self.policy, sort_keys=True).encode("utf-8")
+                self.policy_etag = hashlib.sha3_256(raw).hexdigest()
+            except Exception:
+                self.policy_etag = None
+            # compile if compiler available
+            try:
+                if compile_policy is not None:
+                    self._compiled = compile_policy(self.policy)
+            except Exception:
+                self._compiled = None

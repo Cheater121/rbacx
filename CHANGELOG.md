@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.12.1 — 2026-04-04
+
+**Fixed**
+
+* `core/engine.py` — **thread-safety: race condition in `Guard.set_policy()`**.
+
+  `set_policy()` updated three attributes (`policy`, `policy_etag`, `_compiled`)
+  in separate statements without synchronisation.  In a multi-threaded process
+  (e.g. gunicorn, Django) a concurrent `evaluate_sync()` call could observe the
+  new policy dict paired with the old compiled function or stale etag, producing
+  an inconsistent decision.
+
+  The fix introduces a per-instance `threading.RLock` (`_policy_lock`) that is
+  acquired for the entire duration of `set_policy()` and `_recompute_etag()`,
+  guaranteeing that readers always see a consistent
+  `(policy, policy_etag, _compiled)` triple.  `RLock` is used instead of `Lock`
+  because `set_policy` calls `_recompute_etag` which also acquires the lock
+  — re-entrancy prevents a deadlock.
+
+  The read path (`_decide_async`) is intentionally **not** locked: Python's GIL
+  guarantees atomic reference reads, and locking on every evaluation would
+  negate the concurrency benefits of `evaluate_batch_async`.
+
 ## 1.12.0 — 2026-04-03
 
 **Added**
