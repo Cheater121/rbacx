@@ -8,8 +8,6 @@ We only construct the Guard here and let the middleware do the rest.
 settings.RBACX_GUARD_FACTORY should point to: "rbacx_demo.rbacx_factory.build_guard".
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Final

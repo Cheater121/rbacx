@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 

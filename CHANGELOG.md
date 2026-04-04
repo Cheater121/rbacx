@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.16.0 — 2026-04-04
+
+**Added**
+
+* **Redis cache adapter** — `rbacx.core.redis_cache.RedisCache` implements
+  `AbstractCache` on top of a `redis-py` client. Designed for multi-process
+  and multi-host deployments where the in-memory `DefaultInMemoryCache` is not
+  shared across workers.
+
+  Install via the new extra:
+
+  ```bash
+  pip install "rbacx[cache-redis]"
+  ```
+
+  ```python
+  import redis
+  from rbacx import Guard
+  from rbacx.core.redis_cache import RedisCache
+
+  guard = Guard(
+      policy,
+      cache=RedisCache(redis.Redis(), prefix="rbacx:", default_ttl=300),
+  )
+  ```
+
+  Key properties:
+
+  * JSON serialisation (not pickle).
+  * TTL precedence: explicit `ttl` → `default_ttl` → no expiry.
+  * `clear()` uses `SCAN` + prefix glob — never `FLUSHDB`.
+  * All Redis errors are swallowed and logged at `DEBUG`; a failure is treated
+    as a cache miss, never as an authorisation error.
+  * Compatible with `redis.Redis`, `redis.cluster.RedisCluster`, and any
+    client exposing the same interface.
+
 ## 1.15.0 — 2026-04-04
 
 **Added**
@@ -44,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Sync counterparts (`RbacxDjangoMiddleware`, `require_access`,
   `TraceIdMiddleware`) are unchanged.
 
-## 1.14.0 — 2026-04-04
+## 1.14.0 — 2026-04-03
 
 **Added**
 

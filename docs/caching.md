@@ -12,7 +12,7 @@ Decision caching speeds up repeated authorization checks by storing final `Guard
 - **Automatic invalidation on policy updates.** When the policy changes, the cache is cleared to avoid serving decisions produced by outdated rules.
 - **Manual clear.** Use `guard.clear_cache()` to purge cached decisions proactively.
 
-> Note: the in-memory cache works **within a single process/worker**. For multi-process or distributed deployments, use an external cache implementation — or keep caching disabled.
+> Note: the in-memory cache works **within a single process/worker**. For multi-process or distributed deployments use `RedisCache` (see below) or another external cache implementation.
 
 ---
 
@@ -62,6 +62,56 @@ guard.clear_cache()
 
 ### When it clears automatically
 - On **policy updates** via the core API, to avoid serving decisions based on old rules.
+
+---
+
+## Redis cache adapter
+
+For multi-process or multi-host deployments use `RedisCache` from
+`rbacx.core.redis_cache`.  Install the extra first:
+
+```bash
+pip install "rbacx[cache-redis]"
+```
+
+```python
+import redis
+from rbacx import Guard
+from rbacx.core.redis_cache import RedisCache
+
+client = redis.Redis(host="localhost", port=6379, db=0)
+
+guard = Guard(
+    policy=policy,
+    cache=RedisCache(
+        client,
+        prefix="rbacx:",  # key prefix — avoids collisions with other data
+        default_ttl=300,  # seconds; can be overridden per set() call
+    ),
+)
+```
+
+### TTL precedence
+
+1. Explicit `ttl` passed by `Guard` via `cache.set(key, value, ttl=N)` — wins
+2. `default_ttl` set on `RedisCache(...)` — fallback
+3. No TTL — key never expires
+
+### Behaviour on Redis failures
+
+All operations (`get`, `set`, `delete`, `clear`) catch exceptions and log them
+at `DEBUG` level.  A Redis outage is treated as a cache miss — authorisation
+decisions are still computed correctly, just without the cache speedup.
+
+### Notes
+
+- Serialisation uses `json` (not `pickle`) — safe and auditable.
+- `clear()` uses `SCAN` with a prefix glob — never `FLUSHDB`.  Safe to call on
+  a shared Redis instance.
+- `redis-py` clients are thread-safe by default; no additional locking is
+  needed.
+- Works with `redis.Redis`, `redis.cluster.RedisCluster`, and any compatible
+  client that implements `get`, `set`, `setex`, `delete`, and `scan_iter`.
 
 ---
 

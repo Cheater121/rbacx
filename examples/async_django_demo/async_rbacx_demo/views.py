@@ -10,8 +10,6 @@ GET /doc           — requires role "admin" or "editor" (via roles shorthand)
 GET /doc/admin     — requires role "admin" only
 """
 
-from __future__ import annotations
-
 from django.http import JsonResponse
 
 from rbacx import Action, Context, Guard, Resource, Subject
