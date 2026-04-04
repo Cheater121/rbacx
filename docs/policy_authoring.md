@@ -8,6 +8,7 @@ This guide outlines how to write clear and maintainable RBAC/ABAC/ReBAC policies
 * **ABAC** – decisions come from evaluating **attributes** of subject, resource, action, and environment against **rules**.
 * **ReBAC** – decisions can depend on **relationships** between a subject and a resource (e.g., *user —owner→ document*). Relationships are typically managed in a graph/tuple store and checked via a `RelationshipChecker` port. See *Relationship conditions* below for policy syntax.
 * **Combining algorithms** – `deny-overrides`, `permit-overrides`, `first-applicable`. Choose the one that matches your risk posture.
+* **Role shorthand** – `"roles": ["admin", "editor"]` is sugar for a `hasAny` check on `subject.roles`; see below.
 
 ## Recommendations
 
@@ -68,6 +69,68 @@ Semantics:
 * Combine with ABAC/RBAC conditions as usual (e.g., require a role **and** a relationship).
 
 > Tip: In tuple/graph systems (e.g., SpiceDB, OpenFGA), relationships are expressed as *subject–relation–object* and can be modeled for users, groups, and object hierarchies.
+
+## Role shorthand
+
+Instead of writing a `hasAny` condition for the common case of checking
+`subject.roles`, use the `roles` shorthand directly on the rule:
+
+```json
+{
+  "id": "doc-read",
+  "effect": "permit",
+  "actions": ["read"],
+  "resource": { "type": "doc" },
+  "roles": ["admin", "editor"]
+}
+```
+
+This is exactly equivalent to:
+
+```json
+{
+  "id": "doc-read",
+  "effect": "permit",
+  "actions": ["read"],
+  "resource": { "type": "doc" },
+  "condition": { "hasAny": [{ "attr": "subject.roles" }, ["admin", "editor"]] }
+}
+```
+
+### Combining `roles` with `condition`
+
+When both `roles` and `condition` are present the engine combines them with
+**AND** — both must be satisfied for the rule to match:
+
+```json
+{
+  "id": "doc-read-sensitive",
+  "effect": "permit",
+  "actions": ["read"],
+  "resource": { "type": "doc" },
+  "roles": ["admin"],
+  "condition": { "==": [{ "attr": "resource.attrs.sensitivity" }, "high"] }
+}
+```
+
+### Conflict: both `roles` and `condition` constrain `subject.roles`
+
+If `condition` also references `subject.roles` the engine still combines with
+AND — the result is the **intersection** and may be narrower than intended:
+
+```json
+{
+  "roles": ["admin"],
+  "condition": { "hasAny": [{ "attr": "subject.roles" }, ["admin", "user"]] }
+}
+```
+
+Effective check: `subject.roles ∩ [admin]` AND `subject.roles ∩ [admin, user]`
+→ only `admin` passes (the wider condition is shadowed by the narrower `roles`).
+
+> **Recommendation:** avoid redundant role constraints. Run `rbacx lint` before
+> deploying — the linter emits `ROLES_CONDITION_OVERLAP` when it detects this
+> pattern and explains the AND semantics in the warning message.
 
 ## Examples
 
@@ -133,10 +196,12 @@ rules:
     effect: permit
     actions: [read]
     resource: { type: doc }
-    condition:
-      hasAny:
-        - attr: subject.roles
-        - [user, viewer]
+    roles: [user, viewer]          # shorthand for hasAny on subject.roles
+    # equivalent (legacy syntax):
+    # condition:
+    #   hasAny:
+    #     - attr: subject.roles
+    #     - [user, viewer]
   - id: d1
     effect: deny
     actions: [delete]

@@ -10,7 +10,9 @@ def main() -> None:
                 "effect": "permit",
                 "actions": ["read"],
                 "resource": {"type": "doc", "attrs": {"archived": False}},
-                "condition": {"hasAny": [{"attr": "subject.roles"}, ["reader", "admin"]]},
+                "roles": ["reader", "admin"],  # shorthand for hasAny on subject.roles
+                # Or using the explicit condition syntax:
+                # "condition": {"hasAny": [{"attr": "subject.roles"}, ["reader", "admin"]]},
             },
             {
                 "id": "deny_archived",

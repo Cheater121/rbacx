@@ -34,7 +34,7 @@ Run **validate → lint** in one pass. If validation fails, linting is skipped.
 - `--strict` — for *lint*/**check**: return a non‑zero exit code when any lint issues are found.
 
 ### Lint‑specific
-- `--require-attrs "subject:id,org;resource:type;:a,b"` — require that certain attribute **keys** appear in conditions by entity.  
+- `--require-attrs "subject:id,org;resource:type;:a,b"` — require that certain attribute **keys** appear in conditions by entity.
   Entities: `subject`, `resource`, `action`, or empty for “any”. Right‑hand side is a comma‑separated list of required keys.
 
 ---
@@ -63,6 +63,7 @@ RBACX ships a simple linter to catch common authoring pitfalls:
 - **POTENTIALLY_UNREACHABLE** — with `first-applicable`, a later rule is shadowed because an earlier one with the same effect already covers its actions/resource.
 - **ALWAYS_TRUE** — the condition is trivially true (e.g., `{"==":[X, X]}`); the rule may be overly broad.
 - **ALWAYS_FALSE** — the condition is trivially false (e.g., `{"!=":[X, X]}`); the rule will never match.
+- **ROLES_CONDITION_OVERLAP** — the rule uses the `roles` shorthand and `condition` both constrain `subject.roles`. The engine combines them with AND (intersection), which may be narrower than intended. Remove the redundant constraint.
 
 > We intentionally avoid a generic `regex` operator to reduce ReDoS risk. If you add regex matching, prefer safe engines (like RE2) and enforce timeouts.
 
@@ -106,7 +107,7 @@ rbacx lint --policy policy.json --require-attrs "subject:id,org;resource:type"
 
 **Output semantics**
 - JSON: a list of issue objects. Typical fields: `code`, `message`, `path`, `policy_index` (for sets).
-- Text: one line per issue, e.g.  
+- Text: one line per issue, e.g.
   `MISSING_ID [policy_index=0] rules[2].id: each rule should have a stable id`
 
 ### Check (validate → lint)

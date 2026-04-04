@@ -474,7 +474,26 @@ def evaluate(
                 )
             continue
 
-        cond = rule.get("condition")
+        # Roles shorthand: {"roles": ["admin", "editor"]} expands to a
+        # hasAny condition on subject.roles and is combined with any explicit
+        # "condition" via AND.  Both checks must pass for the rule to match.
+        #
+        # When "roles" and "condition" both constrain subject.roles the engine
+        # takes the AND — which is the intersection (most restrictive).  This
+        # is intentional and fail-closed: the result may be narrower than the
+        # author intended.  Use `rbacx lint` to detect ROLES_CONDITION_OVERLAP.
+        roles_shorthand = rule.get("roles")
+        explicit_cond = rule.get("condition")
+        if roles_shorthand and isinstance(roles_shorthand, list):
+            roles_cond: dict[str, Any] = {
+                "hasAny": [{"attr": "subject.roles"}, list(roles_shorthand)]
+            }
+            if explicit_cond is not None:
+                cond: Any = {"and": [roles_cond, explicit_cond]}
+            else:
+                cond = roles_cond
+        else:
+            cond = explicit_cond
         if cond is not None:
             try:
                 if not eval_condition(cond, env):

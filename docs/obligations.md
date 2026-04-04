@@ -3,6 +3,28 @@
 
 This page documents the built-in obligation types enforced by `BasicObligationChecker` and shows how to extend the checker with custom policies (e.g., geo-fencing). It also clarifies how to target obligations to a specific decision effect (`permit` vs `deny`) and how `challenge` hints are surfaced to the PEP layer.
 
+## Obligations and deny decisions
+
+When the engine produces a `deny` decision, `Decision.obligations` is always
+`[]` — obligations from the matched deny rule are intentionally discarded.
+
+This is a deliberate security decision aligned with XACML recommendations:
+
+* **Obligations are side effects** (log access, mask data, add watermark,
+  trigger a webhook). Executing them on a denied request can cause unexpected
+  behaviour, information leakage, or policy bypass.
+* **`deny` is a terminal state** — under `deny-overrides` the loop breaks on
+  the first matching deny, so evaluation may be incomplete and the context
+  not fully resolved.
+* **Predictability** — the engine guarantees `obligations` is always a `list`
+  and is non-empty only on `permit`.
+
+If you need the PEP to know *why* a request was denied, use `Decision.reason`
+and `Decision.rule_id`. For authentication challenges (e.g. `WWW-Authenticate`
+headers on 401 responses) use the dedicated `Decision.challenge` field, which
+is populated by `require_mfa`, `http_challenge`, and similar obligation types
+when they fire on a *permit* decision that fails an obligation check.
+
 ## Compatibility
 
 The checker accepts both legacy and modern raw decision shapes:

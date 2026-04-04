@@ -17,6 +17,7 @@ Universal **RBAC/ABAC/ReBAC** policy engine for Python with a clean core, policy
 ## Features
 - Algorithms: `deny-overrides` (default), `permit-overrides`, `first-applicable`
 - Conditions: `==`, `!=`, `<`, `<=`, `>`, `>=`, `contains`, `in`, `hasAll`, `hasAny`, `startsWith`, `endsWith`, `before`, `after`, `between`
+- Role shorthand: `"roles": ["admin", "editor"]` on any rule — sugar for `hasAny` on `subject.roles`
 - Explainability: `decision`, `reason`, `rule_id`/`last_rule_id`, `obligations`
 - Policy sets: combine multiple policies with the same algorithms
 - Hot reload: file/HTTP/S3 sources with ETag and a polling manager
@@ -42,7 +43,9 @@ policy = {
             "effect": "permit",
             "actions": ["read"],
             "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
-            "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
+            "roles": ["reader", "admin"],  # shorthand: hasAny on subject.roles
+            # Or using the explicit condition syntax:
+            # "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
             "obligations": [ {"type": "require_mfa"} ]
         },
         {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"],

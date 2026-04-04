@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.14.0 — 2026-04-03
+
+**Added**
+
+* **Role shorthand** — `"roles": ["admin", "editor"]` on any rule is syntactic
+  sugar for a `hasAny` check on `subject.roles`.
+
+  ```json
+  {
+    "id": "doc-read",
+    "effect": "permit",
+    "actions": ["read"],
+    "resource": { "type": "doc" },
+    "roles": ["admin", "editor"]
+  }
+  ```
+
+  Equivalent to the previous verbose form:
+
+  ```json
+  "condition": { "hasAny": [{ "attr": "subject.roles" }, ["admin", "editor"]] }
+  ```
+
+  When both `roles` and `condition` are present they are combined with **AND**
+  (both must pass).  If `condition` also references `subject.roles`, the result
+  is the intersection — which may be narrower than intended.  The linter detects
+  this case and emits `ROLES_CONDITION_OVERLAP`.
+
+* **Lint check `ROLES_CONDITION_OVERLAP`** — emitted when a rule's `roles`
+  shorthand and its `condition` both constrain `subject.roles`.  Non-blocking
+  warning that recommends removing the redundant constraint.
+
 ## 1.13.0 — 2026-04-04
 
 **Added**

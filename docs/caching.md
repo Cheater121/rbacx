@@ -32,7 +32,9 @@ policy = {
             "effect": "permit",
             "actions": ["read"],
             "resource": {"type": "doc", "attrs": {"visibility": ["public", "internal"]}},
-            "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
+            "roles": ["reader", "admin"],   # shorthand for hasAny on subject.roles
+            # equivalent (legacy syntax):
+            # "condition": {"hasAny": [ {"attr": "subject.roles"}, ["reader", "admin"] ]},
             "obligations": [ {"type": "require_mfa"} ]
         },
         {"id": "doc_deny_archived", "effect": "deny", "actions": ["*"],
