@@ -5,6 +5,7 @@
 * **Core vs. Adapters**: Authorization decision logic lives in `rbacx.core` (e.g., `Guard`), while framework-specific integration is implemented as adapters (FastAPI, Django, Flask, DRF, Starlette/Litestar). This separation keeps the core framework-agnostic.
 * **Ports/Interfaces**: Core depends on abstract ports (sync/async-friendly; e.g., `RoleResolver`, `DecisionLogSink`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
 * **Security defaults**: The default combining algorithm is `deny-overrides` (deny-by-default). Other algorithms: `permit-overrides`, `first-applicable`.
+* **Role shorthand** — `"roles": ["admin", "editor"]` on any rule is sugar for a `hasAny` check on `subject.roles`, keeping policies readable without verbose conditions.
 * **ReBAC port**: Optional `RelationshipChecker` in `rbacx.core.ports` with ready-to-use implementations: `LocalRelationshipChecker`, `SpiceDBChecker`, `OpenFGAChecker`. Enables relationship-based checks (subject —relation→ resource) alongside RBAC/ABAC.
 
 ## Policy Model (JSON)

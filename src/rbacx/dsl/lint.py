@@ -88,6 +88,33 @@ def _first_applicable_unreachable(earlier: dict[str, Any], later: dict[str, Any]
     return _resource_covers(earlier, later)
 
 
+def _condition_references_subject_roles(cond: Any) -> bool:
+    """Return True if *cond* contains any reference to ``subject.roles``.
+
+    Walks the condition tree looking for ``{"attr": "subject.roles"}`` tokens
+    inside ``hasAny``, ``hasAll``, ``==``, ``!=``, ``in``, or ``contains``
+    expressions, and recurses into ``and`` / ``or`` / ``not`` subtrees.
+    """
+    if not isinstance(cond, dict):
+        return False
+    for op in ("hasAny", "hasAll", "==", "!=", "in", "contains"):
+        if op in cond:
+            operands = cond[op]
+            if isinstance(operands, list):
+                for operand in operands:
+                    if isinstance(operand, dict) and operand.get("attr") == "subject.roles":
+                        return True
+    for op in ("and", "or"):
+        if op in cond:
+            sub = cond[op]
+            if isinstance(sub, list):
+                if any(_condition_references_subject_roles(c) for c in sub):
+                    return True
+    if "not" in cond:
+        return _condition_references_subject_roles(cond["not"])
+    return False
+
+
 def analyze_policy(
     policy: dict[str, Any], *, require_attrs: dict[str, list[str]] | None = None
 ) -> list[Issue]:
@@ -124,6 +151,30 @@ def analyze_policy(
 
         if _is_broad_resource(rule):
             issues.append({"code": "BROAD_RESOURCE", "id": rid, "index": idx})
+
+        # Warn when "roles" shorthand and "condition" both constrain subject.roles.
+        # The engine combines them with AND (intersection), which may be narrower
+        # than the author intended.  Recommend removing the redundant constraint.
+        roles_shorthand = rule.get("roles")
+        explicit_cond = rule.get("condition")
+        if (
+            roles_shorthand
+            and isinstance(roles_shorthand, list)
+            and explicit_cond is not None
+            and _condition_references_subject_roles(explicit_cond)
+        ):
+            issues.append(
+                {
+                    "code": "ROLES_CONDITION_OVERLAP",
+                    "id": rid,
+                    "index": idx,
+                    "message": (
+                        "Both 'roles' shorthand and 'condition' constrain subject.roles. "
+                        "The engine combines them with AND (intersection), which may be "
+                        "narrower than intended. Remove the redundant constraint."
+                    ),
+                }
+            )
 
         # Required attributes apply to PERMIT rules only
         rtype = _rtype(rule)

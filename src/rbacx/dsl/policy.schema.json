@@ -112,6 +112,14 @@
               }
             }
           }
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Shorthand for a subject.roles membership check. Equivalent to condition.hasAny([subject.roles], roles). Combined with 'condition' via AND when both are present.",
+          "minItems": 1
         }
       },
       "required": [
