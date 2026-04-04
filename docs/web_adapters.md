@@ -120,6 +120,36 @@ app = Litestar(
 
 ---
 
+## Django async (ASGI, Django 4.1+)
+
+For Django applications running under ASGI (uvicorn, daphne), use the async
+variants to avoid blocking the event loop:
+
+```python
+# settings.py
+RBACX_GUARD_FACTORY = "myapp.rbacx.build_guard"
+MIDDLEWARE = [
+    "rbacx.adapters.django.trace.AsyncTraceIdMiddleware",
+    "rbacx.adapters.django.middleware.AsyncRbacxDjangoMiddleware",
+    # ...
+]
+```
+
+```python
+from rbacx import Subject, Resource, Action, Context
+from rbacx.adapters.django.decorators import async_require_access
+
+def build_env(request):
+    uid = getattr(getattr(request, "user", None), "id", None) or "anonymous"
+    return Subject(id=str(uid), roles=["user"]), Action("read"), Resource(type="doc"), Context()
+
+@async_require_access(build_env, add_headers=True)
+async def doc(request):
+    ...
+```
+
+---
+
 ## Django (decorator + middleware)
 
 Enable the middleware to inject a Guard:
