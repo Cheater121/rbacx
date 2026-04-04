@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from importlib import import_module
 from typing import Any, Callable
@@ -60,3 +61,45 @@ class RbacxDjangoMiddleware:
         if self._guard is not None:
             request.rbacx_guard = self._guard
         return self.get_response(request)
+
+
+class AsyncRbacxDjangoMiddleware:
+    """Async-capable variant of :class:`RbacxDjangoMiddleware` for Django 4.1+
+    ASGI applications.
+
+    Inject a Guard instance onto each Django request as ``request.rbacx_guard``
+    without blocking the event loop.
+
+    Config:
+      - ``settings.RBACX_GUARD_FACTORY``: dotted path to a zero-arg callable
+        returning a ``Guard``.
+
+    Django detects async middleware via the ``_is_coroutine`` marker attribute
+    (set in ``__init__`` when ``get_response`` is itself a coroutine function)
+    and the ``async_capable`` / ``sync_capable`` flags.
+    """
+
+    async_capable = True
+    sync_capable = False
+
+    def __init__(self, get_response: Callable) -> None:
+        if settings is None:  # pragma: no cover
+            raise RuntimeError("Django is required to use AsyncRbacxDjangoMiddleware")
+        self.get_response = get_response
+        self._guard: Any | None = None
+
+        # Mark this middleware as a coroutine so Django's ASGI handler
+        # calls it with ``await`` instead of calling it synchronously.
+        if asyncio.iscoroutinefunction(self.get_response):
+            self._is_coroutine = asyncio.coroutines._is_coroutine  # type: ignore[attr-defined]
+
+        factory_path = getattr(settings, "RBACX_GUARD_FACTORY", None)
+        if factory_path:
+            factory = _load_dotted(factory_path)
+            self._guard = factory()
+
+    async def __call__(self, request: Any) -> Any:
+        """Attach the guard to the request, then await the next middleware."""
+        if self._guard is not None:
+            request.rbacx_guard = self._guard
+        return await self.get_response(request)

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.15.0 — 2026-04-04
+
+**Added**
+
+* **Django async support** for Django 4.1+ ASGI applications.
+
+  Three new components in `rbacx.adapters.django`:
+
+  * `AsyncRbacxDjangoMiddleware` — async middleware that injects a `Guard`
+    onto each request as `request.rbacx_guard` without blocking the event
+    loop.  Sets the `_is_coroutine` marker so Django's ASGI handler correctly
+    awaits it.
+
+  * `async_require_access(build_env, *, guard, add_headers, audit)` —
+    async view decorator equivalent to `require_access` but for `async def`
+    views.  Calls `Guard.evaluate_async` internally.
+
+  * `AsyncTraceIdMiddleware` — async variant of `TraceIdMiddleware` that
+    injects a trace/request-id into the logging context for the duration of
+    the request.
+
+  ```python
+  # settings.py
+  MIDDLEWARE = [
+      "rbacx.adapters.django.trace.AsyncTraceIdMiddleware",
+      "rbacx.adapters.django.middleware.AsyncRbacxDjangoMiddleware",
+  ]
+
+  # views.py
+  from rbacx.adapters.django.decorators import async_require_access
+
+  @async_require_access(build_env, add_headers=True)
+  async def my_view(request):
+      ...
+  ```
+
+  Sync counterparts (`RbacxDjangoMiddleware`, `require_access`,
+  `TraceIdMiddleware`) are unchanged.
+
 ## 1.14.0 — 2026-04-03
 
 **Added**

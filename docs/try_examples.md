@@ -114,6 +114,31 @@ curl -i http://127.0.0.1:8004/docs/1
 
 ---
 
+## Async Django (`examples/async_django_demo`)
+
+```bash
+uvicorn async_rbacx_demo.asgi:application --port 8005 --reload   --app-dir examples/async_django_demo
+# Test:
+curl http://127.0.0.1:8005/health
+curl http://127.0.0.1:8005/doc                        # 403 — viewer role
+curl -H "X-Role: editor" http://127.0.0.1:8005/doc    # 200 — editor allowed
+curl -H "X-Role: admin"  http://127.0.0.1:8005/doc    # 200 — admin allowed
+curl -H "X-Role: admin"  http://127.0.0.1:8005/doc/admin  # 200 — admin only
+```
+
+**Endpoints**
+
+- `GET /health` → `{"ok": true}` (no auth)
+- `GET /doc` → allowed for `admin` and `editor` roles
+- `GET /doc/admin` → allowed for `admin` only
+
+Uses `AsyncRbacxDjangoMiddleware`, `async_require_access`, and
+`AsyncTraceIdMiddleware`.  The `X-Role` header simulates authentication —
+replace with real Django auth in production.  The policy uses the `roles`
+shorthand instead of a verbose `hasAny` condition.
+
+---
+
 ## Notes
 
 - Authorization failures generally return **403** with a short JSON body. If your decision includes an **authentication challenge** (e.g., MFA required), returning **401** with an appropriate `WWW-Authenticate` or custom challenge header may be more appropriate. See **Mapping Decision reasons to HTTP responses**.

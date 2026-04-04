@@ -1,0 +1,18 @@
+{
+  "algorithm": "deny-overrides",
+  "rules": [
+    {
+      "id": "permit-read-doc-roles",
+      "effect": "permit",
+      "actions": ["read"],
+      "resource": {"type": "doc"},
+      "roles": ["admin", "editor"]
+    },
+    {
+      "id": "deny-delete-doc",
+      "effect": "deny",
+      "actions": ["delete"],
+      "resource": {"type": "doc"}
+    }
+  ]
+}
