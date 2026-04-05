@@ -10,7 +10,7 @@ Install requirements:
 
 Configure:
     export RBACX_AI_API_KEY="sk-..."            # OpenAI key (or any compatible)
-    export RBACX_AI_MODEL="gpt-5.4"             # optional, default gpt-5.4-mini
+    export RBACX_AI_MODEL="gpt-4o"              # optional, default gpt-4o
     export RBACX_AI_BASE_URL=""                 # optional, e.g. OpenRouter URL
 
 Run:
@@ -181,47 +181,36 @@ app = FastAPI(
 
 
 # ---------------------------------------------------------------------------
-# EnvBuilders — one per resource type
+# EnvBuilder factory — one function: action and resource type as params
 # ---------------------------------------------------------------------------
 
 
-def _role(request: Request) -> str:
-    """Read X-Role header; default to 'viewer'."""
-    return request.headers.get("X-Role", "viewer")
+def make_env(action: str, resource_type: str):
+    """Return an EnvBuilder that extracts subject from request headers.
 
+    Args:
+        action: the action string passed to ``Action`` (e.g. ``"read"``).
+        resource_type: the resource type string (e.g. ``"document"``).
 
-def _user(request: Request) -> str:
-    return request.headers.get("X-User", "anonymous")
+    The returned callable reads two headers from the request:
+        - ``X-User``  — subject id (default: ``"anonymous"``).
+        - ``X-Role``  — single role assigned to the subject (default: ``"viewer"``).
 
+    In production replace header parsing with real authentication logic.
+    """
 
-def build_env_document(request: Request):
-    """Build env for document endpoints."""
-    return (
-        Subject(id=_user(request), roles=[_role(request)]),
-        Action("read"),
-        Resource(type="document"),
-        Context(),
-    )
+    def _build(request: Request):
+        user = request.headers.get("X-User", "anonymous")
+        role = request.headers.get("X-Role", "viewer")
+        return (
+            Subject(id=user, roles=[role]),
+            Action(action),
+            Resource(type=resource_type),
+            Context(),
+        )
 
-
-def build_env_document_write(request: Request):
-    """Build env for write operations on documents."""
-    return (
-        Subject(id=_user(request), roles=[_role(request)]),
-        Action("write"),
-        Resource(type="document"),
-        Context(),
-    )
-
-
-def build_env_report(request: Request):
-    """Build env for report endpoints."""
-    return (
-        Subject(id=_user(request), roles=[_role(request)]),
-        Action("read"),
-        Resource(type="report"),
-        Context(),
-    )
+    _build.__name__ = f"build_env_{action}_{resource_type}"
+    return _build
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +250,9 @@ async def current_policy():
     tags=["Documents"],
     summary="List documents",
     description="Returns a list of documents. Requires viewer role or higher.",
-    dependencies=[Depends(require_access(get_guard(), build_env_document, add_headers=True))],
+    dependencies=[
+        Depends(require_access(get_guard(), make_env("read", "document"), add_headers=True))
+    ],
 )
 async def list_documents():
     return {"documents": ["doc-1", "doc-2", "doc-3"]}
@@ -272,7 +263,9 @@ async def list_documents():
     tags=["Documents"],
     summary="Get a document",
     description="Returns a single document by ID. Requires viewer role or higher.",
-    dependencies=[Depends(require_access(get_guard(), build_env_document, add_headers=True))],
+    dependencies=[
+        Depends(require_access(get_guard(), make_env("read", "document"), add_headers=True))
+    ],
 )
 async def get_document(doc_id: str):
     return {"doc_id": doc_id, "content": "…"}
@@ -283,7 +276,9 @@ async def get_document(doc_id: str):
     tags=["Documents"],
     summary="Create a document",
     description="Creates a new document. Requires editor role or higher.",
-    dependencies=[Depends(require_access(get_guard(), build_env_document_write, add_headers=True))],
+    dependencies=[
+        Depends(require_access(get_guard(), make_env("write", "document"), add_headers=True))
+    ],
 )
 async def create_document(request: Request):
     return {"created": True}
@@ -294,7 +289,9 @@ async def create_document(request: Request):
     tags=["Reports"],
     summary="Monthly report",
     description="Returns the monthly summary report. Admin only.",
-    dependencies=[Depends(require_access(get_guard(), build_env_report, add_headers=True))],
+    dependencies=[
+        Depends(require_access(get_guard(), make_env("read", "report"), add_headers=True))
+    ],
 )
 async def monthly_report():
     return {"report": "monthly", "data": []}
