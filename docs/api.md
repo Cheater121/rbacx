@@ -202,6 +202,7 @@ async def evaluate_batch_async(
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
     *,
     explain: bool = False,
+    timeout: float | None = None,
 ) -> list[Decision]: ...
 
 def evaluate_batch_sync(
@@ -209,6 +210,7 @@ def evaluate_batch_sync(
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
     *,
     explain: bool = False,
+    timeout: float | None = None,
 ) -> list[Decision]: ...
 ```
 
@@ -218,6 +220,9 @@ def evaluate_batch_sync(
 * Requests are evaluated **concurrently** via `asyncio.gather` — wall-clock
   time grows with the slowest single request rather than the total count.
 * An **empty** input list returns `[]` immediately without any evaluation.
+* `timeout` (seconds) bounds the total wall-clock time for the batch.
+  `asyncio.TimeoutError` is raised if the deadline is exceeded.  ``None``
+  (default) means no deadline.
 * `Context` may be `None` for any individual request.
 * All DI hooks (metrics, logger, obligation checker, role resolver, cache) are
   invoked **per request**, exactly as with `evaluate_async` / `evaluate_sync`.
@@ -238,6 +243,38 @@ Fields returned by `Guard.evaluate*`:
 * `policy_id: Optional[str]`
 * `reason: Optional[str]`
 * `trace: Optional[List[RuleTrace]]` — populated when `explain=True`; `None` by default
+
+---
+
+## `require_batch_access` (FastAPI)
+
+FastAPI dependency that evaluates multiple `(action, resource_type)` pairs in
+one `evaluate_batch_async` call and returns a `list[Decision]`.
+
+```python
+from rbacx.adapters.fastapi import require_batch_access
+from rbacx import Subject
+
+def build_subject(request: Request) -> Subject:
+    return Subject(id="user", roles=[request.headers.get("X-Role", "viewer")])
+
+@app.get("/ui-state")
+async def ui_state(
+    decisions=Depends(
+        require_batch_access(
+            guard,
+            [("read", "document"), ("write", "document"), ("delete", "document")],
+            build_subject,
+            timeout=2.0,
+        )
+    )
+):
+    return {
+        "can_read":   decisions[0].allowed,
+        "can_write":  decisions[1].allowed,
+        "can_delete": decisions[2].allowed,
+    }
+```
 
 ---
 

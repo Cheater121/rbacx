@@ -70,6 +70,15 @@ read, write, delete = guard.evaluate_batch_sync([
 
 Results are returned in the same order as the input. All DI hooks (metrics, logger, cache, obligations) apply per request exactly as with the single-request methods.
 
+Both methods accept an optional `timeout` parameter (seconds) to bound total wall-clock time:
+
+```python
+# Raise asyncio.TimeoutError if the batch takes longer than 2 seconds:
+decisions = await guard.evaluate_batch_async([...], timeout=2.0)
+```
+
+For FastAPI, `require_batch_access` wraps this into a dependency — see `docs/web_adapters.md`.
+
 ---
 
 ## The 3 steps to implement your adapter

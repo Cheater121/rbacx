@@ -6,6 +6,8 @@
 * **Ports/Interfaces**: Core depends on abstract ports (sync/async-friendly; e.g., `RoleResolver`, `DecisionLogSink`, `MetricsSink`, `ObligationChecker`) enabling custom implementations without modifying the core.
 * **Security defaults**: The default combining algorithm is `deny-overrides` (deny-by-default). Other algorithms: `permit-overrides`, `first-applicable`.
 * **Role shorthand** — `"roles": ["admin", "editor"]` on any rule is sugar for a `hasAny` check on `subject.roles`, keeping policies readable without verbose conditions.
+* **Conditional obligations** — obligations accept an optional `condition` field evaluated against the full request env; the obligation is skipped when the condition is `False`, enabling fine-grained enforcement (e.g. MFA only for high-sensitivity resources).
+* **Redis cache adapter** — `RedisCache` from `rbacx.core.redis_cache` implements `AbstractCache` on top of a `redis-py` client for multi-process / multi-host deployments (`pip install rbacx[cache-redis]`).
 * **ReBAC port**: Optional `RelationshipChecker` in `rbacx.core.ports` with ready-to-use implementations: `LocalRelationshipChecker`, `SpiceDBChecker`, `OpenFGAChecker`. Enables relationship-based checks (subject —relation→ resource) alongside RBAC/ABAC.
 
 ## Policy Model (JSON)
@@ -39,7 +41,7 @@
 
 ## Testing
 
-* **Coverage**: Meets industry standards. Approximately **80+%** of the codebase.
+* **Coverage**: Meets industry standards. **100%** branch coverage on the core engine and adapters.
 * **Scope**: Tests cover decision logic, rule combining, ABAC operators (including time and collection ops), obligations, policy loading/reloading, and linting.
 
 ## Performance Considerations
@@ -58,5 +60,8 @@
 ## Async support
 
 * `Guard` provides both `evaluate_sync(...)` and `evaluate_async(...)`. Injected ports (resolver, obligations, metrics, logger) can be synchronous **or** asynchronous; both forms are supported.
-* `Guard` provides **`evaluate_batch_sync(...)`** and **`evaluate_batch_async(...)`** for evaluating multiple requests in a single call — results are returned in the same order as the input. Requests run concurrently via `asyncio.gather`, making it efficient for UI scenarios that need to know which actions are permitted for a given user.
+* `Guard` provides **`evaluate_batch_sync(...)`** and **`evaluate_batch_async(...)`** for evaluating multiple requests in a single call — results are returned in the same order as the input. Requests run concurrently via `asyncio.gather`, making it efficient for UI scenarios that need to know which actions are permitted for a given user.  Pass `timeout=N` to bound the total wall-clock time for the entire batch.
+* **`require_batch_access`** — FastAPI dependency that evaluates multiple `(action, resource_type)` pairs in one batch call and returns `list[Decision]`, ideal for rendering UI state in a single request.
+* **Django async** — `AsyncRbacxDjangoMiddleware`, `async_require_access`, and `AsyncTraceIdMiddleware` for Django 4.1+ ASGI applications.
+* **Native SpiceDB bulk check** — `SpiceDBChecker.batch_check` uses `BulkCheckPermissions` in async mode (one gRPC call for N triples) when available (authzed ≥ 0.9).
 * `HotReloader` provides `check_and_reload(...)` (sync) and `check_and_reload_async(...)` (async) and accepts `PolicySource` implementations with sync or async `load()`/`etag()`.

@@ -114,6 +114,46 @@ curl -i http://127.0.0.1:8004/docs/1
 
 ---
 
+## AI-assisted FastAPI (`examples/ai_fastapi_demo`)
+
+Demonstrates how to pass FastAPI's auto-generated OpenAPI schema to the AI
+Policy Authoring System so the LLM produces a matching rbacx policy
+automatically — no manual JSON authoring needed.
+
+```bash
+pip install "rbacx[ai]" fastapi uvicorn
+
+export RBACX_AI_API_KEY="sk-..."
+export RBACX_AI_MODEL="gpt-4o"            # optional
+export RBACX_AI_BASE_URL=""               # optional, e.g. OpenRouter
+
+uvicorn examples.ai_fastapi_demo.app:app --reload --port 8010
+```
+
+**Endpoints**
+
+- `GET /ping` → health check (no auth)
+- `GET /policy` → shows the active policy (generated or fallback)
+- `GET /documents` → viewer role or higher
+- `GET /documents/{id}` → viewer role or higher
+- `POST /documents` → editor role or higher
+- `GET /reports/monthly` → admin only
+
+**Test:**
+
+```bash
+curl http://127.0.0.1:8010/policy
+curl -H "X-Role: viewer" http://127.0.0.1:8010/documents            # 200
+curl -H "X-Role: viewer" -X POST http://127.0.0.1:8010/documents    # 403
+curl -H "X-Role: editor" -X POST http://127.0.0.1:8010/documents    # 200
+curl -H "X-Role: admin"  http://127.0.0.1:8010/reports/monthly      # 200
+```
+
+If `RBACX_AI_API_KEY` is not set the app starts with a built-in fallback
+policy so it remains fully functional without an LLM configured.
+
+---
+
 ## Async Django (`examples/async_django_demo`)
 
 ```bash
