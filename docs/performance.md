@@ -14,3 +14,7 @@
   enabled/disabled buttons). Requests run concurrently via `asyncio.gather`,
   so the wall-clock time equals the slowest individual check rather than the
   sum of all checks.
+- **Set `timeout` on batch calls** when individual checks may hit a slow external
+  provider (SpiceDB, OpenFGA). Use `timeout=N` to bound total wall-clock time;
+  `asyncio.TimeoutError` is raised on expiry — catch it and return a safe fallback
+  rather than letting the request hang indefinitely.

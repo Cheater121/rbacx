@@ -14,6 +14,7 @@ class PrometheusMetrics(MetricsSink):
     Exposes:
       - rbacx_decisions_total{decision="allow|deny|..."}
       - rbacx_decision_seconds (Histogram) — optional latency distribution
+      - rbacx_batch_size (Histogram) — distribution of evaluate_batch_* call sizes
 
     Notes:
       * Counter uses the `_total` suffix and latency uses `_seconds` to follow Prometheus/OpenMetrics naming.
@@ -26,11 +27,13 @@ class PrometheusMetrics(MetricsSink):
     # Explicit attribute annotations for mypy
     _counter: Any | None
     _hist: Any | None
+    _batch_hist: Any | None
 
     def __init__(self) -> None:
         # default to None so attributes are always defined
         self._counter = None
         self._hist = None
+        self._batch_hist = None
 
         # create instruments only if the client is available
         if Counter is None or Histogram is None:  # pragma: no cover
@@ -46,6 +49,12 @@ class PrometheusMetrics(MetricsSink):
         self._hist = Histogram(
             "rbacx_decision_seconds",
             "RBACX decision evaluation duration in seconds.",
+        )
+        # Batch size histogram — number of requests per evaluate_batch_* call
+        self._batch_hist = Histogram(
+            "rbacx_batch_size",
+            "Distribution of rbacx evaluate_batch_* call sizes (number of requests per call).",
+            buckets=(1, 2, 5, 10, 25, 50, 100, 250, 500, 1000),
         )
 
     # -- MetricsSink ------------------------------------------------------------
@@ -69,25 +78,29 @@ class PrometheusMetrics(MetricsSink):
 
     # ----------------------------- Optional extension --------------------------
     def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
-        """Optionally record a latency distribution **in seconds**.
+        """Record a value in the appropriate histogram.
 
-        This is a **carcass method** so users can see how to implement it. Guard will call it
-        only if present (checked via ``hasattr``). If Prometheus is unavailable or the histogram
-        wasn't created, this method safely no-ops.
+        Routing:
+          - ``"rbacx_batch_size"`` → ``rbacx_batch_size`` histogram.
+          - Any other *name* → ``rbacx_decision_seconds`` latency histogram.
 
         Parameters
         ----------
         name: str
-            Metric name. Accepted for compatibility and future extensions; ignored here.
+            Metric name used for routing (see above).
         value: float
-            Duration **in seconds** (as exposed by Guard).
+            Value to record.  For latency use seconds; for batch size use the
+            request count.
         labels: dict[str, str] | None
-            Currently unused (histogram has no labels by default).
+            Currently unused (histograms have no labels by default).
         """
-        if self._hist is None:
-            return
         try:
-            self._hist.observe(float(value))  # seconds
+            if name == "rbacx_batch_size":
+                if self._batch_hist is not None:
+                    self._batch_hist.observe(float(value))
+            else:
+                if self._hist is not None:
+                    self._hist.observe(float(value))
         except Exception:  # pragma: no cover
             __import__("logging").getLogger("rbacx.metrics.prometheus").debug(
                 "PrometheusMetrics.observe: failed to record histogram", exc_info=True

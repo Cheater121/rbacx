@@ -108,3 +108,15 @@ async def test_async_http_error_branch_returns_falses():
     cli = ofga.OpenFGAChecker(cfg, async_client=ofga.httpx.AsyncClient())  # type: ignore[attr-defined]
     out = await cli.batch_check([("u:1", "r", "o:1"), ("u:2", "r", "o:2"), ("u:3", "r", "o:3")])
     assert out == [False, False, False]
+
+
+def test_sync_batch_check_empty_returns_empty(monkeypatch):
+    """sync batch_check([]) returns [] immediately without HTTP call (line 147)."""
+    import sys
+
+    sys.modules["httpx"] = make_httpx(ok=True)
+    ofga = importlib.reload(importlib.import_module("rbacx.rebac.openfga"))
+    cfg = ofga.OpenFGAConfig(api_url="http://api", store_id="s")
+    cli = ofga.OpenFGAChecker(cfg, client=ofga.httpx.Client())  # type: ignore[attr-defined]
+    result = cli.batch_check([])
+    assert result == []

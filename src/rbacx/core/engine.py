@@ -424,6 +424,7 @@ class Guard:
         requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
         *,
         explain: bool = False,
+        timeout: float | None = None,
     ) -> list[Decision]:
         """Evaluate multiple access requests concurrently, preserving order.
 
@@ -437,10 +438,20 @@ class Guard:
                 tuples.  *context* may be ``None``.
             explain: when ``True``, populate :attr:`Decision.trace` on every
                 returned :class:`Decision`.
+            timeout: optional wall-clock deadline in seconds for the **entire
+                batch**.  When exceeded :class:`asyncio.TimeoutError` is raised
+                and no partial results are returned.  ``None`` (default) means
+                no deadline.  Useful when individual checks may call a slow
+                ReBAC provider (e.g. SpiceDB, OpenFGA) and you need a bound on
+                total latency.
 
         Returns:
             List of :class:`Decision` objects, one per request, preserving
             input order.
+
+        Raises:
+            asyncio.TimeoutError: when *timeout* is set and the batch does not
+                complete within the allotted time.
 
         Example::
 
@@ -448,21 +459,38 @@ class Guard:
                 (subject, Action("read"),   resource1, ctx),
                 (subject, Action("write"),  resource1, ctx),
                 (subject, Action("delete"), resource2, None),
-            ])
+            ], timeout=2.0)
         """
         if not requests:
             return []
-        return list(
-            await asyncio.gather(
-                *[self._evaluate_core_async(s, a, r, c, explain=explain) for s, a, r, c in requests]
-            )
-        )
+
+        coros = [self._evaluate_core_async(s, a, r, c, explain=explain) for s, a, r, c in requests]
+        gathered = asyncio.gather(*coros)
+        if timeout is not None:
+            gathered = asyncio.wait_for(gathered, timeout=timeout)  # type: ignore[assignment]
+
+        results = list(await gathered)
+
+        # Emit batch_size metric so operators can tune pool sizes and TTLs.
+        if self.metrics is not None:
+            try:
+                observe = getattr(self.metrics, "observe", None)
+                if observe is not None:
+                    if inspect.iscoroutinefunction(observe):
+                        await observe("rbacx_batch_size", float(len(requests)))
+                    else:
+                        observe("rbacx_batch_size", float(len(requests)))
+            except Exception:
+                logger.exception("RBACX: metrics.observe(rbacx_batch_size) failed")
+
+        return results
 
     def evaluate_batch_sync(
         self,
         requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
         *,
         explain: bool = False,
+        timeout: float | None = None,
     ) -> list[Decision]:
         """Synchronous wrapper for :meth:`evaluate_batch_async`.
 
@@ -476,10 +504,16 @@ class Guard:
                 tuples.  *context* may be ``None``.
             explain: when ``True``, populate :attr:`Decision.trace` on every
                 returned :class:`Decision`.
+            timeout: optional wall-clock deadline in seconds passed through to
+                :meth:`evaluate_batch_async`.  ``None`` means no deadline.
 
         Returns:
             List of :class:`Decision` objects, one per request, preserving
             input order.
+
+        Raises:
+            asyncio.TimeoutError: when *timeout* is set and the batch does not
+                complete within the allotted time.
         """
         if not requests:
             return []
@@ -491,10 +525,14 @@ class Guard:
             loop_running = False
 
         if not loop_running:
-            return asyncio.run(self.evaluate_batch_async(requests, explain=explain))
+            return asyncio.run(
+                self.evaluate_batch_async(requests, explain=explain, timeout=timeout)
+            )
 
         def _runner() -> list[Decision]:
-            return asyncio.run(self.evaluate_batch_async(requests, explain=explain))
+            return asyncio.run(
+                self.evaluate_batch_async(requests, explain=explain, timeout=timeout)
+            )
 
         if Guard._executor is None:
             Guard._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rbacx-sync")

@@ -8,6 +8,8 @@ from google.protobuf.struct_pb2 import Struct  # type: ignore[import-untyped]
 # Optional: install via extra rbacx[rebac-spicedb]
 try:
     from authzed.api.v1 import (
+        BulkCheckPermissionRequest,
+        BulkCheckPermissionRequestItem,
         CheckPermissionRequest,
         CheckPermissionResponse,
         Consistency,
@@ -57,6 +59,10 @@ class _ZedAsyncClient(Protocol):
         self, request: CheckPermissionRequest, timeout: float | None = ...
     ) -> CheckPermissionResponse: ...
 
+    async def BulkCheckPermissions(self, request: Any, timeout: float | None = ...) -> Any:
+        """Optional — available in authzed ≥ 0.9.  Detected via hasattr at runtime."""
+        ...
+
 
 def _dict_to_struct(d: dict[str, Any]) -> Struct:
     s = Struct()
@@ -69,7 +75,9 @@ class SpiceDBChecker(RelationshipChecker):
     """
     ReBAC provider backed by the SpiceDB/Authzed gRPC API.
 
-    - Uses CheckPermission; batch -> sequential calls (gRPC has no one-shot batch).
+    - Single checks use ``CheckPermission``.
+    - Batch checks use ``BulkCheckPermissions`` (one gRPC call for N triples)
+      in async mode; falls back to sequential sync calls otherwise.
     - Consistency: ZedToken (at_least_as_fresh) or fully_consistent.
     - Caveats: pass context as google.protobuf.Struct.
     """
@@ -167,22 +175,91 @@ class SpiceDBChecker(RelationshipChecker):
         context: dict[str, Any] | None = None,
         zed_token: str | None = None,
     ) -> list[bool] | Any:  # Any = Awaitable[list[bool]]
+        """Check multiple (subject, relation, resource) triples in one call.
+
+        *Async mode* uses ``BulkCheckPermissions`` when available (authzed ≥ 0.9)
+        — a single gRPC round-trip for all *triples*, preserving order.  Falls
+        back to concurrent ``CheckPermission`` calls when the bulk RPC is absent.
+
+        *Sync mode* falls back to sequential ``CheckPermission`` calls (the
+        SpiceDB sync gRPC client does not expose a bulk endpoint).
+
+        On any RPC error the affected item resolves to ``False`` (fail-closed).
+        """
+        if not triples:
+            return []
+
         if self._aclient is not None:
+            aclient = self._aclient
+            # BulkCheckPermissions was added in authzed ≥ 0.9; detect at runtime.
+            _has_bulk = hasattr(aclient, "BulkCheckPermissions")
 
             async def _run() -> list[bool]:
-                out: list[bool] = []
+                # Build consistency once for the whole batch
+                consistency: Any = None
+                if zed_token:
+                    consistency = Consistency(at_least_as_fresh=ZedToken(token=zed_token))
+                elif self.cfg.prefer_fully_consistent:
+                    consistency = Consistency(fully_consistent=True)
+
+                ctx_struct = _dict_to_struct(context) if context else None
+
+                items: list[Any] = []
                 for s, r, o in triples:
-                    out.append(
-                        await self._check_single_async(
-                            s, r, o, context=context, zed_token=zed_token
+                    obj_type, obj_id = (o.split(":", 1) + [""])[:2]
+                    subj_type, subj_id = (s.split(":", 1) + [""])[:2]
+                    items.append(
+                        BulkCheckPermissionRequestItem(
+                            resource=ObjectReference(object_type=obj_type, object_id=obj_id),
+                            permission=r,
+                            subject=SubjectReference(
+                                object=ObjectReference(object_type=subj_type, object_id=subj_id)
+                            ),
+                            context=ctx_struct,
                         )
                     )
-                return out
+
+                req = BulkCheckPermissionRequest(
+                    items=items,
+                    consistency=consistency,
+                )
+
+                if not _has_bulk:
+                    # Older authzed client — fall back to concurrent single checks
+                    import asyncio as _aio
+
+                    results = await _aio.gather(
+                        *[
+                            self._check_single_async(s, r, o, context=context, zed_token=zed_token)
+                            for s, r, o in triples
+                        ]
+                    )
+                    return list(results)
+
+                try:
+                    resp = await aclient.BulkCheckPermissions(req, timeout=self.cfg.timeout_seconds)
+                    # resp.pairs is a list of BulkCheckPermissionPair ordered
+                    # by input position when the API preserves order.
+                    # Each pair has .item (echo) and .item.permissionship.
+                    out: list[bool] = []
+                    for pair in resp.pairs:
+                        allowed = (
+                            pair.item.permissionship
+                            == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION
+                        )
+                        out.append(allowed)
+                    return out
+                except RpcError as exc:
+                    logger.warning("SpiceDB BulkCheckPermissions RPC error: %s", exc, exc_info=True)
+                    return [False] * len(triples)
+                except Exception:
+                    logger.error("SpiceDB BulkCheckPermissions unexpected error", exc_info=True)
+                    return [False] * len(triples)
 
             return _run()
 
-        # sync fallback
-        return [self.check(s, r, o, context=context, zed_token=zed_token) for (s, r, o) in triples]
+        # sync mode: no bulk gRPC endpoint on sync client — sequential fallback
+        return [self.check(s, r, o, context=context, zed_token=zed_token) for s, r, o in triples]
 
     # -------------- helpers --------------
 

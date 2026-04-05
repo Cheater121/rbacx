@@ -36,7 +36,7 @@ def test_eval_guard_sync_path_indirect():
     Covers lines 42-43 indirectly via require_access: when guard exposes is_allowed_sync,
     the decorator should take the fast path (allowed).
     """
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
     from starlette.requests import Request
 
     import rbacx.adapters.starlette as st_mod
@@ -77,7 +77,7 @@ async def test_dependency_returns_none_when_allowed_true():
     """
     Covers lines 68-69: dependency should return None (no deny) when allowed=True.
     """
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
     from starlette.requests import Request
 
     import rbacx.adapters.starlette as st_mod
@@ -114,7 +114,7 @@ async def test_async_endpoint_allows_and_calls_handler():
     """
     Covers the tail of 82-94: deny is None on async handler -> returns await handler(request).
     """
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
     from starlette.requests import Request
 
     import rbacx.adapters.starlette as st_mod
@@ -157,7 +157,7 @@ async def test_sync_endpoint_returns_callable_deny_when_dependency_returns_respo
     Covers line 106: when dependency returns an ASGI-callable deny (e.g. a Response),
     the wrapper must 'return deny' directly (no coercion, no threadpool).
     """
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
     from starlette.requests import Request
     from starlette.responses import JSONResponse  # Response objects are ASGI-callable.
 
@@ -222,7 +222,7 @@ async def test_sync_endpoint_calls_real_run_in_threadpool():
     Covers line 107: deny is None on sync handler -> must execute
     `return await run_in_threadpool(handler, request)` (real threadpool call).
     """
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
     from starlette.requests import Request
 
     import rbacx.adapters.starlette as st_mod

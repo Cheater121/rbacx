@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_fastapi_dependency_sets_rbacx_headers_on_deny():
     fastapi = pytest.importorskip("fastapi")
-    pytest.importorskip("starlette")
+    pytest.importorskip("starlette.requests")
 
     from starlette.requests import Request
 

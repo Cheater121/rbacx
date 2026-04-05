@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.17.0 — 2026-04-05
+
+**Added**
+
+* **SpiceDB native `batch_check`** — async mode now issues a single
+  `BulkCheckPermissions` gRPC call instead of N sequential `CheckPermission`
+  calls.  Results are reassembled in input order from `resp.pairs`.  On RPC
+  error the entire batch returns `[False] * N` (fail-closed).  Sync mode
+  retains the sequential fallback (no bulk endpoint on sync gRPC client).
+
+* **OpenFGA `batch_check` empty-list guard** — `batch_check([])` now returns
+  `[]` immediately without issuing any HTTP request.
+
+* **`evaluate_batch_async` / `evaluate_batch_sync` `timeout` parameter** —
+  optional wall-clock deadline in seconds for the entire batch.  When exceeded,
+  `asyncio.TimeoutError` is raised.  Useful when individual checks call a slow
+  ReBAC provider and you need a bound on total latency.
+
+  ```python
+  decisions = await guard.evaluate_batch_async(requests, timeout=2.0)
+  ```
+
+* **`rbacx_batch_size` metric** — `evaluate_batch_async` now calls
+  `metrics.observe("rbacx_batch_size", N)` after each non-empty batch.
+  Both `PrometheusMetrics` and `OpenTelemetryMetrics` expose a dedicated
+  histogram for this metric.  Useful for capacity planning and TTL tuning.
+
+* **`require_batch_access` FastAPI dependency** — evaluates multiple
+  `(action, resource_type)` pairs in one `evaluate_batch_async` call and
+  returns a `list[Decision]`.  Designed for UI-state endpoints that need
+  to know which actions a user may perform at once.
+
+  ```python
+  from rbacx.adapters.fastapi import require_batch_access
+
+  @app.get("/ui-state")
+  async def ui_state(
+      decisions=Depends(
+          require_batch_access(guard,
+              [("read", "doc"), ("write", "doc"), ("delete", "doc")],
+              build_subject, timeout=2.0)
+      )
+  ):
+      return {"can_read": decisions[0].allowed, "can_write": decisions[1].allowed}
+  ```
+
+## 1.16.2 — 2026-04-05
+
+**Fixed**
+
+* `examples/ai_fastapi_demo/app.py` — `PolicyGenerationError` (invalid JSON
+  from LLM, network error, rate limit, etc.) was not caught inside
+  `_generate_policy`, causing the Starlette lifespan to propagate the
+  exception and kill the application on startup.  The call to
+  `ai.from_schema()` is now wrapped in `try/except Exception`; any failure
+  logs a `WARNING` and falls back to the built-in policy.
+
 ## 1.16.1 — 2026-04-05
 
 **Added**

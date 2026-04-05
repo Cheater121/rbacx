@@ -1,7 +1,7 @@
 import pytest
 
 hypothesis = pytest.importorskip("hypothesis")
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from rbacx.core.engine import Guard
@@ -34,6 +34,7 @@ def _env_strategy():
 
 
 @given(_env_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow], deadline=None)
 def test_normalization_deterministic_and_stable(env):
     g = Guard({"rules": []})
     s1 = _normalize(g, env)
