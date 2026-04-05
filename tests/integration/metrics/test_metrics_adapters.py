@@ -28,7 +28,7 @@ def _install_fake_prometheus(monkeypatch):
             return _Lbl(self)
 
     class Hst:
-        def __init__(self, name, doc, labelnames=None, registry=None):
+        def __init__(self, name, doc, labelnames=None, registry=None, **kw):
             self.name, self.doc = name, doc
             self.labelnames = tuple(labelnames or [])
             self._vals = []

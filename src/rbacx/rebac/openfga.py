@@ -136,6 +136,16 @@ class OpenFGAChecker(RelationshipChecker):
         context: dict[str, Any] | None = None,
         authorization_model_id: str | None = None,
     ):
+        """Check multiple (subject, relation, resource) triples via OpenFGA
+        ``/batch-check`` — a single HTTP round-trip for all *triples*.
+
+        Uses ``correlation_id`` per check to reassemble results in input order,
+        since the OpenFGA API does not guarantee response ordering.
+        On any HTTP error all results resolve to ``False`` (fail-closed).
+        """
+        if not triples:
+            return []
+
         # Build request with correlation_id per check (order is not guaranteed in responses)
         checks: list[dict[str, Any]] = []
         corr_ids: list[str] = []

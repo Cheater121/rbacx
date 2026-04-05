@@ -14,6 +14,7 @@ class OpenTelemetryMetrics(MetricsSink):
     Creates:
       - Counter: rbacx_decisions_total (labels: decision)
       - Histogram: rbacx_decision_seconds (unit: s)
+      - Histogram: rbacx_batch_size (unit: {request}) — evaluate_batch_* call sizes
 
     Notes:
       * OTEL recommends carrying the **unit** in metadata; we also keep `_seconds` in the name
@@ -25,11 +26,13 @@ class OpenTelemetryMetrics(MetricsSink):
     # Explicit attribute annotations for mypy
     _counter: Any | None
     _hist: Any | None
+    _batch_hist: Any | None
 
     def __init__(self) -> None:
         # Ensure attributes always exist
         self._counter = None
         self._hist = None
+        self._batch_hist = None
 
         if get_meter is None:  # pragma: no cover
             return
@@ -59,6 +62,20 @@ class OpenTelemetryMetrics(MetricsSink):
         except Exception:  # pragma: no cover
             self._hist = None
 
+        # Batch size histogram
+        try:
+            create_hist = getattr(meter, "create_histogram", None)
+            if create_hist is not None:
+                self._batch_hist = create_hist(
+                    name="rbacx_batch_size",
+                    description="Distribution of evaluate_batch_* call sizes (requests per call).",
+                    unit="{request}",
+                )
+            else:  # pragma: no cover
+                self._batch_hist = None
+        except Exception:  # pragma: no cover
+            self._batch_hist = None
+
     # -- MetricsSink ------------------------------------------------------------
 
     def inc(self, name: str, labels: dict[str, str] | None = None) -> None:
@@ -80,26 +97,28 @@ class OpenTelemetryMetrics(MetricsSink):
 
     # ----------------------------- Optional extension --------------------------
     def observe(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
-        """Optionally record a latency distribution **in seconds**.
+        """Record a value in the appropriate histogram.
 
-        This is a **carcass method** so users can see how to implement it. Guard will call it
-        only if present (checked via ``hasattr``). If no OTEL SDK/pipeline is configured or
-        the histogram wasn't created, this method safely no-ops.
+        Routing:
+          - ``"rbacx_batch_size"`` → ``rbacx_batch_size`` histogram.
+          - Any other *name* → ``rbacx_decision_seconds`` latency histogram.
 
         Parameters
         ----------
         name: str
-            Metric name. Accepted for compatibility and future extensions; ignored here.
+            Metric name used for routing.
         value: float
-            Duration **in seconds** (as exposed by Guard).
+            Value to record.
         labels: dict[str, str] | None
-            OTEL Histogram accepts attributes; we pass them through if present.
+            OTEL Histogram accepts attributes; passed through if present.
         """
-        if self._hist is None:
-            return
         try:
-            # Histogram.record(value, attributes=labels) is the conventional API.
-            self._hist.record(float(value), attributes=dict(labels or {}))
+            if name == "rbacx_batch_size":
+                if self._batch_hist is not None:
+                    self._batch_hist.record(float(value), attributes=dict(labels or {}))
+            else:
+                if self._hist is not None:
+                    self._hist.record(float(value), attributes=dict(labels or {}))
         except Exception:  # pragma: no cover
             __import__("logging").getLogger("rbacx.metrics.otel").debug(
                 "OpenTelemetryMetrics.observe: failed to record histogram", exc_info=True

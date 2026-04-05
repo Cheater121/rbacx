@@ -39,6 +39,38 @@ async def doc():
     return {"ok": True}
 ```
 
+
+### Batch access check (UI state)
+
+Use `require_batch_access` to evaluate multiple actions in one call — ideal for
+rendering UI elements (show/hide buttons) without N sequential requests:
+
+```python
+from rbacx.adapters.fastapi import require_batch_access
+from rbacx import Subject
+
+def build_subject(request: Request) -> Subject:
+    role = request.headers.get("X-Role", "viewer")
+    return Subject(id="user", roles=[role])
+
+@app.get("/ui-state")
+async def ui_state(
+    decisions=Depends(
+        require_batch_access(
+            guard,
+            [("read", "document"), ("write", "document"), ("delete", "document")],
+            build_subject,
+            timeout=2.0,  # optional deadline for the whole batch
+        )
+    )
+):
+    return {
+        "can_read":   decisions[0].allowed,
+        "can_write":  decisions[1].allowed,
+        "can_delete": decisions[2].allowed,
+    }
+```
+
 ---
 
 ## Flask (decorator)
