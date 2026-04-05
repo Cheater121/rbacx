@@ -355,3 +355,59 @@ async def main():
 
 asyncio.run(main())
 ```
+
+---
+
+## Runnable demos
+
+Two ready-to-run examples are included under `examples/`:
+
+### `examples/ai_demo/demo.py` — standalone script
+
+A self-contained script that walks through all three AI authoring steps:
+generate → refine → explain.  No web framework needed.
+
+```bash
+pip install "rbacx[ai]"
+
+# Edit the constants at the top of the file:
+#   API_KEY = "sk-..."
+#   SCHEMA  = "openapi.json"   # path to your OpenAPI schema
+#   MODEL   = "gpt-5.4"
+
+python examples/ai_demo/demo.py
+```
+
+### `examples/ai_fastapi_demo/app.py` — live FastAPI integration
+
+Shows how to pass FastAPI's **auto-generated OpenAPI schema** into
+`AIPolicy.from_schema()` at startup so the LLM produces a policy that
+matches the actual routes — no manual JSON authoring.
+
+```bash
+pip install "rbacx[ai]" fastapi uvicorn
+
+export RBACX_AI_API_KEY="sk-..."
+export RBACX_AI_MODEL="gpt-5.4"       # optional
+export RBACX_AI_BASE_URL=""           # optional, e.g. OpenRouter URL
+
+uvicorn examples.ai_fastapi_demo.app:app --reload --port 8010
+```
+
+The app exposes a `GET /policy` endpoint that returns the active policy
+and its source (`ai-generated` or `fallback`), making it easy to inspect
+what the LLM produced.
+
+If `RBACX_AI_API_KEY` is not set the app starts with a built-in fallback
+policy so it remains fully functional without an LLM configured.
+
+**Quick test:**
+
+```bash
+curl http://127.0.0.1:8010/policy                                    # inspect generated policy
+curl -H "X-Role: viewer" http://127.0.0.1:8010/documents             # 200
+curl -H "X-Role: viewer" -X POST http://127.0.0.1:8010/documents     # 403
+curl -H "X-Role: editor" -X POST http://127.0.0.1:8010/documents     # 200
+curl -H "X-Role: admin"  http://127.0.0.1:8010/reports/monthly       # 200
+curl -H "X-Role: viewer" http://127.0.0.1:8010/reports/monthly       # 403
+```

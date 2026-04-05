@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.16.1 — 2026-04-05
+
+**Added**
+
+* `examples/ai_fastapi_demo/app.py` — new runnable demo showing how to wire
+  FastAPI's auto-generated OpenAPI schema into `AIPolicy.from_schema()` at
+  startup.  The LLM generates a matching rbacx policy automatically; a
+  built-in fallback policy is used when no API key is configured.
+* `docs/ai_policy_authoring.md` — new *Runnable demos* section at the bottom
+  documenting both `examples/ai_demo/demo.py` and the new FastAPI demo.
+
 ## 1.16.0 — 2026-04-04
 
 **Added**

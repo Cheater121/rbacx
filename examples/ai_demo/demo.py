@@ -6,7 +6,7 @@ from rbacx.ai import AIPolicy
 
 API_KEY = "sk-..."  # ← insert your API key here
 SCHEMA = "openapi.json"  # ← path to your schema (JSON or YAML)
-MODEL = "gpt-4o"  # gpt-4o / claude-3-5-sonnet / llama3 / etc.
+MODEL = "gpt-5.4-mini"  # gpt-5 / claude-3-5-sonnet / llama3 / etc.
 BASE_URL = None  # None = OpenAI; for other providers use:
 # "https://openrouter.ai/api/v1", etc.
 
