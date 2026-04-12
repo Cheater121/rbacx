@@ -1,0 +1,2380 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cheater121.github.io/rbacx/ai_policy_authoring/">
+      
+      
+        <link rel="prev" href="../policy_authoring/">
+      
+      
+        <link rel="next" href="../policy_catalog/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.20">
+    
+    
+      
+        <title>AI Policy Authoring - RBACX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-policy-authoring-system" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RBACX" class="md-header__button md-logo" aria-label="RBACX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RBACX
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AI Policy Authoring
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Cheater121/rbacx" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cheater121/rbacx
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RBACX" class="md-nav__button md-logo" aria-label="RBACX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    RBACX
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Cheater121/rbacx" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Cheater121/rbacx
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../highlights/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Highlights
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why_choose/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Why choose RBACX
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategies
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Concepts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Security model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reasons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Explainability (reasons & obligations)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Role hierarchy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit_mode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audit mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../obligations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Obligations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../caching/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Decision caching
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../types/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Types
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Policy
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Policy
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_authoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authoring
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    AI Policy Authoring
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    AI Policy Authoring
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-llm-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported LLM providers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from_schema-generate-a-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_schema() — generate a policy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="from_schema() — generate a policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#return-value-policyresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      Return value — PolicyResult
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refine_policy-iterative-refinement" class="md-nav__link">
+    <span class="md-ellipsis">
+      refine_policy() — iterative refinement
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="refine_policy() — iterative refinement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-from-an-explicit-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Starting from an explicit policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-is-always-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validation is always on
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explain_decision-human-readable-decision-explanations" class="md-nav__link">
+    <span class="md-ellipsis">
+      explain_decision() — human-readable decision explanations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="explain_decision() — human-readable decision explanations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How it works
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      input format
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe_mode-pipeline-in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      safe_mode pipeline in detail
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exception-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exception reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-generate-refine-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example: generate, refine, explain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runnable demos
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runnable demos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplesai_demodemopy-standalone-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/ai_demo/demo.py — standalone script
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesai_fastapi_demoapppy-live-fastapi-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/ai_fastapi_demo/app.py — live FastAPI integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy catalog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../time_operators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Time operators
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_loading/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy loading (hot reload)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy_stores/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy stores
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_policy_source/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Custom PolicySource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http_mapping/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HTTP mapping
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    ReBAC
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            ReBAC
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rebac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rebac/local/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Local Provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rebac/openfga/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenFGA Provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rebac/spicedb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SpiceDB / Authzed Provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Integration
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Integration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web_adapters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web adapters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Custom Adapters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../try_examples/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Try examples
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Observability
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Observability
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel_metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenTelemetry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prometheus/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Prometheus
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Policy diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability_stack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Observability stack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Performance
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Performance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Performance guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Benchmarks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Operations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Operations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration_rbac_to_abac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migration (RBAC→ABAC)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Public API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-llm-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported LLM providers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from_schema-generate-a-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_schema() — generate a policy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="from_schema() — generate a policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#return-value-policyresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      Return value — PolicyResult
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refine_policy-iterative-refinement" class="md-nav__link">
+    <span class="md-ellipsis">
+      refine_policy() — iterative refinement
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="refine_policy() — iterative refinement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-from-an-explicit-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Starting from an explicit policy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-is-always-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validation is always on
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explain_decision-human-readable-decision-explanations" class="md-nav__link">
+    <span class="md-ellipsis">
+      explain_decision() — human-readable decision explanations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="explain_decision() — human-readable decision explanations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How it works
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      input format
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe_mode-pipeline-in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      safe_mode pipeline in detail
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exception-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exception reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-generate-refine-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example: generate, refine, explain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runnable demos
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runnable demos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplesai_demodemopy-standalone-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/ai_demo/demo.py — standalone script
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesai_fastapi_demoapppy-live-fastapi-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/ai_fastapi_demo/app.py — live FastAPI integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="ai-policy-authoring-system">AI Policy Authoring System<a class="headerlink" href="#ai-policy-authoring-system" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Available in:</strong> <code>rbacx[ai]</code> — install with <code>pip install rbacx[ai]</code></p>
+</blockquote>
+<p>The AI Policy Authoring System lets you generate, refine, and understand
+rbacx policies using any OpenAI-compatible language model.  You describe
+your API in a standard OpenAPI schema and the system produces a valid,
+linted rbacx policy that is ready to pass directly to <code>Guard</code>.</p>
+<hr />
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>rbacx<span class="o">[</span>ai<span class="o">]</span>
+</code></pre></div>
+<p>This installs <code>openai&gt;=1.0</code> and <code>PyYAML&gt;=6.0</code> as additional dependencies.</p>
+<hr />
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.ai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIPolicy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.core.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Guard</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">ai</span> <span class="o">=</span> <span class="n">AIPolicy</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Generate a policy from an OpenAPI schema</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span><span class="s2">&quot;openapi.json&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;SaaS B2B app&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">)</span>        <span class="c1"># ready-to-use policy dict</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">warnings</span><span class="p">)</span>   <span class="c1"># lint issues (empty = clean)</span>
+
+    <span class="c1"># Wire directly into Guard</span>
+    <span class="n">guard</span> <span class="o">=</span> <span class="n">Guard</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+<hr />
+<h2 id="supported-llm-providers">Supported LLM providers<a class="headerlink" href="#supported-llm-providers" title="Permanent link">&para;</a></h2>
+<p><code>AIPolicy</code> accepts any OpenAI-compatible endpoint via <code>base_url</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Example <code>base_url</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI (default)</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td>OpenRouter</td>
+<td><code>"https://openrouter.ai/api/v1"</code></td>
+</tr>
+<tr>
+<td>Ollama (local)</td>
+<td><code>"http://localhost:11434/v1"</code></td>
+</tr>
+<tr>
+<td>Azure OpenAI</td>
+<td><code>"https://&lt;resource&gt;.openai.azure.com/openai/deployments/&lt;deployment&gt;"</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="c1"># OpenRouter — access Claude, Gemini, Mistral, etc.</span>
+<span class="n">ai</span> <span class="o">=</span> <span class="n">AIPolicy</span><span class="p">(</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;sk-or-...&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;anthropic/claude-3-5-sonnet&quot;</span><span class="p">,</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://openrouter.ai/api/v1&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Ollama — fully local, no API key needed</span>
+<span class="n">ai</span> <span class="o">=</span> <span class="n">AIPolicy</span><span class="p">(</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;ollama&quot;</span><span class="p">,</span>   <span class="c1"># any non-empty string</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;llama3&quot;</span><span class="p">,</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;http://localhost:11434/v1&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="from_schema-generate-a-policy"><code>from_schema()</code> — generate a policy<a class="headerlink" href="#from_schema-generate-a-policy" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
+    <span class="n">schema</span><span class="p">,</span>           <span class="c1"># Path | str | dict  (OpenAPI 3.x or 2.0, JSON or YAML)</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">context</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>       <span class="c1"># free-form domain hint for the LLM</span>
+    <span class="n">safe_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>   <span class="c1"># validate → retry → lint pipeline (recommended)</span>
+    <span class="nb">compile</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>    <span class="c1"># also compile the policy (requires rbacx compiler)</span>
+    <span class="n">explain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>    <span class="c1"># request per-rule human explanations (extra LLM call)</span>
+    <span class="n">raw</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>        <span class="c1"># include raw LLM output in result.raw for debugging</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h3>
+<p><strong><code>schema</code></strong> — the API schema to generate a policy for.  Accepted forms:</p>
+<ul>
+<li><code>Path</code> or file-path string pointing to a <code>.json</code>, <code>.yaml</code>, or <code>.yml</code> file</li>
+<li>raw JSON string</li>
+<li>pre-loaded <code>dict</code></li>
+</ul>
+<p>OpenAPI 3.x and OpenAPI 2.0 (Swagger) are supported.</p>
+<p><strong><code>context</code></strong> — optional free-form description of your domain, e.g.
+<code>"multi-tenant SaaS, roles: admin / member / viewer, tenant isolation required"</code>.
+A richer context produces more precise rules.</p>
+<p><strong><code>safe_mode</code></strong> (default <code>True</code>) — runs the full validation pipeline:</p>
+<div class="highlight"><pre><span></span><code>LLM call → JSON parse → validate (DSL schema) →
+  if errors: fix prompt → LLM retry → validate again →
+    if still errors: raise ValidationRetryError
+lint → warnings
+</code></pre></div>
+<p>Set to <code>False</code> only for experimentation; the returned policy may not pass
+<code>validate_policy</code>.</p>
+<p><strong><code>compile</code></strong> (default <code>False</code>) — compile the policy via the rbacx compiler
+and return the result in <code>result.compiled</code>.  Raises <code>PolicyGenerationError</code>
+if the compiler is unexpectedly unavailable.</p>
+<p><strong><code>explain</code></strong> (default <code>False</code>) — make an extra LLM call to produce a
+per-rule plain-English explanation.  Result is in <code>result.explanation</code>
+(<code>{rule_id: str}</code>).</p>
+<p><strong><code>raw</code></strong> (default <code>False</code>) — expose the raw LLM response string in
+<code>result.raw</code>.  Useful for prompt debugging.</p>
+<h3 id="return-value-policyresult">Return value — <code>PolicyResult</code><a class="headerlink" href="#return-value-policyresult" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dsl</code></td>
+<td><code>dict</code></td>
+<td>Generated policy — pass to <code>Guard(result.dsl)</code></td>
+</tr>
+<tr>
+<td><code>warnings</code></td>
+<td><code>list[Issue]</code></td>
+<td>Lint issues from <code>analyze_policy</code> (empty = clean)</td>
+</tr>
+<tr>
+<td><code>compiled</code></td>
+<td><code>Any \| None</code></td>
+<td>Compiled policy or <code>None</code></td>
+</tr>
+<tr>
+<td><code>explanation</code></td>
+<td><code>dict[str, str] \| None</code></td>
+<td><code>{rule_id: text}</code> or <code>None</code></td>
+</tr>
+<tr>
+<td><code>raw</code></td>
+<td><code>str \| None</code></td>
+<td>Raw LLM output or <code>None</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
+    <span class="s2">&quot;openapi.json&quot;</span><span class="p">,</span>
+    <span class="n">context</span><span class="o">=</span><span class="s2">&quot;B2B SaaS. Roles: admin, editor, viewer. Tenant isolation required.&quot;</span><span class="p">,</span>
+    <span class="n">explain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">issue</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">warnings</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">issue</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">rule_id</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">explanation</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>   <span class="c1"># raw LLM JSON</span>
+</code></pre></div>
+<hr />
+<h2 id="refine_policy-iterative-refinement"><code>refine_policy()</code> — iterative refinement<a class="headerlink" href="#refine_policy-iterative-refinement" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span>
+    <span class="n">feedback</span><span class="p">,</span>         <span class="c1"># str  — natural-language instruction</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>      <span class="c1"># dict | None — reset session to this policy first</span>
+    <span class="nb">compile</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>    <span class="c1"># compile the refined policy</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>refine_policy</code> maintains a <strong>persistent conversation history</strong> across calls
+so the model remembers all previous feedback.  Each call extends the history
+and returns a new <code>PolicyResult</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Start from a generated policy</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span><span class="s2">&quot;openapi.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Iterative refinement — the model remembers each step</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span><span class="s2">&quot;viewers should not be able to delete anything&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span><span class="s2">&quot;editors can update but not create new resources&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span><span class="s2">&quot;admins bypass all restrictions&quot;</span><span class="p">)</span>
+
+<span class="c1"># Final policy — ready to use</span>
+<span class="n">guard</span> <span class="o">=</span> <span class="n">Guard</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="starting-from-an-explicit-policy">Starting from an explicit policy<a class="headerlink" href="#starting-from-an-explicit-policy" title="Permanent link">&para;</a></h3>
+<p>Pass <code>policy=</code> to reset the session to a specific starting point without
+calling <code>from_schema</code> first.  This is useful for refining a hand-written or
+previously saved policy:</p>
+<div class="highlight"><pre><span></span><code><span class="n">existing_policy</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;my_policy.json&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span>
+    <span class="s2">&quot;add MFA requirement for delete actions on sensitive resources&quot;</span><span class="p">,</span>
+    <span class="n">policy</span><span class="o">=</span><span class="n">existing_policy</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="validation-is-always-on">Validation is always on<a class="headerlink" href="#validation-is-always-on" title="Permanent link">&para;</a></h3>
+<p><code>refine_policy</code> always runs the full <code>safe_mode</code> pipeline — the refined
+policy is validated before being accepted.  If validation fails after two
+attempts a <code>ValidationRetryError</code> is raised and the session state is <strong>not</strong>
+updated (the previous policy is preserved).</p>
+<hr />
+<h2 id="explain_decision-human-readable-decision-explanations"><code>explain_decision()</code> — human-readable decision explanations<a class="headerlink" href="#explain_decision-human-readable-decision-explanations" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">expl</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">explain_decision</span><span class="p">(</span>
+    <span class="n">policy</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">,</span>
+    <span class="nb">input</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user:42&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;roles&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;viewer&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;attrs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">},</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;doc:99&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;attrs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="s2">&quot;owner_id&quot;</span><span class="p">:</span> <span class="s2">&quot;user:42&quot;</span><span class="p">},</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">expl</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">allowed</span><span class="p">)</span>   <span class="c1"># True / False  (deterministic — from Guard)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">expl</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">rule_id</span><span class="p">)</span>   <span class="c1"># which rule fired</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">expl</span><span class="o">.</span><span class="n">human</span><span class="p">)</span>              <span class="c1"># plain-English explanation from LLM</span>
+</code></pre></div>
+<h3 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
+<ol>
+<li>A minimal <code>Guard(policy)</code> evaluates the request <strong>deterministically</strong> —
+   the LLM never decides the allow/deny outcome.</li>
+<li>The authoritative <code>Decision</code> (including <code>rule_id</code>, <code>effect</code>, <code>reason</code>) is
+   passed to the LLM together with the policy and the input.</li>
+<li>The LLM writes a 2–4 sentence explanation of <em>why</em> that decision was
+   reached.</li>
+</ol>
+<p>This design eliminates hallucination on the security-critical allow/deny
+result while still producing useful, readable explanations.</p>
+<h3 id="input-format"><code>input</code> format<a class="headerlink" href="#input-format" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>subject.id</code></td>
+<td><code>str</code></td>
+<td>yes</td>
+<td>Subject identifier</td>
+</tr>
+<tr>
+<td><code>subject.roles</code></td>
+<td><code>list[str]</code></td>
+<td>no</td>
+<td>Role list (default <code>[]</code>)</td>
+</tr>
+<tr>
+<td><code>subject.attrs</code></td>
+<td><code>dict</code></td>
+<td>no</td>
+<td>Subject attributes (default <code>{}</code>)</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td><code>str</code></td>
+<td>yes</td>
+<td>Action name, e.g. <code>"read"</code></td>
+</tr>
+<tr>
+<td><code>resource.type</code></td>
+<td><code>str</code></td>
+<td>yes</td>
+<td>Resource type</td>
+</tr>
+<tr>
+<td><code>resource.id</code></td>
+<td><code>str \| None</code></td>
+<td>no</td>
+<td>Resource identifier</td>
+</tr>
+<tr>
+<td><code>resource.attrs</code></td>
+<td><code>dict</code></td>
+<td>no</td>
+<td>Resource attributes (default <code>{}</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>explain_decision</code> is independent of the refinement session — it can be
+called without a prior <code>from_schema</code>.</p>
+<hr />
+<h2 id="safe_mode-pipeline-in-detail"><code>safe_mode</code> pipeline in detail<a class="headerlink" href="#safe_mode-pipeline-in-detail" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────────────────────────────────────────┐
+│ 1. SchemaParser.parse(schema)  →  NormalizedSchema          │
+│ 2. PromptBuilder.build_generation(schema, context)          │
+│ 3. LLMClient.complete(messages)  →  raw string              │
+│ 4. PolicyGenerator._parse_json(raw)  →  dict                │
+│ 5. PolicyValidator.validate(dict)                           │
+│      ✓ empty errors  →  continue                            │
+│      ✗ errors found  →  PromptBuilder.build_fix(…)          │
+│                          LLM retry  →  parse  →  validate   │
+│                            ✓  →  continue                   │
+│                            ✗  →  raise ValidationRetryError │
+│ 6. PolicyValidator.lint(dict)  →  warnings                  │
+│ 7. (optional) compile                                        │
+│ 8. (optional) ExplainGenerator.explain_rules                 │
+└─────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="exception-reference">Exception reference<a class="headerlink" href="#exception-reference" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>When raised</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SchemaParseError</code></td>
+<td>Input schema format unrecognised or file unreadable</td>
+</tr>
+<tr>
+<td><code>ValidationRetryError</code></td>
+<td>Both validation attempts fail in <code>safe_mode</code>; carries <code>.raw</code> and <code>.validation_errors</code></td>
+</tr>
+<tr>
+<td><code>PolicyGenerationError</code></td>
+<td>LLM returns empty/non-JSON response; <code>compile=True</code> with unavailable compiler; malformed <code>input</code> dict</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.ai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIPolicy</span><span class="p">,</span> <span class="n">ValidationRetryError</span><span class="p">,</span> <span class="n">PolicyGenerationError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span><span class="s2">&quot;openapi.json&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ValidationRetryError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed after two attempts:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">err</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">validation_errors</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Last raw output:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">PolicyGenerationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generation error:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">cause</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caused by:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">cause</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="full-example-generate-refine-explain">Full example: generate, refine, explain<a class="headerlink" href="#full-example-generate-refine-explain" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.ai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIPolicy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.core.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Guard</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rbacx.core.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Subject</span><span class="p">,</span> <span class="n">Action</span><span class="p">,</span> <span class="n">Resource</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">ai</span> <span class="o">=</span> <span class="n">AIPolicy</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 1. Generate from OpenAPI schema</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">from_schema</span><span class="p">(</span>
+        <span class="s2">&quot;openapi.json&quot;</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">=</span><span class="s2">&quot;Document management SaaS. Roles: admin, editor, viewer.&quot;</span><span class="p">,</span>
+        <span class="n">explain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generated policy — warnings:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">warnings</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">rule_id</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">explanation</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 2. Refine iteratively</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span>
+        <span class="s2">&quot;editors should not be able to delete documents&quot;</span>
+    <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">refine_policy</span><span class="p">(</span>
+        <span class="s2">&quot;viewers can only read, never write or delete&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 3. Wire into Guard</span>
+    <span class="n">guard</span> <span class="o">=</span> <span class="n">Guard</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">)</span>
+
+    <span class="c1"># 4. Explain a decision</span>
+    <span class="n">expl</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ai</span><span class="o">.</span><span class="n">explain_decision</span><span class="p">(</span>
+        <span class="n">policy</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">dsl</span><span class="p">,</span>
+        <span class="nb">input</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;u1&quot;</span><span class="p">,</span> <span class="s2">&quot;roles&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]},</span>
+            <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;d42&quot;</span><span class="p">},</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">verdict</span> <span class="o">=</span> <span class="s2">&quot;ALLOWED&quot;</span> <span class="k">if</span> <span class="n">expl</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">allowed</span> <span class="k">else</span> <span class="s2">&quot;DENIED&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Decision: </span><span class="si">{</span><span class="n">verdict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rule: </span><span class="si">{</span><span class="n">expl</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Explanation: </span><span class="si">{</span><span class="n">expl</span><span class="o">.</span><span class="n">human</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+<hr />
+<h2 id="runnable-demos">Runnable demos<a class="headerlink" href="#runnable-demos" title="Permanent link">&para;</a></h2>
+<p>Two ready-to-run examples are included under <code>examples/</code>:</p>
+<h3 id="examplesai_demodemopy-standalone-script"><code>examples/ai_demo/demo.py</code> — standalone script<a class="headerlink" href="#examplesai_demodemopy-standalone-script" title="Permanent link">&para;</a></h3>
+<p>A self-contained script that walks through all three AI authoring steps:
+generate → refine → explain.  No web framework needed.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;rbacx[ai]&quot;</span>
+
+<span class="c1"># Edit the constants at the top of the file:</span>
+<span class="c1">#   API_KEY = &quot;sk-...&quot;</span>
+<span class="c1">#   SCHEMA  = &quot;openapi.json&quot;   # path to your OpenAPI schema</span>
+<span class="c1">#   MODEL   = &quot;gpt-5.4&quot;</span>
+
+python<span class="w"> </span>examples/ai_demo/demo.py
+</code></pre></div>
+<h3 id="examplesai_fastapi_demoapppy-live-fastapi-integration"><code>examples/ai_fastapi_demo/app.py</code> — live FastAPI integration<a class="headerlink" href="#examplesai_fastapi_demoapppy-live-fastapi-integration" title="Permanent link">&para;</a></h3>
+<p>Shows how to pass FastAPI's <strong>auto-generated OpenAPI schema</strong> into
+<code>AIPolicy.from_schema()</code> at startup so the LLM produces a policy that
+matches the actual routes — no manual JSON authoring.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;rbacx[ai]&quot;</span><span class="w"> </span>fastapi<span class="w"> </span>uvicorn
+
+<span class="nb">export</span><span class="w"> </span><span class="nv">RBACX_AI_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">RBACX_AI_MODEL</span><span class="o">=</span><span class="s2">&quot;gpt-5.4&quot;</span><span class="w">       </span><span class="c1"># optional</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">RBACX_AI_BASE_URL</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w">           </span><span class="c1"># optional, e.g. OpenRouter URL</span>
+
+uvicorn<span class="w"> </span>examples.ai_fastapi_demo.app:app<span class="w"> </span>--reload<span class="w"> </span>--port<span class="w"> </span><span class="m">8010</span>
+</code></pre></div>
+<p>The app exposes a <code>GET /policy</code> endpoint that returns the active policy
+and its source (<code>ai-generated</code> or <code>fallback</code>), making it easy to inspect
+what the LLM produced.</p>
+<p>If <code>RBACX_AI_API_KEY</code> is not set the app starts with a built-in fallback
+policy so it remains fully functional without an LLM configured.</p>
+<p><strong>Quick test:</strong></p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://127.0.0.1:8010/policy<span class="w">                                    </span><span class="c1"># inspect generated policy</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Role: viewer&quot;</span><span class="w"> </span>http://127.0.0.1:8010/documents<span class="w">             </span><span class="c1"># 200</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Role: viewer&quot;</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8010/documents<span class="w">     </span><span class="c1"># 403</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Role: editor&quot;</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8010/documents<span class="w">     </span><span class="c1"># 200</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Role: admin&quot;</span><span class="w">  </span>http://127.0.0.1:8010/reports/monthly<span class="w">       </span><span class="c1"># 200</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Role: viewer&quot;</span><span class="w"> </span>http://127.0.0.1:8010/reports/monthly<span class="w">       </span><span class="c1"># 403</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      
+    
+  </body>
+</html>
