@@ -231,7 +231,7 @@ Handler signature: `(decision: Decision, context: Context) -> None` — sync or 
 `deny` with `reason="obligation_failed"`.  `challenge` is propagated to
 `Decision.challenge`.  Any other exception also causes deny (fail-closed).
 
-See [Obligations](../docs/obligations.md) for full details and behaviour.
+See [Obligations](obligations.md) for full details and behaviour.
 
 ---
 
