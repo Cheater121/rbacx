@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 1.18.0 — 2026-04-12
+
+**Added**
+
+* **Executable obligation handlers** — `Guard.register_obligation_handler(type, handler)`
+  lets callers register sync or async callbacks that are invoked automatically
+  after a `permit` decision carrying the matching obligation type.
+
+  ```python
+  from rbacx.core.engine import ObligationNotMetError
+
+  def check_mfa(decision, context):
+      if not context.attrs.get("mfa"):
+          raise ObligationNotMetError("MFA required", challenge="mfa")
+
+  guard.register_obligation_handler("require_mfa", check_mfa)
+  ```
+
+  Key properties:
+
+  * Handlers run only for `permit` decisions, in obligation order.
+  * `ObligationNotMetError` flips the decision to `deny` with
+    `reason="obligation_failed"`; the optional `challenge` attribute is
+    propagated to `Decision.challenge`.
+  * Any other exception is logged and also flips to `deny` (fail-closed).
+  * The first failing handler short-circuits — subsequent handlers are skipped.
+  * Conditional obligations (`condition` field) are respected — the handler is
+    skipped when the condition evaluates to `False`.
+  * Unregistered obligation types remain in `Decision.obligations` for manual
+    handling (backward-compatible).
+  * Registering a handler for an existing type replaces the previous one.
+
+* **`rbacx.core.engine.ObligationNotMetError`** — new public exception
+  raised by obligation handlers to signal that an obligation was not met.
+  Accepts an optional `challenge` keyword argument.
+
 ## 1.17.0 — 2026-04-05
 
 **Added**

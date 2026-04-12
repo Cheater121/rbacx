@@ -299,6 +299,48 @@ blocking all access.
 
 Obligations without a `condition` field behave exactly as before.
 
+## Executable obligation handlers
+
+Instead of inspecting `Decision.obligations` and dispatching handlers manually,
+register them directly on the `Guard` instance:
+
+```python
+from rbacx.core.engine import ObligationNotMetError
+
+def check_mfa(decision, context):
+    if not context.attrs.get("mfa"):
+        raise ObligationNotMetError("MFA not satisfied", challenge="mfa")
+
+async def check_geo(decision, context):
+    if context.attrs.get("geo") not in ("EU", "US"):
+        raise ObligationNotMetError("Geo not allowed", challenge="geo")
+
+guard.register_obligation_handler("require_mfa", check_mfa)
+guard.register_obligation_handler("require_geo", check_geo)
+```
+
+Handler signature: `(decision: Decision, context: Context) -> None` (sync or async).
+
+**Behaviour:**
+
+* Handlers are called **only for `permit` decisions**, in the order obligations
+  appear in the matched rule.
+* Raising :class:`~rbacx.core.engine.ObligationNotMetError` flips the
+  decision to `deny` with `reason="obligation_failed"`.  Set `challenge=` to
+  propagate a machine-readable hint (e.g. `"mfa"`) to `Decision.challenge`.
+* Any other exception is logged and also flips to `deny` (fail-closed).
+* When the first handler raises, subsequent handlers are **skipped** (fail-fast).
+* Registering a handler for a type that already has one **replaces** the
+  previous handler.
+* Conditional obligations (`condition` field) are respected — the handler is
+  skipped when the condition evaluates to `False`.
+* Unregistered obligation types are left in `Decision.obligations` for manual
+  handling — backward-compatible with the existing approach.
+
+**`ObligationNotMetError`** is importable from `rbacx.core.engine`.
+
+---
+
 ## Notes & best practices
 
 * Keep obligation handlers **pure** (no I/O) and quick; they run in the request path.
