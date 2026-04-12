@@ -104,10 +104,26 @@
 
 ---
 
-## Decision explanation / trace
+## Decision object
 
-Pass `explain=True` to any evaluation method to get a per-rule evaluation log
-attached to the returned `Decision`.
+Fields returned by all `Guard.evaluate*` methods:
+
+| Field | Type | Description |
+|---|---|---|
+| `allowed` | `bool` | Whether access is granted |
+| `effect` | `str` | Declared effect: `"permit"` or `"deny"` |
+| `obligations` | `List[Dict]` | Obligations from the matched rule |
+| `challenge` | `str \| None` | Machine-readable auth challenge (e.g. `"mfa"`) |
+| `rule_id` | `str \| None` | ID of the matched rule |
+| `policy_id` | `str \| None` | ID of the matched policy (policy sets only) |
+| `reason` | `str \| None` | Why the decision was made — see [Reasons](reasons.md) |
+| `trace` | `List[RuleTrace] \| None` | Per-rule evaluation log; `None` unless `explain=True` |
+
+---
+
+## Decision trace (`explain=True`)
+
+Pass `explain=True` to any evaluation method to get a per-rule evaluation log:
 
 ```python
 d = guard.evaluate_sync(subject, action, resource, context, explain=True)
@@ -117,88 +133,54 @@ for entry in d.trace:
     print(f"  rule {entry.rule_id!r} [{entry.effect}] → {status}")
 ```
 
-When `explain=False` (the default) `Decision.trace` is `None` — there is no
-overhead on the hot path.
+When `explain=False` (default) `Decision.trace` is `None` — zero overhead on the hot path.
+
+`explain=True` is supported on all four evaluation methods:
+
+```python
+d         = guard.evaluate_sync(..., explain=True)
+d         = await guard.evaluate_async(..., explain=True)
+decisions = guard.evaluate_batch_sync([...], explain=True)
+decisions = await guard.evaluate_batch_async([...], explain=True)
+```
 
 **`RuleTrace` fields**
 
 | Field | Type | Description |
 |---|---|---|
-| `rule_id` | `str` | The `id` field of the rule as declared in the policy |
-| `effect` | `str` | Declared effect: `"permit"` or `"deny"` |
-| `matched` | `bool` | `True` when the rule fully matched; `False` when skipped |
-| `skip_reason` | `str \| None` | Why the rule was skipped, or `None` when `matched=True` |
+| `rule_id` | `str` | Rule `id` as declared in the policy |
+| `effect` | `str` | `"permit"` or `"deny"` |
+| `matched` | `bool` | `True` when the rule fully matched |
+| `skip_reason` | `str \| None` | Why the rule was skipped; `None` when `matched=True` |
 
 Possible `skip_reason` values: `"action_mismatch"`, `"resource_mismatch"`,
 `"condition_mismatch"`, `"condition_type_mismatch"`, `"condition_depth_exceeded"`.
 
-**Algorithm-specific trace behaviour**
-
-* `deny-overrides` — trace includes every rule up to and including the first
-  matching deny (the loop breaks there).  When only permits fire, all rules
-  are present.
-* `permit-overrides` — trace up to and including the first matching permit.
-* `first-applicable` — trace up to and including the first match; subsequent
-  rules are absent.
-* No match — every rule appears in the trace with `matched=False`.
-
-`explain=True` is supported on all four evaluation methods:
-
 ```python
-# Single request
-d = guard.evaluate_sync(..., explain=True)
-d = await guard.evaluate_async(..., explain=True)
-
-# Batch — explain applies to every request in the batch
-decisions = guard.evaluate_batch_sync([...], explain=True)
-decisions = await guard.evaluate_batch_async([...], explain=True)
-```
-
-`RuleTrace` is importable directly from the root package:
-
-```python
-from rbacx import RuleTrace
+from rbacx import RuleTrace  # importable from root package
 ```
 
 ---
 
 ## Batch evaluation
 
-`Guard` exposes two methods for evaluating multiple access requests in a single
-call — useful for populating UIs that need to know which buttons/tabs/actions
-to show for a given user.
+Evaluate multiple access requests in one call — useful for UI state checks
+(which buttons/actions to show for a given user).
 
 ```python
-from rbacx import Guard, Subject, Action, Resource, Context
-
-guard = Guard(policy)
-subject = Subject(id="u1", roles=["editor"])
-resource = Resource(type="document", id="doc-42")
-ctx = Context(attrs={"mfa": True})
-
-# Async (preferred in ASGI applications)
 decisions = await guard.evaluate_batch_async([
     (subject, Action("read"),   resource, ctx),
     (subject, Action("write"),  resource, ctx),
     (subject, Action("delete"), resource, ctx),
-])
+], timeout=2.0)
 
-# Sync (works everywhere, including inside a running event loop)
-decisions = guard.evaluate_batch_sync([
-    (subject, Action("read"),   resource, ctx),
-    (subject, Action("write"),  resource, ctx),
-    (subject, Action("delete"), resource, ctx),
-])
-
-for action_name, decision in zip(["read", "write", "delete"], decisions):
-    print(action_name, "→", "allow" if decision.allowed else "deny")
+decisions = guard.evaluate_batch_sync([...])
 ```
 
-**Signature**
+**Signatures**
 
 ```python
 async def evaluate_batch_async(
-    self,
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
     *,
     explain: bool = False,
@@ -206,7 +188,6 @@ async def evaluate_batch_async(
 ) -> list[Decision]: ...
 
 def evaluate_batch_sync(
-    self,
     requests: Sequence[tuple[Subject, Action, Resource, Context | None]],
     *,
     explain: bool = False,
@@ -216,40 +197,48 @@ def evaluate_batch_sync(
 
 **Guarantees**
 
-* Results are returned in the **same order** as the input sequence.
-* Requests are evaluated **concurrently** via `asyncio.gather` — wall-clock
-  time grows with the slowest single request rather than the total count.
-* An **empty** input list returns `[]` immediately without any evaluation.
-* `timeout` (seconds) bounds the total wall-clock time for the batch.
-  `asyncio.TimeoutError` is raised if the deadline is exceeded.  ``None``
-  (default) means no deadline.
-* `Context` may be `None` for any individual request.
-* All DI hooks (metrics, logger, obligation checker, role resolver, cache) are
-  invoked **per request**, exactly as with `evaluate_async` / `evaluate_sync`.
-* If any individual request raises an exception the entire batch propagates
-  that exception (**fail-fast** semantics, consistent with `asyncio.gather`).
+* Results are in the **same order** as the input.
+* Requests run **concurrently** via `asyncio.gather` — total time equals the slowest check.
+* Empty input returns `[]` immediately.
+* `timeout` bounds total wall-clock time; raises `asyncio.TimeoutError` on expiry.
+* All DI hooks (metrics, logger, cache, obligations, handlers) apply per request.
 
 ---
 
-## Decision object
+## Executable obligation handlers
 
-Fields returned by `Guard.evaluate*`:
+Register handlers that `Guard` calls automatically after a `permit` decision:
 
-* `allowed: bool`
-* `effect: "permit" | "deny"`
-* `obligations: List[Dict[str, Any]]`
-* `challenge: Optional[str]`
-* `rule_id: Optional[str]`
-* `policy_id: Optional[str]`
-* `reason: Optional[str]`
-* `trace: Optional[List[RuleTrace]]` — populated when `explain=True`; `None` by default
+```python
+from rbacx.core.engine import ObligationNotMetError
+
+def check_mfa(decision, context):
+    if not context.attrs.get("mfa"):
+        raise ObligationNotMetError("MFA required", challenge="mfa")
+
+guard.register_obligation_handler("require_mfa", check_mfa)
+```
+
+**Signature**
+
+```python
+guard.register_obligation_handler(obligation_type: str, handler: Callable) -> None
+```
+
+Handler signature: `(decision: Decision, context: Context) -> None` — sync or async.
+
+`ObligationNotMetError(message="", *, challenge=None)` — flips the decision to
+`deny` with `reason="obligation_failed"`.  `challenge` is propagated to
+`Decision.challenge`.  Any other exception also causes deny (fail-closed).
+
+See [Obligations](../r/docs/obligations.md) for full details and behaviour.
 
 ---
 
 ## `require_batch_access` (FastAPI)
 
 FastAPI dependency that evaluates multiple `(action, resource_type)` pairs in
-one `evaluate_batch_async` call and returns a `list[Decision]`.
+one batch call and returns `list[Decision]`:
 
 ```python
 from rbacx.adapters.fastapi import require_batch_access

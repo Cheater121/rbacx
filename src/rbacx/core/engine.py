@@ -39,6 +39,34 @@ def _now() -> float:
     return time.perf_counter()
 
 
+class ObligationNotMetError(Exception):
+    """Raised by an obligation handler when the obligation cannot be satisfied.
+
+    Raising this exception from a handler registered via
+    :meth:`Guard.register_obligation_handler` causes the engine to flip the
+    decision to ``deny`` with ``reason="obligation_failed"``.
+
+    Args:
+        message: human-readable description of why the obligation was not met.
+        challenge: optional machine-readable challenge string (e.g. ``"mfa"``,
+            ``"step_up"``).  When set, the value is propagated to
+            :attr:`~rbacx.core.decision.Decision.challenge` so the PEP can
+            issue the appropriate response header (e.g. ``WWW-Authenticate``).
+
+    Example::
+
+        from rbacx.core.engine import ObligationNotMetError
+
+        def require_mfa(decision, context):
+            if not context.attrs.get("mfa"):
+                raise ObligationNotMetError("MFA required", challenge="mfa")
+    """
+
+    def __init__(self, message: str = "", *, challenge: str | None = None) -> None:
+        super().__init__(message)
+        self.challenge: str | None = challenge
+
+
 class Guard:
     """Policy evaluation engine.
 
@@ -85,6 +113,9 @@ class Guard:
         self._compiled: Callable[[dict[str, Any]], dict[str, Any]] | None = None
         self.strict_types: bool = bool(strict_types)
         self.relationship_checker = relationship_checker
+        # Registry of executable obligation handlers.
+        # Keys are obligation type strings; values are sync or async callables.
+        self._obligation_handlers: dict[str, Any] = {}
         # Guards atomic replacement of policy / etag / compiled function.
         # RLock allows re-entrant acquisition: set_policy -> _recompute_etag -> clear_cache
         # can all hold the lock in the same thread without deadlocking.
@@ -93,6 +124,55 @@ class Guard:
         self._recompute_etag()
 
     # ---------------------------------------------------------------- set/update
+
+    def register_obligation_handler(
+        self,
+        obligation_type: str,
+        handler: Any,
+    ) -> None:
+        """Register an executable handler for a specific obligation type.
+
+        When ``Guard`` produces a ``permit`` decision that carries an obligation
+        of the given *obligation_type*, it automatically calls the registered
+        *handler* instead of (or in addition to) returning the obligation in
+        ``Decision.obligations``.
+
+        If the handler raises :class:`~rbacx.core.engine.ObligationNotMetError`
+        the decision is flipped to ``deny`` with ``reason="obligation_failed"``
+        and the exception's ``challenge`` attribute (if set) is propagated to
+        ``Decision.challenge``.  Any other exception is treated as a handler
+        error: it is logged and the decision is also flipped to ``deny``
+        (fail-closed semantics).
+
+        Registering a handler for a type that already has one **replaces** the
+        previous handler.
+
+        Handler signature::
+
+            def handler(decision: Decision, context: Context) -> None:
+                # raise ObligationNotMetError on failure
+                ...
+
+            # async handlers are also supported:
+            async def handler(decision: Decision, context: Context) -> None:
+                ...
+
+        Args:
+            obligation_type: the ``type`` string of the obligation as it
+                appears in the policy (e.g. ``"require_mfa"``).
+            handler: sync or async callable conforming to the signature above.
+
+        Example::
+
+            from rbacx.core.engine import ObligationNotMetError
+
+            def check_mfa(decision, context):
+                if not context.attrs.get("mfa"):
+                    raise ObligationNotMetError("MFA not satisfied", challenge="mfa")
+
+            guard.register_obligation_handler("require_mfa", check_mfa)
+        """
+        self._obligation_handlers[obligation_type] = handler
 
     def set_policy(self, policy: dict[str, Any]) -> None:
         """Replace policy/policyset.
@@ -294,6 +374,65 @@ class Guard:
             reason=reason,
             trace=trace,
         )
+
+        # Executable obligation handlers — invoked for permit decisions only.
+        # Handlers receive the fully-built Decision so they can inspect all fields.
+        # ObligationNotMetError flips the decision to deny; any other exception
+        # is logged and also flips to deny (fail-closed).
+        #
+        # Conditional obligations: if an obligation carries a ``condition`` field
+        # we evaluate it here (same logic as BasicObligationChecker) — skip the
+        # handler when the condition is False or raises.
+        if d.allowed and self._obligation_handlers:
+            from .policy import (  # noqa: PLC0415  (deferred to avoid circular import)
+                ConditionDepthError,
+                ConditionTypeError,
+                eval_condition,
+            )
+
+            for ob in raw.get("obligations") or []:
+                ob_type = (ob or {}).get("type")
+                handler = self._obligation_handlers.get(ob_type) if ob_type else None
+                if handler is None:
+                    continue
+                # Respect conditional obligations — skip when condition is False/error
+                ob_condition = (ob or {}).get("condition")
+                if ob_condition is not None:
+                    try:
+                        if not eval_condition(ob_condition, env):
+                            continue
+                    except (ConditionTypeError, ConditionDepthError):
+                        continue  # fail-safe: skip handler on condition error
+                try:
+                    await maybe_await(handler(d, context))
+                except ObligationNotMetError as exc:
+                    d = Decision(
+                        allowed=False,
+                        effect="deny",
+                        obligations=d.obligations,
+                        challenge=exc.challenge if exc.challenge is not None else d.challenge,
+                        rule_id=d.rule_id,
+                        policy_id=d.policy_id,
+                        reason="obligation_failed",
+                        trace=d.trace,
+                    )
+                    break
+                except Exception:
+                    logger.exception(
+                        "RBACX: obligation handler %r raised unexpected error (fail-closed)",
+                        ob_type,
+                    )
+                    d = Decision(
+                        allowed=False,
+                        effect="deny",
+                        obligations=d.obligations,
+                        challenge=d.challenge,
+                        rule_id=d.rule_id,
+                        policy_id=d.policy_id,
+                        reason="obligation_failed",
+                        trace=d.trace,
+                    )
+                    break
 
         # metrics (do not use return values; conditionally await)
         if self.metrics is not None:
